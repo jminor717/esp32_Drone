@@ -341,7 +341,7 @@ static void stabilizerTask(void *param)
             }
             else
             {
-                DEBUG_PRINTI("powering Motors");
+                //DEBUG_PRINTI("powering Motors");
                 powerDistribution(&control);
             }
 

@@ -235,6 +235,8 @@ static bool quadIsFlying = false;
 static uint32_t lastFlightCmd;
 static uint32_t takeoffTime;
 
+static uint16_t AlternateData = 0;
+
 // Data used to enable the task and stabilizer loop to run with minimal locking
 static state_t taskEstimatorState; // The estimator state produced by the task, copied to the stabilzer when needed.
 static Axis3f gyroSnapshot;        // A snpashot of the latest gyro data, used by the task
@@ -438,20 +440,22 @@ void estimatorKalman(state_t *state, sensorData_t *sensors, control_t *control, 
     // Average the last IMU measurements. We do this because the prediction loop is
     // slower than the IMU loop, but the IMU information is required externally at
     // a higher rate (for body rate control).
-    if (sensorsReadAcc(&sensors->acc))
-    {
-        accAccumulator.x += sensors->acc.x;
-        accAccumulator.y += sensors->acc.y;
-        accAccumulator.z += sensors->acc.z;
-        accAccumulatorCount++;
-    }
-
-    if (sensorsReadGyro(&sensors->gyro))
+    if (AlternateData <= 3 && sensorsReadGyro(&sensors->gyro))
     {
         gyroAccumulator.x += sensors->gyro.x;
         gyroAccumulator.y += sensors->gyro.y;
         gyroAccumulator.z += sensors->gyro.z;
         gyroAccumulatorCount++;
+
+        AlternateData = 0;
+    }
+    else if (sensorsReadAcc(&sensors->acc))
+    {
+        accAccumulator.x += sensors->acc.x;
+        accAccumulator.y += sensors->acc.y;
+        accAccumulator.z += sensors->acc.z;
+        accAccumulatorCount++;
+        AlternateData++;
     }
 
     // Average the thrust command from the last time steps, generated externally by the controller

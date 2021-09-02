@@ -26,7 +26,12 @@ static struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
 //#define WIFI_SSID      "Udp Server"
 static char WIFI_SSID[32] = "ESP-DRONE";
 static char WIFI_PWD[64] = "12345678" ;
+
+static char WIFI_SSID_Station[32] = "pretty fly for a wifi";
+static char WIFI_PWD_Station[64] = "JRMinor1!";
 #define MAX_STA_CONN (1)
+
+//#define STATION_MODE
 
 static char rx_buffer[UDP_SERVER_BUFSIZE];
 static char tx_buffer[UDP_SERVER_BUFSIZE];
@@ -207,11 +212,9 @@ void wifiInit(void)
         return;
     }
 
-    esp_netif_t *ap_netif = NULL;
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ap_netif = esp_netif_create_default_wifi_ap();
-    uint8_t mac[6];
+
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -222,23 +225,40 @@ void wifiInit(void)
                     NULL,
                     NULL));
 
+    wifi_config_t wifi_config;
+
+#ifdef STATION_MODE
+    esp_netif_t *sta_netif = NULL;
+    sta_netif = esp_netif_create_default_wifi_sta();
+
+    memcpy(wifi_config.sta.ssid, WIFI_SSID_Station, strlen(WIFI_SSID_Station) + 1);
+    memcpy(wifi_config.sta.password, WIFI_PWD_Station, strlen(WIFI_PWD_Station) + 1);
+    wifi_config.sta.channel = 0;
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+#else
+    esp_netif_t *ap_netif = NULL;
+    uint8_t mac[6];
+    ap_netif = esp_netif_create_default_wifi_ap();
+
     ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_AP, mac));
     sprintf(WIFI_SSID, "ESP-DRONE_%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    wifi_config_t wifi_config;
-    memcpy(wifi_config.ap.ssid, WIFI_SSID, strlen(WIFI_SSID) + 1) ;
+    memcpy(wifi_config.ap.ssid, WIFI_SSID, strlen(WIFI_SSID) + 1);
     wifi_config.ap.ssid_len = strlen(WIFI_SSID);
-    memcpy(wifi_config.ap.password, WIFI_PWD, strlen(WIFI_PWD) + 1) ;
+    memcpy(wifi_config.ap.password, WIFI_PWD, strlen(WIFI_PWD) + 1);
     wifi_config.ap.max_connection = MAX_STA_CONN;
     wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-    wifi_config.ap.channel  = 13;
+    wifi_config.ap.channel = 13;
 
-    if (strlen(WIFI_PWD) == 0) {
+    if (strlen(WIFI_PWD) == 0)
+    {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
-
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+#endif
     ESP_ERROR_CHECK(esp_wifi_start());
 
     esp_netif_ip_info_t ip_info = {
@@ -246,12 +266,20 @@ void wifiInit(void)
         .netmask.addr = ipaddr_addr("255.255.255.0"),
         .gw.addr      = ipaddr_addr("192.168.43.42"),
     };
+
+#ifdef STATION_MODE
+    ESP_ERROR_CHECK(esp_netif_dhcpc_stop(sta_netif));
+    ESP_ERROR_CHECK(esp_netif_set_ip_info(sta_netif, &ip_info));
+    ESP_ERROR_CHECK(esp_netif_dhcpc_start(sta_netif));
+
+    DEBUG_PRINT_LOCAL("wifi_init_station complete.SSID:%s", WIFI_SSID_Station);
+#else
     ESP_ERROR_CHECK(esp_netif_dhcps_stop(ap_netif));
     ESP_ERROR_CHECK(esp_netif_set_ip_info(ap_netif, &ip_info));
     ESP_ERROR_CHECK(esp_netif_dhcps_start(ap_netif));
 
     DEBUG_PRINT_LOCAL("wifi_init_softap complete.SSID:%s password:%s", WIFI_SSID, WIFI_PWD);
-
+#endif
     // This should probably be reduced to a CRTP packet size
     udpDataRx = xQueueCreate(5, sizeof(UDPPacket)); /* Buffer packets (max 64 bytes) */
     DEBUG_QUEUE_MONITOR_REGISTER(udpDataRx);
