@@ -6,7 +6,7 @@
 // 34, 35, 36, 39 are input only
 // 1, 3, 5, 14, 15 output pwm durring boot/reboot
 
-/** //* https://www.esp32.com/viewtopic.php?t=5840
+/**  https://www.esp32.com/viewtopic.php?t=5840
  * There are three "power domains" on the chip, i.e. three separate power input sections.
  * Domain VDD3P3_CPU in on pin 37 (NOT GPIO 37) supplies power to GPIO5; GPIO18; GPIO23; GPIO19; GPIO22; GPIO3; GPIO1; and GPIO21.
  * This domain can SOURCE up to 40mA and SINK up to 28mA on STRENGTH 3
