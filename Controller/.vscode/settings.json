@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.json": "jsonc",
+        "bt_types.h": "c",
+        "gap_api.h": "c"
+    }
+}
