@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 void sitAwInit(void);
 void sitAwUpdateSetpoint(setpoint_t *setpoint, const sensorData_t *sensorData,

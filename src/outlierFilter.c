@@ -26,7 +26,7 @@
 
 #include <math.h>
 #include "outlierFilter.h"
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 #include "log.h"
 #include "debug_cf.h"
 

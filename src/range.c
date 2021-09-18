@@ -29,7 +29,7 @@
 #include "log.h"
 
 #include "range.h"
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 #include "estimator.h"
 
 static uint16_t ranges[RANGE_T_END] = {0,};

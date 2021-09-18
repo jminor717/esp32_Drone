@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "config.h"
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 #include "stm32_legacy.h"
 
 #define DEFAULT_YAW_MODE  XMODE

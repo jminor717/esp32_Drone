@@ -55,7 +55,7 @@
 #define __ESTIMATOR_KALMAN_H__
 
 #include <stdint.h>
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 void estimatorKalmanInit(void);
 bool estimatorKalmanTest(void);

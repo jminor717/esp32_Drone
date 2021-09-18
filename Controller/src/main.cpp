@@ -4,13 +4,17 @@
 void setup()
 {
     Serial.begin(115200);
+    //char mac[] = "60:5b:b4:d9:7b:14";
     char mac[] = "03:03:03:03:03:03";
     PS4.begin(mac);
     Serial.println("Ready.");
+    Serial.println(mac);
+    //PS4.attach();
 }
 
 void loop()
 {
+    int8_t val = 0;
     // Below has all accessible outputs from the controller
     if (PS4.isConnected())
     {
@@ -59,7 +63,6 @@ void loop()
             Serial.println("PS Button");
         if (PS4.Touchpad())
             Serial.println("Touch Pad Button");
-
         if (PS4.L2())
         {
             Serial.printf("L2 button at %d\n", PS4.L2Value());
@@ -68,23 +71,28 @@ void loop()
         {
             Serial.printf("R2 button at %d\n", PS4.R2Value());
         }
-
-        if (PS4.LStickX())
+        val = PS4.LStickX();
+        if (val > 10 || val < -10)
         {
-            Serial.printf("Left Stick x at %d\n", PS4.LStickX());
+            Serial.printf("Left Stick x at %d\n", val);
         }
-        if (PS4.LStickY())
+        val = PS4.LStickY();
+        if (val > 10 || val < -10)
         {
-            Serial.printf("Left Stick y at %d\n", PS4.LStickY());
+            Serial.printf("Left Stick y at %d\n", val);
         }
-        if (PS4.RStickX())
+        val = PS4.RStickX();
+        if (val > 10 || val < -10)
         {
-            Serial.printf("Right Stick x at %d\n", PS4.RStickX());
+            Serial.printf("Right Stick x at %d\n", val);
         }
-        if (PS4.RStickY())
+        val = PS4.RStickY();
+        if (val > 10 || val < -10)
         {
-            Serial.printf("Right Stick y at %d\n", PS4.RStickY());
+            Serial.printf("Right Stick y at %d\n", val);
         }
+        // ps4_sensor_t sense = PS4.SensorData();
+        //Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
         if (PS4.Charging())
             Serial.println("The controller is charging");
@@ -93,11 +101,11 @@ void loop()
         if (PS4.Mic())
             Serial.println("The controller has a mic attached");
 
-        Serial.printf("Battery Level : %d\n", PS4.Battery());
+        //Serial.printf("Battery Level : %d\n", PS4.Battery());
 
-        Serial.println();
+        //Serial.println();
         // This delay is to make the output more human readable
         // Remove it when you're not trying to see the output
-        delay(1000);
+        delay(16);
     }
 }

@@ -32,7 +32,7 @@
 #include "sensfusion6.h"
 #include "position_estimator.h"
 #include "sensors.h"
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 #include "static_mem.h"
 
 #define ATTITUDE_UPDATE_RATE RATE_250_HZ

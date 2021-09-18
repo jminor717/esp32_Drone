@@ -26,7 +26,7 @@
 #ifndef __POWER_DISTRIBUTION_H__
 #define __POWER_DISTRIBUTION_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 void powerDistributionInit(void);
 bool powerDistributionTest(void);

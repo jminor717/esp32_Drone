@@ -26,7 +26,7 @@
 #ifndef __SENSORS_H__
 #define __SENSORS_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 typedef enum { ACC_MODE_PROPTEST, ACC_MODE_FLIGHT } accModes;
 

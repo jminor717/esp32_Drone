@@ -72,7 +72,14 @@
         "esp_attr.h": "c",
         "algorithm": "c",
         "random": "c",
-        "utility": "c"
+        "utility": "c",
+        "string": "c",
+        "vector": "c",
+        "limits": "c",
+        "list": "c",
+        "streambuf": "c",
+        "functional": "c",
+        "position_controller.h": "c"
     },
     "cSpell.words": [
         "XSHUT"

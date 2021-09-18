@@ -26,7 +26,7 @@
 #ifndef __CONTROLLER_INDI_H__
 #define __CONTROLLER_INDI_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 //#include "filter.h"
 #include "math3d.h"
 #include "log.h"

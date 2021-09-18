@@ -26,7 +26,7 @@
 #ifndef __ESTIMATOR_H__
 #define __ESTIMATOR_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 typedef enum {
   anyEstimator = 0,

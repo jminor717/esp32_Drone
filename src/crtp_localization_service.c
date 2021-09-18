@@ -34,7 +34,7 @@
 // #include "log.h"
 // #include "param.h"
 
-// #include "stabilizer_types.h"
+// #include "../common/stabilizer_types.h"
 // #include "stabilizer.h"
 // #include "configblock.h"
 // //#include "worker.h"

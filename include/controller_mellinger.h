@@ -26,7 +26,7 @@
 #ifndef __CONTROLLER_MELLINGER_H__
 #define __CONTROLLER_MELLINGER_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 void controllerMellingerInit(void);
 bool controllerMellingerTest(void);

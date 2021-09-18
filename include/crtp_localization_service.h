@@ -26,7 +26,7 @@
 #ifndef _CRTP_LOCALIZATION_SERVICE_H_
 #define _CRTP_LOCALIZATION_SERVICE_H_
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 //#include "pulse_processor.h"
 
 /**

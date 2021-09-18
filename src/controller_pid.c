@@ -1,6 +1,6 @@
 
 #include "stabilizer.h"
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 #include "attitude_controller.h"
 #include "sensfusion6.h"

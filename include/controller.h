@@ -26,7 +26,7 @@
 #ifndef __CONTROLLER_H__
 #define __CONTROLLER_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 typedef enum {
   ControllerTypeAny,

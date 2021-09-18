@@ -26,7 +26,7 @@
 #ifndef __ESTIMATOR_COMPLEMENTARY_H__
 #define __ESTIMATOR_COMPLEMENTARY_H__
 
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 
 void estimatorComplementaryInit(void);
 bool estimatorComplementaryTest(void);

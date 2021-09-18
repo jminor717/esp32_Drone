@@ -27,7 +27,7 @@
 #define CRTP_COMMANDER_H_
 
 #include <stdint.h>
-#include "stabilizer_types.h"
+#include "../common/stabilizer_types.h"
 #include "crtp.h"
 
 typedef enum {
