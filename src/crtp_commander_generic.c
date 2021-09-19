@@ -55,24 +55,13 @@
  *   1 - Add a new type in the packetType_e enum.
  *   2 - Implement a decoder function with good documentation about the data
  *       structure and the intent of the packet.
- *   3 - Add the decoder function to the packetDecoders array.
+ *   3 - Add the decoder function to the packetDecoders array.currently in common/Data_type.h
  *   4 - Create a new params group for your handler if necessary
  *   5 - Pull-request your change :-)
  */
 
 typedef void (*packetDecoder_t)(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen);
 
-/* ---===== 1 - packetType_e enum =====--- */
-enum packet_type {
-  stopType          = 0,
-  velocityWorldType = 1,
-  zDistanceType     = 2,
-  cppmEmuType       = 3,
-  altHoldType       = 4,
-  hoverType         = 5,
-  fullStateType     = 6,
-  positionType      = 7,
-};
 
 /* ---===== 2 - Decoding functions =====--- */
 /* The setpoint structure is reinitialized to 0 before being passed to the

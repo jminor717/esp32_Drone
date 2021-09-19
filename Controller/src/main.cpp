@@ -1,6 +1,20 @@
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
 
+/*
+low level send and receive interface
+    wifi -> esp32 wifi, mimic existing drone implamentation
+    long range radio -> combine TX and RX loops on both controller and Drone to help minimize likelihood of colission
+high level independent command and setpoint transmition lops to allow commands to be sent more frequently than setpoints
+    low level will run at the rate of the fastest high level and try to combine high level packets to minimize the time that TX is active
+    
+
+*/
+
+
+
+void handleControlUpdate();
+
 void setup()
 {
     Serial.begin(115200);
@@ -9,10 +23,10 @@ void setup()
     PS4.begin(mac);
     Serial.println("Ready.");
     Serial.println(mac);
-    //PS4.attach();
+    PS4.attach(&handleControlUpdate);
 }
 
-void loop()
+void handleControlUpdate()
 {
     int8_t val = 0;
     // Below has all accessible outputs from the controller
@@ -102,10 +116,13 @@ void loop()
             Serial.println("The controller has a mic attached");
 
         //Serial.printf("Battery Level : %d\n", PS4.Battery());
+    }
+}
 
-        //Serial.println();
-        // This delay is to make the output more human readable
-        // Remove it when you're not trying to see the output
-        delay(16);
+void loop()
+{
+    while (true)
+    {
+        delay(portMAX_DELAY);
     }
 }

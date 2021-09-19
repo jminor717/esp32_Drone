@@ -122,23 +122,6 @@ static bool handleMemWrite(const uint32_t memAddr, const uint8_t writeLen, const
 
 STATIC_MEM_TASK_ALLOC(crtpCommanderHighLevelTask, CMD_HIGH_LEVEL_TASK_STACKSIZE);
 
-// CRTP Packet definitions
-
-// trajectory command (first byte of crtp packet)
-enum TrajectoryCommand_e {
-  COMMAND_SET_GROUP_MASK          = 0,
-  COMMAND_TAKEOFF                 = 1, // Deprecated, use COMMAND_TAKEOFF_2
-  COMMAND_LAND                    = 2, // Deprecated, use COMMAND_LAND_2
-  COMMAND_STOP                    = 3,
-  COMMAND_GO_TO                   = 4,
-  COMMAND_START_TRAJECTORY        = 5,
-  COMMAND_DEFINE_TRAJECTORY       = 6,
-  COMMAND_TAKEOFF_2               = 7,
-  COMMAND_LAND_2                  = 8,
-  COMMAND_TAKEOFF_WITH_VELOCITY   = 9,
-  COMMAND_LAND_WITH_VELOCITY      = 10,
-};
-
 struct data_set_group_mask {
   uint8_t groupMask; // mask for which groups this CF belongs to
 } __attribute__((packed));

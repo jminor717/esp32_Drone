@@ -63,9 +63,22 @@ static int wifilinkReceiveCRTPPacket(CRTPPacket *p);
 
 STATIC_MEM_TASK_ALLOC(wifilinkTask, USBLINK_TASK_STACKSIZE);
 
+#ifdef CONFIG_ENABLE_LEGACY_APP
 static float rch, pch, ych;
 static uint16_t tch;
 
+static bool detectOldVersionApp(UDPPacket *in)
+{
+    if ((in->data)[0] != 0x00 && in->size == 11)
+    { //12-1
+        if ((in->data)[0] == 0x80 && (in->data)[9] == 0x00 && (in->data)[10] == 0x00 && (in->data)[11] == 0x00)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
 static bool wifilinkIsConnected(void)
 {
     return (xTaskGetTickCount() - lastPacketTick) < M2T(WIFI_ACTIVITY_TIMEOUT_MS);
@@ -77,18 +90,6 @@ static struct crtpLinkOperations wifilinkOp = {
     .receivePacket     = wifilinkReceiveCRTPPacket,
     .isConnected       = wifilinkIsConnected,
 };
-
-static bool detectOldVersionApp(UDPPacket *in)
-{
-
-    if ((in->data)[0] != 0x00 && in->size == 11) { //12-1
-        if ((in->data)[0] == 0x80 && (in->data)[9] == 0x00 && (in->data)[10] == 0x00 && (in->data)[11] == 0x00) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 static void wifilinkTask(void *param)
 {

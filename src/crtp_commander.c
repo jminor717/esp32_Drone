@@ -49,41 +49,6 @@ void crtpCommanderInit(void)
   isInit = true;
 }
 
-enum crtpSetpointGenericChannel {
-  SET_SETPOINT_CHANNEL = 0,
-  META_COMMAND_CHANNEL = 1,
-};
-
-/* Channel 1 of the generic commander port is used for "meta-commands"
- * that alter the behavior of the commander itself, e.g. mode switching.
- * Although we use the generic commander port due to increasing pressure on the
- * 4-bit space of ports numbers, meta-commands that are unrelated to
- * streaming generic setpoint control modes are permitted.
- *
- * The packet format for meta-commands is:
- * +------+==========================+
- * | TYPE |     DATA                 |
- * +------+==========================+
- *
- * TYPE is an 8-bit value. The remainder of the data depends on the command.
- * The maximum data size is 29 bytes.
- */
-
-/* To add a new packet:
- *   1 - Add a new type in the metaCommand_e enum.
- *   2 - Implement a decoder function with good documentation about the data
- *       structure and the intent of the packet.
- *   3 - Add the decoder function to the metaCommandDecoders array.
- *   4 - Create a new params group for your handler if necessary
- *   5 - Pull-request your change :-)
- */
-
-/* ---===== 1 - metaCommand_e enum =====--- */
-enum metaCommand_e {
-  metaNotifySetpointsStop = 0,
-  nMetaCommands,
-};
-
 typedef void (*metaCommandDecoder_t)(const void *data, size_t datalen);
 
 /* ---===== 2 - Decoding functions =====--- */
