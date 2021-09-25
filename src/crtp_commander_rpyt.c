@@ -42,17 +42,6 @@
 #define MAX_THRUST  60000
 
 /**
- * CRTP commander rpyt packet format
- */
-struct CommanderCrtpLegacyValues
-{
-  float roll;       // deg
-  float pitch;      // deg
-  float yaw;        // deg
-  uint16_t thrust;
-} __attribute__((packed));
-
-/**
  * Stabilization modes for Roll, Pitch, Yaw.
  */
 typedef enum

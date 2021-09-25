@@ -79,7 +79,10 @@
         "list": "c",
         "streambuf": "c",
         "functional": "c",
-        "position_controller.h": "c"
+        "position_controller.h": "c",
+        "imu_types.h": "c",
+        "wifi_esp32.h": "c",
+        "esp_netif.h": "c"
     },
     "cSpell.words": [
         "XSHUT"

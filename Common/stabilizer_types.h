@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "imu_types.h"
+#include "../common/imu_types.h"
 //#include "lighthouse_calibration.h"
 
 /* Data structure used by the stabilizer subsystem.

@@ -58,7 +58,60 @@ enum packet_type
     positionType = 7,
 };
 
-// CRTP Packet definitions
+/* velocityDecoder  velocityWorldType
+ * Set the Crazyflie velocity in the world coordinate system
+ */
+struct velocityPacket_s
+{
+    float vx;      // m in the world frame of reference
+    float vy;      // ...
+    float vz;      // ...
+    float yawrate; // deg/s
+} __attribute__((packed));
+
+/* zDistanceDecoder  zDistanceType
+ * Set the Crazyflie absolute height and roll/pitch angles
+ */
+struct zDistancePacket_s
+{
+    float roll;      // deg
+    float pitch;     // ...
+    float yawrate;   // deg/s
+    float zDistance; // m in the world frame of reference
+} __attribute__((packed));
+
+/* altHoldDecoder  altHoldType
+ * Set the Crazyflie vertical velocity and roll/pitch angle
+ */
+struct altHoldPacket_s
+{
+    float roll;      // rad
+    float pitch;     // ...
+    float yawrate;   // deg/s
+    float zVelocity; // m/s in the world frame of reference
+} __attribute__((packed));
+
+/* hoverDecoder  hoverType
+ * Set the Crazyflie absolute height and velocity in the body coordinate system
+ */
+struct hoverPacket_s
+{
+    float vx;        // m/s in the body frame of reference
+    float vy;        // ...
+    float yawrate;   // deg/s
+    float zDistance; // m in the world frame of reference
+} __attribute__((packed));
+
+/**
+ * CRTP commander rpyt packet format
+ */
+struct CommanderCrtpLegacyValues
+{
+    float roll;  // deg
+    float pitch; // deg
+    float yaw;   // deg
+    uint16_t thrust;
+} __attribute__((packed));
 
 // trajectory command (first byte of crtp packet)
 enum TrajectoryCommand_e

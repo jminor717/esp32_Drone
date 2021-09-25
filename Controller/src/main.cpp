@@ -1,17 +1,37 @@
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
+#include <WiFi.h>
+#include <WiFiUdp.h>
+#include <../Common/Data_type.h>
+#include <atomic>
+
+#define WIFIssid "ESP-DRONE"
+#define WIFIpassword "12345678"
+#define UDP_SERVER_PORT 2390
+
+#define WIFI_TRANSMIT_RATE_Us 40000
+
+#define MIN_THRUST 1000
+#define MAX_THRUST 60000
+
+#define MIN_DEGREE 2.0
+#define MAX_DEGREE 2.0
 
 /*
 low level send and receive interface
     wifi -> esp32 wifi, mimic existing drone implamentation
     long range radio -> combine TX and RX loops on both controller and Drone to help minimize likelihood of colission
 high level independent command and setpoint transmition lops to allow commands to be sent more frequently than setpoints
-    low level will run at the rate of the fastest high level and try to combine high level packets to minimize the time that TX is active
-    
+    low level will run at the rate of the fastest high level and try to combine high level packets to minimize the time that TX is active (only for long range radio)
+
 
 */
+IPAddress DroneAddress = IPAddress();
+WiFiUDP udp = WiFiUDP();
 
-
+int64_t now = esp_timer_get_time();
+int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
+std::atomic<bool> inTransmit(false);
 
 void handleControlUpdate();
 
@@ -24,6 +44,12 @@ void setup()
     Serial.println("Ready.");
     Serial.println(mac);
     PS4.attach(&handleControlUpdate);
+
+    DroneAddress.fromString("192.168.43.42");
+    WiFi.begin(WIFIssid, WIFIpassword);
+    //WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    udp.begin(UDP_SERVER_PORT);
+    now = esp_timer_get_time();
 }
 
 void handleControlUpdate()
@@ -32,6 +58,7 @@ void handleControlUpdate()
     // Below has all accessible outputs from the controller
     if (PS4.isConnected())
     {
+        now = esp_timer_get_time();
         if (PS4.Right())
             Serial.println("Right Button");
         if (PS4.Down())
@@ -77,34 +104,24 @@ void handleControlUpdate()
             Serial.println("PS Button");
         if (PS4.Touchpad())
             Serial.println("Touch Pad Button");
+
         if (PS4.L2())
-        {
             Serial.printf("L2 button at %d\n", PS4.L2Value());
-        }
         if (PS4.R2())
-        {
             Serial.printf("R2 button at %d\n", PS4.R2Value());
-        }
+
         val = PS4.LStickX();
         if (val > 10 || val < -10)
-        {
             Serial.printf("Left Stick x at %d\n", val);
-        }
         val = PS4.LStickY();
         if (val > 10 || val < -10)
-        {
             Serial.printf("Left Stick y at %d\n", val);
-        }
         val = PS4.RStickX();
         if (val > 10 || val < -10)
-        {
             Serial.printf("Right Stick x at %d\n", val);
-        }
         val = PS4.RStickY();
         if (val > 10 || val < -10)
-        {
             Serial.printf("Right Stick y at %d\n", val);
-        }
         // ps4_sensor_t sense = PS4.SensorData();
         //Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
@@ -116,6 +133,47 @@ void handleControlUpdate()
             Serial.println("The controller has a mic attached");
 
         //Serial.printf("Battery Level : %d\n", PS4.Battery());
+        if (now > NextAvalableTransmit && !inTransmit)
+        {
+            uint16_t R2 = 0, rx = 0, ry = 0, lx = 0;
+            if (PS4.R2())
+                R2 = PS4.R2Value();
+            val = PS4.LStickX();
+            if (val > 10 || val < -10)
+                lx = val;
+            val = PS4.RStickX();
+            if (val > 10 || val < -10)
+                rx = val;
+            val = PS4.RStickY();
+            if (val > 10 || val < -10)
+                ry = val;
+
+            inTransmit = true;
+            struct CommanderCrtpLegacyValues values;
+            values.roll = map(rx, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
+            values.pitch = map(ry, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
+            values.yaw = map(lx, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
+            values.thrust = map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
+
+            CRTPPacket cmd;
+            cmd.channel = 0;
+            cmd.port = CRTP_PORT_SETPOINT;
+
+            memcpy(cmd.data, (const uint8_t *)&values, sizeof(CommanderCrtpLegacyValues));
+
+            uint8_t *buffer = (uint8_t *)malloc(sizeof(CRTPPacket));
+            memcpy(buffer, (const uint8_t *)&cmd, sizeof(CRTPPacket));
+
+            udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+
+            udp.write(buffer, sizeof(CRTPPacket));
+
+            udp.endPacket();
+
+            free(buffer);
+            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
+            inTransmit = false;
+        }
     }
 }
 
