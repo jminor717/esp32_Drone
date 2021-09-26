@@ -116,7 +116,8 @@ static void wifilinkTask(void *param)
         {
             /* command step - receive  04 copy CRTP part from packet, the size not contain head */
             p.size = wifiIn.size - 1;
-            memcpy(&p.raw, wifiIn.data, wifiIn.size);
+            //memcpy(&p.raw, wifiIn.data, wifiIn.size);
+            memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
         }
 
         /* command step - receive 05 send to crtpPacketDelivery queue */

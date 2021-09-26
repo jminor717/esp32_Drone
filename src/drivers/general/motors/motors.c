@@ -181,33 +181,36 @@ bool motorsTest(void)
 // Ithrust is thrust mapped for 65536 <==> 60 grams
 void motorsSetRatio(uint32_t id, uint16_t ithrust)
 {
-//     if (isInit) {
-//         uint16_t ratio;
+    // if (ithrust >0){
+    //     DEBUG_PRINTI("set motor %d to %d", id, ithrust);
+    // }
+    //     if (isInit) {
+    //         uint16_t ratio;
 
-//         ASSERT(id < NBR_OF_MOTORS);
+    //         ASSERT(id < NBR_OF_MOTORS);
 
-//         ratio = ithrust;
+    //         ratio = ithrust;
 
-// #ifdef ENABLE_THRUST_BAT_COMPENSATED
+    // #ifdef ENABLE_THRUST_BAT_COMPENSATED
 
-//         if (motorMap[id]->drvType == BRUSHED) {
-//             float thrust = ((float)ithrust / 65536.0f) * 40; //根据实际重量修改
-//             float volts = -0.0006239f * thrust * thrust + 0.088f * thrust;
-//             float supply_voltage = pmGetBatteryVoltage();
-//             float percentage = volts / supply_voltage;
-//             percentage = percentage > 1.0f ? 1.0f : percentage;
-//             ratio = percentage * UINT16_MAX;
-//             motor_ratios[id] = ratio;
-//         }
+    //         if (motorMap[id]->drvType == BRUSHED) {
+    //             float thrust = ((float)ithrust / 65536.0f) * 40; //根据实际重量修改
+    //             float volts = -0.0006239f * thrust * thrust + 0.088f * thrust;
+    //             float supply_voltage = pmGetBatteryVoltage();
+    //             float percentage = volts / supply_voltage;
+    //             percentage = percentage > 1.0f ? 1.0f : percentage;
+    //             ratio = percentage * UINT16_MAX;
+    //             motor_ratios[id] = ratio;
+    //         }
 
-// #endif
-//         ledc_set_duty(motors_channel[id].speed_mode, motors_channel[id].channel, (uint32_t)motorsConv16ToBits(ratio));
-//         ledc_update_duty(motors_channel[id].speed_mode, motors_channel[id].channel);
-//         motor_ratios[id] = ratio;
-// #ifdef DEBUG_EP2
-//         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
-// #endif
-//     }
+    // #endif
+    //         ledc_set_duty(motors_channel[id].speed_mode, motors_channel[id].channel, (uint32_t)motorsConv16ToBits(ratio));
+    //         ledc_update_duty(motors_channel[id].speed_mode, motors_channel[id].channel);
+    //         motor_ratios[id] = ratio;
+    // #ifdef DEBUG_EP2
+    //         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
+    // #endif
+    //     }
 }
 
 int motorsGetRatio(uint32_t id)

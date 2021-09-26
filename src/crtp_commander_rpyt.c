@@ -246,6 +246,7 @@ void crtpCommanderRpytDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
       setpoint->attitude.yaw = values->yaw;
     }
   }
+  DEBUG_PRINTI("crpt decode got values t%d, r%f, p%f, y%f", values->thrust, values->roll, values->pitch, values->yaw);
 }
 
 // Params for flight modes

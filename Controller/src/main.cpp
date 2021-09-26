@@ -4,8 +4,9 @@
 #include <WiFiUdp.h>
 #include <../Common/Data_type.h>
 #include <atomic>
+#include "esp32-hal-log.h"
 
-#define WIFIssid "ESP-DRONE"
+#define WIFIssid "ESP-DRONE_BCDDC2D254AD"
 #define WIFIpassword "12345678"
 #define UDP_SERVER_PORT 2390
 
@@ -16,6 +17,8 @@
 
 #define MIN_DEGREE 2.0
 #define MAX_DEGREE 2.0
+
+#define MIN_JOYCON_ANGLE 20
 
 /*
 low level send and receive interface
@@ -38,8 +41,10 @@ void handleControlUpdate();
 void setup()
 {
     Serial.begin(115200);
+    Serial.setDebugOutput(true);
+    //"60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
     //char mac[] = "60:5b:b4:d9:7b:14";
-    char mac[] = "03:03:03:03:03:03";
+    char mac[] = "4C:11:AE:DF:8B:F4";
     PS4.begin(mac);
     Serial.println("Ready.");
     Serial.println(mac);
@@ -50,6 +55,12 @@ void setup()
     //WiFi.setTxPower(WIFI_POWER_19_5dBm);
     udp.begin(UDP_SERVER_PORT);
     now = esp_timer_get_time();
+
+    log_v("Verbose");
+    log_d("Debug");
+    log_i("Info");
+    log_w("Warning");
+    log_e("Error");
 }
 
 void handleControlUpdate()
@@ -105,23 +116,23 @@ void handleControlUpdate()
         if (PS4.Touchpad())
             Serial.println("Touch Pad Button");
 
-        if (PS4.L2())
-            Serial.printf("L2 button at %d\n", PS4.L2Value());
-        if (PS4.R2())
-            Serial.printf("R2 button at %d\n", PS4.R2Value());
+        // if (PS4.L2())
+        //     Serial.printf("L2 button at %d\n", PS4.L2Value());
+        // if (PS4.R2())
+        //     Serial.printf("R2 button at %d\n", PS4.R2Value());
 
-        val = PS4.LStickX();
-        if (val > 10 || val < -10)
-            Serial.printf("Left Stick x at %d\n", val);
-        val = PS4.LStickY();
-        if (val > 10 || val < -10)
-            Serial.printf("Left Stick y at %d\n", val);
-        val = PS4.RStickX();
-        if (val > 10 || val < -10)
-            Serial.printf("Right Stick x at %d\n", val);
-        val = PS4.RStickY();
-        if (val > 10 || val < -10)
-            Serial.printf("Right Stick y at %d\n", val);
+        // val = PS4.LStickX();
+        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+        //     Serial.printf("Left Stick x at %d\n", val);
+        // val = PS4.LStickY();
+        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+        //     Serial.printf("Left Stick y at %d\n", val);
+        // val = PS4.RStickX();
+        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+        //     Serial.printf("Right Stick x at %d\n", val);
+        // val = PS4.RStickY();
+        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+        //     Serial.printf("Right Stick y at %d\n", val);
         // ps4_sensor_t sense = PS4.SensorData();
         //Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
@@ -139,31 +150,38 @@ void handleControlUpdate()
             if (PS4.R2())
                 R2 = PS4.R2Value();
             val = PS4.LStickX();
-            if (val > 10 || val < -10)
+            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 lx = val;
             val = PS4.RStickX();
-            if (val > 10 || val < -10)
+            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 rx = val;
             val = PS4.RStickY();
-            if (val > 10 || val < -10)
+            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 ry = val;
 
             inTransmit = true;
             struct CommanderCrtpLegacyValues values;
-            values.roll = map(rx, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
-            values.pitch = map(ry, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
-            values.yaw = map(lx, -125, 125, MIN_DEGREE * 1000, MAX_DEGREE * 1000) / 1000.0;
+            values.roll = map(rx, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
+            values.pitch = map(ry, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
+            values.yaw = map(lx, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
             values.thrust = map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
-
+            if (values.thrust == MIN_THRUST)
+            {
+                values.thrust = 0;
+            }
             CRTPPacket cmd;
             cmd.channel = 0;
             cmd.port = CRTP_PORT_SETPOINT;
 
             memcpy(cmd.data, (const uint8_t *)&values, sizeof(CommanderCrtpLegacyValues));
 
-            uint8_t *buffer = (uint8_t *)malloc(sizeof(CRTPPacket));
+            uint8_t *buffer = (uint8_t *)calloc(1, sizeof(CRTPPacket));
             memcpy(buffer, (const uint8_t *)&cmd, sizeof(CRTPPacket));
-
+            // log_v("%f,%f,%f", values.roll, values.pitch, values.yaw);
+            // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+            //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
+            //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
+            //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
             udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
 
             udp.write(buffer, sizeof(CRTPPacket));

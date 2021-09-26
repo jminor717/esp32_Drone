@@ -181,14 +181,15 @@ void crtpRxTask(void *param)
     {
       if (!link->receivePacket(&p))
       {
-        if (queues[p.port])
-        {
-            //?DEBUG_PRINTI("xQueueSend crtpRxTask");
-            if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
-            {
-                // We should never drop packet
-                ASSERT(0);
-          }
+          //DEBUG_PRINTI("Packet %d, %d, %d, %d received", p.port, p.channel, p.header,p.size);
+          if (queues[p.port])
+          {
+              //DEBUG_PRINTI("xQueueSend crtpRxTask %d, %d", p.port, p.channel);
+              if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
+              {
+                  // We should never drop packet
+                  ASSERT(0);
+              }
         }
 
         if (callbacks[p.port])
