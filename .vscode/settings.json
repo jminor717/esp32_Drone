@@ -131,7 +131,8 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "cstdbool": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "ledc.h": "c"
     },
     "cSpell.words": [
         "XSHUT"

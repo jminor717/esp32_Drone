@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
 #include <WiFi.h>
-#include <WiFiUdp.h>
+//#include <WiFiUdp.h>
+#include "AsyncUDP.h"
 #include <../Common/Data_type.h>
 #include <atomic>
 #include "esp32-hal-log.h"
@@ -30,7 +31,8 @@ high level independent command and setpoint transmition lops to allow commands t
 
 */
 IPAddress DroneAddress = IPAddress();
-WiFiUDP udp = WiFiUDP();
+//WiFiUDP udp = WiFiUDP();
+AsyncUDP udp2;
 
 int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
@@ -53,14 +55,41 @@ void setup()
     DroneAddress.fromString("192.168.43.42");
     WiFi.begin(WIFIssid, WIFIpassword);
     //WiFi.setTxPower(WIFI_POWER_19_5dBm);
-    udp.begin(UDP_SERVER_PORT);
-    now = esp_timer_get_time();
+    // udp.begin(UDP_SERVER_PORT);
+
+    if (udp2.listen(UDP_SERVER_PORT))
+    {
+        Serial.print("UDP Listening on IP: ");
+        Serial.println(WiFi.localIP());
+        udp2.onPacket([](AsyncUDPPacket packet)
+                      {
+                          Serial.print("UDP Packet Type: ");
+                          Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
+                                                                                                 : "Unicast");
+                          Serial.print(", From: ");
+                          Serial.print(packet.remoteIP());
+                          Serial.print(":");
+                          Serial.print(packet.remotePort());
+                          Serial.print(", To: ");
+                          Serial.print(packet.localIP());
+                          Serial.print(":");
+                          Serial.print(packet.localPort());
+                          Serial.print(", Length: ");
+                          Serial.print(packet.length());
+                          Serial.print(", Data: ");
+                          Serial.write(packet.data(), packet.length());
+                          Serial.println();
+                          //reply to the client
+                          //packet.printf("Got %u bytes of data", packet.length());
+                      });
+    }
 
     log_v("Verbose");
     log_d("Debug");
     log_i("Info");
     log_w("Warning");
     log_e("Error");
+    now = esp_timer_get_time();
 }
 
 void handleControlUpdate()
@@ -146,9 +175,10 @@ void handleControlUpdate()
         //Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
-            uint16_t R2 = 0, rx = 0, ry = 0, lx = 0;
+            uint8_t R2 = 0;
+            int8_t rx = 0, ry = 0, lx = 0;
             if (PS4.R2())
-                R2 = PS4.R2Value();
+                R2 = PS4.R2Value(); // 0 - 255
             val = PS4.LStickX();
             if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 lx = val;
@@ -160,33 +190,36 @@ void handleControlUpdate()
                 ry = val;
 
             inTransmit = true;
-            struct CommanderCrtpLegacyValues values;
-            values.roll = map(rx, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
-            values.pitch = map(ry, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
-            values.yaw = map(lx, -125, 125, -(MIN_DEGREE * 1000), MAX_DEGREE * 1000) / 1000.0;
-            values.thrust = map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
-            if (values.thrust == MIN_THRUST)
-            {
-                values.thrust = 0;
-            }
+            struct altHoldPacket_s values;
+            values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            values.yawrate = lx / 62.5;            // map(lx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            values.zVelocity = (R2 / 510.0) - 0.1; //map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
+            // if (values.thrust == MIN_THRUST)
+            // {
+            //     values.thrust = 0;
+            // }
             CRTPPacket cmd;
             cmd.channel = 0;
-            cmd.port = CRTP_PORT_SETPOINT;
+            cmd.port = CRTP_PORT_SETPOINT_GENERIC;
 
-            memcpy(cmd.data, (const uint8_t *)&values, sizeof(CommanderCrtpLegacyValues));
+            memcpy(cmd.data, (const uint8_t *)&values, sizeof(altHoldPacket_s));
 
             uint8_t *buffer = (uint8_t *)calloc(1, sizeof(CRTPPacket));
             memcpy(buffer, (const uint8_t *)&cmd, sizeof(CRTPPacket));
-            // log_v("%f,%f,%f", values.roll, values.pitch, values.yaw);
+            log_v("%f,%f,%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
             //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
             //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
-            udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+            //  udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
 
-            udp.write(buffer, sizeof(CRTPPacket));
+            //  udp.write(buffer, sizeof(CRTPPacket));
 
-            udp.endPacket();
+            //  udp.endPacket();
+            AsyncUDPMessage msg;
+            msg.write(buffer, sizeof(CRTPPacket));
+            udp2.broadcastTo(msg, UDP_SERVER_PORT);
 
             free(buffer);
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;

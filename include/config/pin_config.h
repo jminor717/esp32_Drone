@@ -30,10 +30,10 @@
 #define CONFIG_LED_PIN_RED 2
 
 //motor outputs
-#define CONFIG_MOTOR01_PIN 12
-#define CONFIG_MOTOR02_PIN 13
-#define CONFIG_MOTOR03_PIN 27
-#define CONFIG_MOTOR04_PIN 4
+#define CONFIG_MOTOR01_PIN 13
+#define CONFIG_MOTOR02_PIN 4
+#define CONFIG_MOTOR03_PIN 12
+#define CONFIG_MOTOR04_PIN 27
 
 //battery voltage monitor
 #define CONFIG_ADC1_PIN 35

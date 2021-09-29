@@ -211,7 +211,7 @@ void stabilizerInit(StateEstimatorType estimator)
     DEBUG_PRINTI("finish stateEstimatorInit");
     controllerInit(ControllerTypePID); //ControllerTypeAny
     DEBUG_PRINTI("finish controllerInit");
-    //powerDistributionInit();
+    powerDistributionInit();
     sitAwInit();
     //collisionAvoidanceInit();
     estimatorType = getStateEstimator();
@@ -230,7 +230,7 @@ bool stabilizerTest(void)
     DEBUG_PRINTI("Sensor test = %d ", pass);
     pass &= stateEstimatorTest();
     pass &= controllerTest();
-    //pass &= powerDistributionTest();
+    pass &= powerDistributionTest();
     //pass &= collisionAvoidanceTest();
 
     return pass;

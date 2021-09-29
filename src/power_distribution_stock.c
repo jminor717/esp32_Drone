@@ -61,7 +61,13 @@ static uint32_t idleThrust = DEFAULT_IDLE_THRUST;
 
 void powerDistributionInit(void)
 {
-  motorsInit(platformConfigGetMotorMapping());
+    //platformConfigGetMotorMapping()
+    MotorPerifDef mtr[4];
+    mtr[0].drvType = BRUSHED;
+    mtr[1].drvType = BRUSHED;
+    mtr[2].drvType = BRUSHED;
+    mtr[3].drvType = BRUSHED;
+    motorsInit(mtr);
 }
 
 bool powerDistributionTest(void)

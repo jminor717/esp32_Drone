@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-//#include "driver/ledc.h"
+#include "driver/ledc.h"
 
 #include "config.h"
 #include "stm32_legacy.h"

@@ -365,7 +365,7 @@ void processAccGyroMeasurements(const uint8_t *buffer)
 #else
     /* sensors step 2.2 Calculates the gyro bias first when the  variance is below threshold */
     gyroBiasFound = processGyroBias(gyroRaw.x, gyroRaw.y, gyroRaw.z, &gyroBias);
-    gyroBiasFound = true;
+    //gyroBiasFound = true;
 #endif
 
     /*sensors step 2.3 Calculates the acc scale when platform is steady */
