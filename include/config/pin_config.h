@@ -36,7 +36,10 @@
 #define CONFIG_MOTOR04_PIN 27
 
 //battery voltage monitor
-#define CONFIG_ADC1_PIN 35
+#define CONFIG_VBat_PIN 34
+#define VBat_VOLTAGE_DIVIDER_RATIO 0.838 //measured
+
+#define CONFIG_DCDC_PGOOD_PIN 35
 
 //sensor pins
 #define CONFIG_MPU_PIN_INT 18

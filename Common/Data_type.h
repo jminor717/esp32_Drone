@@ -1,6 +1,21 @@
 #include <stdint.h>
+#include <string.h>
 
 #define CRTP_MAX_DATA_SIZE 30
+
+static uint8_t calculate_cksum(uint8_t *data, size_t len)
+{
+    unsigned char *c = data;
+    int i;
+    unsigned char cksum = 0;
+
+    for (i = 0; i < len; i++)
+    {
+        cksum += *(c++);
+    }
+
+    return cksum;
+}
 
 typedef struct _CRTPPacket
 {
@@ -31,6 +46,9 @@ typedef struct _CRTPPacket
     };
 } __attribute__((packed)) CRTPPacket;
 
+//data[0] type
+//data[1] checksum for data array
+
 typedef enum
 {
     CRTP_PORT_CONSOLE = 0x00,
@@ -57,6 +75,7 @@ enum packet_type
     fullStateType = 6,
     positionType = 7,
 };
+typedef enum packet_type packet_type;
 
 /* velocityDecoder  velocityWorldType
  * Set the Crazyflie velocity in the world coordinate system
@@ -83,13 +102,38 @@ struct zDistancePacket_s
 /* altHoldDecoder  altHoldType
  * Set the Crazyflie vertical velocity and roll/pitch angle
  */
-struct altHoldPacket_s
+typedef struct altHoldPacket_s
 {
+    uint8_t checksum;
+    uint8_t type;
     float roll;      // rad
     float pitch;     // ...
     float yawrate;   // deg/s
     float zVelocity; // m/s in the world frame of reference
 } __attribute__((packed));
+typedef struct altHoldPacket_s altHoldPacket_s;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+static void altHoldPacket_Decode(altHoldPacket_s *packet, const uint8_t *data)
+{
+    packet->checksum = data[1];
+    packet->type = data[0];
+    memcpy(&packet->roll, &data[2], sizeof(packet->roll));
+    memcpy(&packet->pitch, &data[6], sizeof(packet->pitch));
+    memcpy(&packet->yawrate, &data[10], sizeof(packet->yawrate));
+    memcpy(&packet->zVelocity, &data[14], sizeof(packet->zVelocity));
+}
+static void altHoldPacket_Encode(altHoldPacket_s *packet, uint8_t *data, packet_type type)
+{
+    data[0] = type;
+    memcpy(&data[2], &packet->roll, sizeof(packet->roll));
+    memcpy(&data[6], &packet->pitch, sizeof(packet->pitch));
+    memcpy(&data[10], &packet->yawrate, sizeof(packet->yawrate));
+    memcpy(&data[14], &packet->zVelocity, sizeof(packet->zVelocity));
+    data[1] = calculate_cksum(data, CRTP_MAX_DATA_SIZE);
+}
+#pragma GCC diagnostic pop
 
 /* hoverDecoder  hoverType
  * Set the Crazyflie absolute height and velocity in the body coordinate system

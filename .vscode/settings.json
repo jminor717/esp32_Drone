@@ -132,7 +132,8 @@
         "cinttypes": "cpp",
         "cstdbool": "cpp",
         "typeinfo": "cpp",
-        "ledc.h": "c"
+        "ledc.h": "c",
+        "esp_log.h": "c"
     },
     "cSpell.words": [
         "XSHUT"

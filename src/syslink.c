@@ -95,13 +95,13 @@ static void syslinkRouteIncommingPacket(SyslinkPacket *slp)
   switch (groupType)
   {
     case SYSLINK_RADIO_GROUP:
-     // radiolinkSyslinkDispatch(slp);
+     //! radiolinkSyslinkDispatch(slp);
       break;
     case SYSLINK_PM_GROUP:
-    //  pmSyslinkUpdate(slp);
+    //!  pmSyslinkUpdate(slp);
       break;
     case SYSLINK_OW_GROUP:
-     // owSyslinkRecieve(slp);
+     //! owSyslinkRecieve(slp);
       break;
     default:
       DEBUG_PRINT("Unknown packet:%X.\n", slp->type);

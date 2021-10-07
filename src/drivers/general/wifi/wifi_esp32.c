@@ -12,6 +12,7 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
+#include <../common/Data_type.h>
 
 #include "queuemonitor.h"
 #include "wifi_esp32.h"
@@ -19,9 +20,11 @@
 #include "debug_cf.h"
 
 #define UDP_SERVER_PORT 2390
+#define UDP_SEND_PORT 2391
 #define UDP_SERVER_BUFSIZE 128
 
 static struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
+static struct sockaddr_in broadcast_addr;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -54,20 +57,6 @@ static bool isUDPInit = false;
 static bool isUDPConnected = false;
 
 static esp_err_t udp_server_create(void *arg);
-
-static uint8_t calculate_cksum(void *data, size_t len)
-{
-    unsigned char *c = data;
-    int i;
-    unsigned char cksum = 0;
-
-    for (i = 0; i < len; i++)
-    {
-        cksum += *(c++);
-    }
-
-    return cksum;
-}
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
@@ -145,7 +134,7 @@ static esp_err_t udp_server_create(void *arg)
 
 static void udp_server_rx_task(void *pvParameters)
 {
-    uint8_t cksum = 0;
+    //uint8_t cksum = 0;
     socklen_t socklen = sizeof(source_addr);
 
     while (true)
@@ -171,12 +160,12 @@ static void udp_server_rx_task(void *pvParameters)
             //copy part of the UDP packet
             rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string...
             memcpy(inPacket.data, rx_buffer, len);
-            cksum = inPacket.data[len - 1];
+            //!cksum = inPacket.data[len - 1];
             //remove cksum, do not belong to CRTP
             inPacket.size = len - 1;
             //check packet
-        //    if (cksum == calculate_cksum(inPacket.data, len - 1) && inPacket.size < 64)
-         //   {
+            //    if (cksum == calculate_cksum(inPacket.data, len - 1) && inPacket.size < 64)
+            //   {
             // DEBUG_PRINTI("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //              inPacket.data[0], inPacket.data[1], inPacket.data[2], inPacket.data[3], inPacket.data[4], inPacket.data[5], inPacket.data[6], inPacket.data[7], inPacket.data[8], inPacket.data[9],
             //              inPacket.data[10], inPacket.data[11], inPacket.data[12], inPacket.data[13], inPacket.data[14], inPacket.data[15], inPacket.data[16], inPacket.data[17], inPacket.data[18], inPacket.data[19],
@@ -215,10 +204,10 @@ static void udp_server_tx_task(void *pvParameters)
         if ((xQueueReceive(udpDataTx, &outPacket, 5) == pdTRUE) && isUDPConnected)
         {
             memcpy(tx_buffer, outPacket.data, outPacket.size);
-            tx_buffer[outPacket.size] = calculate_cksum(tx_buffer, outPacket.size);
+            tx_buffer[outPacket.size] = calculate_cksum((unsigned char *)tx_buffer, outPacket.size);
             tx_buffer[outPacket.size + 1] = 0;
 
-            int err = sendto(sock, tx_buffer, outPacket.size + 1, 0, (struct sockaddr *)&source_addr, sizeof(source_addr));
+            int err = sendto(sock, tx_buffer, outPacket.size + 1, 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr));
             if (err < 0)
             {
                 DEBUG_PRINT_LOCAL("Error occurred during sending: errno %d", errno);
@@ -241,6 +230,10 @@ void wifiInit(void)
     {
         return;
     }
+
+    broadcast_addr.sin_port = htons(UDP_SEND_PORT);
+    broadcast_addr.sin_family = AF_INET;
+    broadcast_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

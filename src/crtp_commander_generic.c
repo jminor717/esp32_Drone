@@ -36,6 +36,8 @@
 #include "quatcompress.h"
 #include "freertos/FreeRTOS.h"
 #include "cfassert.h"
+#define DEBUG_MODULE "CRPTGENERAL"
+#include "debug_cf.h"
 
 /* The generic commander format contains a packet type and data that has to be
  * decoded into a setpoint_t structure. The aim is to make it future-proof
@@ -60,8 +62,7 @@
  *   5 - Pull-request your change :-)
  */
 
-typedef void (*packetDecoder_t)(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen);
-
+typedef void (*packetDecoder_t)(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen);
 
 /* ---===== 2 - Decoding functions =====--- */
 /* The setpoint structure is reinitialized to 0 before being passed to the
@@ -71,58 +72,55 @@ typedef void (*packetDecoder_t)(setpoint_t *setpoint, uint8_t type, const void *
 /* stopDecoder
  * Keeps setpoint to 0: stops the motors and fall
  */
-static void stopDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void stopDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  return;
+    return;
 }
 
 /* velocityDecoder
  * Set the Crazyflie velocity in the world coordinate system
  */
-static void velocityDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void velocityDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  const struct velocityPacket_s *values = data;
+    const struct velocityPacket_s *values = data;
 
-  ASSERT(datalen == sizeof(struct velocityPacket_s));
+    ASSERT(datalen == sizeof(struct velocityPacket_s));
 
-  setpoint->mode.x = modeVelocity;
-  setpoint->mode.y = modeVelocity;
-  setpoint->mode.z = modeVelocity;
+    setpoint->mode.x = modeVelocity;
+    setpoint->mode.y = modeVelocity;
+    setpoint->mode.z = modeVelocity;
 
-  setpoint->velocity.x = values->vx;
-  setpoint->velocity.y = values->vy;
-  setpoint->velocity.z = values->vz;
+    setpoint->velocity.x = values->vx;
+    setpoint->velocity.y = values->vy;
+    setpoint->velocity.z = values->vz;
 
-  setpoint->mode.yaw = modeVelocity;
+    setpoint->mode.yaw = modeVelocity;
 
-  setpoint->attitudeRate.yaw = -values->yawrate;
+    setpoint->attitudeRate.yaw = -values->yawrate;
 }
 
 /* zDistanceDecoder
  * Set the Crazyflie absolute height and roll/pitch angles
  */
-static void zDistanceDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void zDistanceDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  const struct zDistancePacket_s *values = data;
+    const struct zDistancePacket_s *values = data;
 
+    ASSERT(datalen == sizeof(struct zDistancePacket_s));
 
-  ASSERT(datalen == sizeof(struct zDistancePacket_s));
+    setpoint->mode.z = modeAbs;
 
-  setpoint->mode.z = modeAbs;
+    setpoint->position.z = values->zDistance;
 
-  setpoint->position.z = values->zDistance;
+    setpoint->mode.yaw = modeVelocity;
 
+    setpoint->attitudeRate.yaw = -values->yawrate;
 
-  setpoint->mode.yaw = modeVelocity;
+    setpoint->mode.roll = modeAbs;
+    setpoint->mode.pitch = modeAbs;
 
-  setpoint->attitudeRate.yaw = -values->yawrate;
-
-
-  setpoint->mode.roll = modeAbs;
-  setpoint->mode.pitch = modeAbs;
-
-  setpoint->attitude.roll = values->roll;
-  setpoint->attitude.pitch = values->pitch;
+    setpoint->attitude.roll = values->roll;
+    setpoint->attitude.pitch = values->pitch;
 }
 
 /* cppmEmuDecoder
@@ -137,233 +135,238 @@ static void zDistanceDecoder(setpoint_t *setpoint, uint8_t type, const void *dat
  */
 #define MAX_AUX_RC_CHANNELS 10
 
-static float s_CppmEmuRollMaxRateDps = 720.0f; // For rate mode
+static float s_CppmEmuRollMaxRateDps = 720.0f;  // For rate mode
 static float s_CppmEmuPitchMaxRateDps = 720.0f; // For rate mode
-static float s_CppmEmuRollMaxAngleDeg = 50.0f; // For level mode
+static float s_CppmEmuRollMaxAngleDeg = 50.0f;  // For level mode
 static float s_CppmEmuPitchMaxAngleDeg = 50.0f; // For level mode
-static float s_CppmEmuYawMaxRateDps = 400.0f; // Used regardless of flight mode
+static float s_CppmEmuYawMaxRateDps = 400.0f;   // Used regardless of flight mode
 
-struct cppmEmuPacket_s {
-  struct {
-      uint8_t numAuxChannels : 4;   // Set to 0 through MAX_AUX_RC_CHANNELS
-      uint8_t reserved : 4;
-  } hdr;
-  uint16_t channelRoll;
-  uint16_t channelPitch;
-  uint16_t channelYaw;
-  uint16_t channelThrust;
-  uint16_t channelAux[MAX_AUX_RC_CHANNELS];
+struct cppmEmuPacket_s
+{
+    struct
+    {
+        uint8_t numAuxChannels : 4; // Set to 0 through MAX_AUX_RC_CHANNELS
+        uint8_t reserved : 4;
+    } hdr;
+    uint16_t channelRoll;
+    uint16_t channelPitch;
+    uint16_t channelYaw;
+    uint16_t channelThrust;
+    uint16_t channelAux[MAX_AUX_RC_CHANNELS];
 } __attribute__((packed));
 
 static inline float getChannelUnitMultiplier(uint16_t channelValue, uint16_t channelMidpoint, uint16_t channelRange)
 {
-  // Compute a float from -1 to 1 based on the RC channel value, midpoint, and total range magnitude
-  return ((float)channelValue - (float)channelMidpoint) / (float)channelRange;
+    // Compute a float from -1 to 1 based on the RC channel value, midpoint, and total range magnitude
+    return ((float)channelValue - (float)channelMidpoint) / (float)channelRange;
 }
 
-static void cppmEmuDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void cppmEmuDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  bool isSelfLevelEnabled = true;
+    bool isSelfLevelEnabled = true;
 
-  ASSERT(datalen >= 9); // minimum 9 bytes expected - 1byte header + four 2byte channels
-  const struct cppmEmuPacket_s *values = data;
-  ASSERT(datalen == 9 + (2*values->hdr.numAuxChannels)); // Total size is 9 + number of active aux channels
+    ASSERT(datalen >= 9); // minimum 9 bytes expected - 1byte header + four 2byte channels
+    const struct cppmEmuPacket_s *values = data;
+    ASSERT(datalen == 9 + (2 * values->hdr.numAuxChannels)); // Total size is 9 + number of active aux channels
 
-  // Aux channel 0 is reserved for enabling/disabling self-leveling
-  // If it's in use, check and see if it's set and enable self-leveling.
-  // If aux channel 0 is not in use, default to self-leveling enabled.
-  isSelfLevelEnabled = !(values->hdr.numAuxChannels >= 1 && values->channelAux[0] < 1500);
+    // Aux channel 0 is reserved for enabling/disabling self-leveling
+    // If it's in use, check and see if it's set and enable self-leveling.
+    // If aux channel 0 is not in use, default to self-leveling enabled.
+    isSelfLevelEnabled = !(values->hdr.numAuxChannels >= 1 && values->channelAux[0] < 1500);
 
-  // Set the modes
+    // Set the modes
 
-  // Position is disabled
-  setpoint->mode.x = modeDisable;
-  setpoint->mode.y = modeDisable;
-  setpoint->mode.z = modeDisable;
+    // Position is disabled
+    setpoint->mode.x = modeDisable;
+    setpoint->mode.y = modeDisable;
+    setpoint->mode.z = modeDisable;
 
-  // Yaw is always velocity
-  setpoint->mode.yaw = modeVelocity;
+    // Yaw is always velocity
+    setpoint->mode.yaw = modeVelocity;
 
-  // Roll/Pitch mode is either velocity or abs based on isSelfLevelEnabled
-  setpoint->mode.roll = isSelfLevelEnabled ? modeAbs : modeVelocity;
-  setpoint->mode.pitch = isSelfLevelEnabled ? modeAbs : modeVelocity;
+    // Roll/Pitch mode is either velocity or abs based on isSelfLevelEnabled
+    setpoint->mode.roll = isSelfLevelEnabled ? modeAbs : modeVelocity;
+    setpoint->mode.pitch = isSelfLevelEnabled ? modeAbs : modeVelocity;
 
-  // Rescale the CPPM values into angles to build the setpoint packet
-  if(isSelfLevelEnabled)
-  {
-    setpoint->attitude.roll = -1 * getChannelUnitMultiplier(values->channelRoll, 1500, 500) * s_CppmEmuRollMaxAngleDeg; // roll inverted
-    setpoint->attitude.pitch = -1 * getChannelUnitMultiplier(values->channelPitch, 1500, 500) * s_CppmEmuPitchMaxAngleDeg; // pitch inverted
-  }
-  else
-  {
-    setpoint->attitudeRate.roll = -1 * getChannelUnitMultiplier(values->channelRoll, 1500, 500) * s_CppmEmuRollMaxRateDps; // roll inverted
-    setpoint->attitudeRate.pitch = -1 * getChannelUnitMultiplier(values->channelPitch, 1500, 500) * s_CppmEmuPitchMaxRateDps; // pitch inverted
-  }
+    // Rescale the CPPM values into angles to build the setpoint packet
+    if (isSelfLevelEnabled)
+    {
+        setpoint->attitude.roll = -1 * getChannelUnitMultiplier(values->channelRoll, 1500, 500) * s_CppmEmuRollMaxAngleDeg;    // roll inverted
+        setpoint->attitude.pitch = -1 * getChannelUnitMultiplier(values->channelPitch, 1500, 500) * s_CppmEmuPitchMaxAngleDeg; // pitch inverted
+    }
+    else
+    {
+        setpoint->attitudeRate.roll = -1 * getChannelUnitMultiplier(values->channelRoll, 1500, 500) * s_CppmEmuRollMaxRateDps;    // roll inverted
+        setpoint->attitudeRate.pitch = -1 * getChannelUnitMultiplier(values->channelPitch, 1500, 500) * s_CppmEmuPitchMaxRateDps; // pitch inverted
+    }
 
-  setpoint->attitudeRate.yaw = -1 * getChannelUnitMultiplier(values->channelYaw, 1500, 500) * s_CppmEmuYawMaxRateDps; // yaw inverted
-  setpoint->thrust = getChannelUnitMultiplier(values->channelThrust, 1000, 1000) * (float)UINT16_MAX; // Thrust is positive only - uses the full 1000-2000 range
+    setpoint->attitudeRate.yaw = -1 * getChannelUnitMultiplier(values->channelYaw, 1500, 500) * s_CppmEmuYawMaxRateDps; // yaw inverted
+    setpoint->thrust = getChannelUnitMultiplier(values->channelThrust, 1000, 1000) * (float)UINT16_MAX;                 // Thrust is positive only - uses the full 1000-2000 range
 
-  // Make sure thrust isn't negative
-  if(setpoint->thrust < 0)
-  {
-    setpoint->thrust = 0;
-  }
+    // Make sure thrust isn't negative
+    if (setpoint->thrust < 0)
+    {
+        setpoint->thrust = 0;
+    }
 }
-
 
 /* altHoldDecoder
  * Set the Crazyflie vertical velocity and roll/pitch angle
  */
-static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  const struct altHoldPacket_s *values = data;
+    struct altHoldPacket_s values;
 
-  ASSERT(datalen == sizeof(struct altHoldPacket_s));
+    altHoldPacket_Decode(&values, data);
 
+    DEBUG_PRINTI("altHold decode got values z%f, r%f, p%f, y%f", values.zVelocity, values.roll, values.pitch, values.yawrate);
 
-  setpoint->mode.z = modeVelocity;
+    // ASSERT(datalen == sizeof(struct altHoldPacket_s));
 
-  setpoint->velocity.z = values->zVelocity;
+    setpoint->mode.z = modeVelocity;
 
+    setpoint->velocity.z = values.zVelocity;
 
-  setpoint->mode.yaw = modeVelocity;
+    setpoint->mode.yaw = modeVelocity;
 
-  setpoint->attitudeRate.yaw = -values->yawrate;
+    setpoint->attitudeRate.yaw = -values.yawrate;
 
+    setpoint->mode.roll = modeAbs;
+    setpoint->mode.pitch = modeAbs;
 
-  setpoint->mode.roll = modeAbs;
-  setpoint->mode.pitch = modeAbs;
-
-  setpoint->attitude.roll = values->roll;
-  setpoint->attitude.pitch = values->pitch;
+    setpoint->attitude.roll = values.roll;
+    setpoint->attitude.pitch = values.pitch;
 }
 
 /* hoverDecoder
  * Set the Crazyflie absolute height and velocity in the body coordinate system
  */
-static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-  const struct hoverPacket_s *values = data;
+    const struct hoverPacket_s *values = data;
 
-  ASSERT(datalen == sizeof(struct hoverPacket_s));
+    ASSERT(datalen == sizeof(struct hoverPacket_s));
 
-  setpoint->mode.z = modeAbs;
-  setpoint->position.z = values->zDistance;
+    setpoint->mode.z = modeAbs;
+    setpoint->position.z = values->zDistance;
 
+    setpoint->mode.yaw = modeVelocity;
+    setpoint->attitudeRate.yaw = -values->yawrate;
 
-  setpoint->mode.yaw = modeVelocity;
-  setpoint->attitudeRate.yaw = -values->yawrate;
+    setpoint->mode.x = modeVelocity;
+    setpoint->mode.y = modeVelocity;
+    setpoint->velocity.x = values->vx;
+    setpoint->velocity.y = values->vy;
 
-
-  setpoint->mode.x = modeVelocity;
-  setpoint->mode.y = modeVelocity;
-  setpoint->velocity.x = values->vx;
-  setpoint->velocity.y = values->vy;
-
-  setpoint->velocity_body = true;
+    setpoint->velocity_body = true;
 }
 
-struct fullStatePacket_s {
-  int16_t x;         // position - mm
-  int16_t y;
-  int16_t z;
-  int16_t vx;        // velocity - mm / sec
-  int16_t vy;
-  int16_t vz;
-  int16_t ax;        // acceleration - mm / sec^2
-  int16_t ay;
-  int16_t az;
-  int32_t quat;      // compressed quaternion, see quatcompress.h
-  int16_t rateRoll;  // angular velocity - milliradians / sec
-  int16_t ratePitch; //  (NOTE: limits to about 5 full circles per sec.
-  int16_t rateYaw;   //   may not be enough for extremely aggressive flight.)
-} __attribute__((packed));
-static void fullStateDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+struct fullStatePacket_s
 {
-  const struct fullStatePacket_s *values = data;
+    int16_t x; // position - mm
+    int16_t y;
+    int16_t z;
+    int16_t vx; // velocity - mm / sec
+    int16_t vy;
+    int16_t vz;
+    int16_t ax; // acceleration - mm / sec^2
+    int16_t ay;
+    int16_t az;
+    int32_t quat;      // compressed quaternion, see quatcompress.h
+    int16_t rateRoll;  // angular velocity - milliradians / sec
+    int16_t ratePitch; //  (NOTE: limits to about 5 full circles per sec.
+    int16_t rateYaw;   //   may not be enough for extremely aggressive flight.)
+} __attribute__((packed));
+static void fullStateDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
+{
+    const struct fullStatePacket_s *values = data;
 
-  ASSERT(datalen == sizeof(struct fullStatePacket_s));
+    ASSERT(datalen == sizeof(struct fullStatePacket_s));
 
-  #define UNPACK(x) \
-  setpoint->mode.x = modeAbs; \
-  setpoint->position.x = values->x / 1000.0f; \
-  setpoint->velocity.x = (values->v ## x) / 1000.0f; \
-  setpoint->acceleration.x = (values->a ## x) / 1000.0f; \
+#define UNPACK(x)                                    \
+    setpoint->mode.x = modeAbs;                      \
+    setpoint->position.x = values->x / 1000.0f;      \
+    setpoint->velocity.x = (values->v##x) / 1000.0f; \
+    setpoint->acceleration.x = (values->a##x) / 1000.0f;
 
-  UNPACK(x)
-  UNPACK(y)
-  UNPACK(z)
-  #undef UNPACK
+    UNPACK(x)
+    UNPACK(y)
+    UNPACK(z)
+#undef UNPACK
 
-  float const millirad2deg = 180.0f / ((float)M_PI * 1000.0f);
-  setpoint->attitudeRate.roll = millirad2deg * values->rateRoll;
-  setpoint->attitudeRate.pitch = millirad2deg * values->ratePitch;
-  setpoint->attitudeRate.yaw = millirad2deg * values->rateYaw;
+    float const millirad2deg = 180.0f / ((float)M_PI * 1000.0f);
+    setpoint->attitudeRate.roll = millirad2deg * values->rateRoll;
+    setpoint->attitudeRate.pitch = millirad2deg * values->ratePitch;
+    setpoint->attitudeRate.yaw = millirad2deg * values->rateYaw;
 
-  quatdecompress(values->quat, (float *)&setpoint->attitudeQuaternion.q0);
-  setpoint->mode.quat = modeAbs;
-  setpoint->mode.roll = modeDisable;
-  setpoint->mode.pitch = modeDisable;
-  setpoint->mode.yaw = modeDisable;
+    quatdecompress(values->quat, (float *)&setpoint->attitudeQuaternion.q0);
+    setpoint->mode.quat = modeAbs;
+    setpoint->mode.roll = modeDisable;
+    setpoint->mode.pitch = modeDisable;
+    setpoint->mode.yaw = modeDisable;
 }
 
 /* positionDecoder
  * Set the absolute postition and orientation
  */
- struct positionPacket_s {
-   float x;     // Position in m
-   float y;
-   float z;
-   float yaw;   // Orientation in degree
- } __attribute__((packed));
-static void positionDecoder(setpoint_t *setpoint, uint8_t type, const void *data, size_t datalen)
+struct positionPacket_s
 {
-  const struct positionPacket_s *values = data;
+    float x; // Position in m
+    float y;
+    float z;
+    float yaw; // Orientation in degree
+} __attribute__((packed));
+static void positionDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
+{
+    const struct positionPacket_s *values = (const char *)data;
 
-  setpoint->mode.x = modeAbs;
-  setpoint->mode.y = modeAbs;
-  setpoint->mode.z = modeAbs;
+    setpoint->mode.x = modeAbs;
+    setpoint->mode.y = modeAbs;
+    setpoint->mode.z = modeAbs;
 
-  setpoint->position.x = values->x;
-  setpoint->position.y = values->y;
-  setpoint->position.z = values->z;
+    setpoint->position.x = values->x;
+    setpoint->position.y = values->y;
+    setpoint->position.z = values->z;
 
+    setpoint->mode.yaw = modeAbs;
 
-  setpoint->mode.yaw = modeAbs;
-
-  setpoint->attitude.yaw = values->yaw;
+    setpoint->attitude.yaw = values->yaw;
 }
 
- /* ---===== 3 - packetDecoders array =====--- */
+/* ---===== 3 - packetDecoders array =====--- */
 const static packetDecoder_t packetDecoders[] = {
-  [stopType]          = stopDecoder,
-  [velocityWorldType] = velocityDecoder,
-  [zDistanceType]     = zDistanceDecoder,
-  [cppmEmuType]       = cppmEmuDecoder,
-  [altHoldType]       = altHoldDecoder,
-  [hoverType]         = hoverDecoder,
-  [fullStateType]     = fullStateDecoder,
-  [positionType]      = positionDecoder,
+    [stopType] = stopDecoder,
+    [velocityWorldType] = velocityDecoder,
+    [zDistanceType] = zDistanceDecoder,
+    [cppmEmuType] = cppmEmuDecoder,
+    [altHoldType] = altHoldDecoder,
+    [hoverType] = hoverDecoder,
+    [fullStateType] = fullStateDecoder,
+    [positionType] = positionDecoder,
 };
 
 /* Decoder switch */
 void crtpCommanderGenericDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
 {
-  static int nTypes = -1;
+    DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
 
-  ASSERT(pk->size > 0);
+    static int nTypes = positionType + 1;
 
-  if (nTypes<0) {
-    nTypes = sizeof(packetDecoders)/sizeof(packetDecoders[0]);
-  }
+    // ASSERT(pk->size > 0);
 
-  uint8_t type = pk->data[0];
+    // if (nTypes < 0)
+    // {
+    //     nTypes = sizeof(packetDecoders) / sizeof(packetDecoders[0]);
+    // }
 
-  memset(setpoint, 0, sizeof(setpoint_t));
+    uint8_t type = pk->data[0];
 
-  if (type<nTypes && (packetDecoders[type] != NULL)) {
-    packetDecoders[type](setpoint, type, ((char*)pk->data)+1, pk->size-1);
-  }
+    memset(setpoint, 0, sizeof(setpoint_t));
+
+    if (type < nTypes /*&& (packetDecoders[type] != NULL)*/)
+    {
+        packetDecoders[type](setpoint, type, ((unsigned char *)pk->data), pk->size - 1);
+    }
 }
 
 // Params for generic CRTP handlers

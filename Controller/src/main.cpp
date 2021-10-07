@@ -10,6 +10,7 @@
 #define WIFIssid "ESP-DRONE_BCDDC2D254AD"
 #define WIFIpassword "12345678"
 #define UDP_SERVER_PORT 2390
+#define UDP_RECEIVE_PORT 2391
 
 #define WIFI_TRANSMIT_RATE_Us 40000
 
@@ -200,14 +201,22 @@ void handleControlUpdate()
             //     values.thrust = 0;
             // }
             CRTPPacket cmd;
-            cmd.channel = 0;
+            memset(&cmd, 0, sizeof(CRTPPacket));
+            cmd.channel = SET_SETPOINT_CHANNEL;
             cmd.port = CRTP_PORT_SETPOINT_GENERIC;
-
-            memcpy(cmd.data, (const uint8_t *)&values, sizeof(altHoldPacket_s));
+            packet_type type = altHoldType;
+            if (!PS4.R2())
+            {
+                type = stopType;
+            }
+            //memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
+            
+            (&values, cmd.data, type);
 
             uint8_t *buffer = (uint8_t *)calloc(1, sizeof(CRTPPacket));
             memcpy(buffer, (const uint8_t *)&cmd, sizeof(CRTPPacket));
-            log_v("%f,%f,%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
+            log_v("r%f,p%f,y%f,v%f, c2%d", values.roll, values.pitch, values.yawrate, values.zVelocity, cmd.data[1]);
+
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
             //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],

@@ -36,7 +36,7 @@
 #include "config.h"
 #include "system.h"
 #include "pm_esplane.h"
-//#include "adc_esp32.h"
+#include "adc_esp32.h"
 #include "led.h"
 #include "log.h"
 #include "ledseq.h"
@@ -122,7 +122,7 @@ void pmInit(void)
         return;
     }
 
-    pmEnableExtBatteryVoltMeasuring(CONFIG_ADC1_PIN, 2); // ADC1 PIN is fixed to ADC channel
+    pmEnableExtBatteryVoltMeasuring(CONFIG_VBat_PIN, VBat_VOLTAGE_DIVIDER_RATIO); // ADC1 PIN is fixed to ADC channel
 
     pmSyslinkInfo.pgood = false;
     pmSyslinkInfo.chg = false;
@@ -225,7 +225,7 @@ PMStates pmUpdateState()
 {
     PMStates state;
     bool isCharging = pmSyslinkInfo.chg;
-    bool isPgood = pmSyslinkInfo.pgood;
+    bool isPgood = pmGetBatteryVoltage() > PM_BAT_LOW_VOLTAGE;
     uint32_t batteryLowTime;
 
     batteryLowTime = xTaskGetTickCount() - batteryLowTimeStamp;
@@ -286,7 +286,7 @@ float pmMeasureExtBatteryVoltage(void)
 
     if (isExtBatVoltDeckPinSet)
     {
-        voltage = 1.0; //!analogReadVoltage(extBatVoltDeckPin) * extBatVoltMultiplier;
+        voltage = analogReadVoltage(extBatVoltDeckPin) * extBatVoltMultiplier;
     }
     else
     {
@@ -340,7 +340,7 @@ void pmTask(void *param)
     {
         vTaskDelay(M2T(100));
         extBatteryVoltage = pmMeasureExtBatteryVoltage();
-        extBatteryVoltageMV = (uint16_t)(extBatteryVoltage * 1000);
+        //extBatteryVoltageMV = (uint16_t)(extBatteryVoltage * 1000);
         extBatteryCurrent = pmMeasureExtBatteryCurrent();
         pmSetBatteryVoltage(extBatteryVoltage);
         batteryLevel = pmBatteryChargeFromVoltage(pmGetBatteryVoltage()) * 10;
@@ -404,7 +404,7 @@ void pmTask(void *param)
         case charging:
         {
             // Charge level between 0.0 and 1.0
-            float chargeLevel = pmBatteryChargeFromVoltage(pmGetBatteryVoltage()) / 10.0f;
+           // float chargeLevel = pmBatteryChargeFromVoltage(pmGetBatteryVoltage()) / 10.0f;
           //!  ledseqSetChargeLevel(chargeLevel);
         }
         break;

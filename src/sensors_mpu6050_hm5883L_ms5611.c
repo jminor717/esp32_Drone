@@ -810,7 +810,7 @@ static bool processGyroBias(int16_t gx, int16_t gy, int16_t gz, Axis3f *gyroBias
 
         if (gyroBiasRunning.isBiasValueFound) {
             //TODO:
-            //!soundSetEffect(SND_CALIB);
+            //soundSetEffect(SND_CALIB);
             //!ledseqRun(&seq_calibrated);
             DEBUG_PRINTI("isBiasValueFound!");
         }
