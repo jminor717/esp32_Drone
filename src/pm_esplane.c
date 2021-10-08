@@ -25,14 +25,13 @@
  * pm.c - Power Management driver and functions.
  */
 
-
-
 #include <string.h>
 #include <stdbool.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "crtp.h"
 #include "config.h"
 #include "system.h"
 #include "pm_esplane.h"
@@ -94,6 +93,8 @@ static uint32_t batteryCriticalLowTimeStamp;
 static bool isInit;
 static PMStates pmState;
 static PmSyslinkInfo pmSyslinkInfo;
+
+CRTPPacket p;
 
 static uint8_t batteryLevel;
 
@@ -223,9 +224,11 @@ void pmSetChargeState(PMChargeStates chgState)
 
 PMStates pmUpdateState()
 {
+
     PMStates state;
     bool isCharging = pmSyslinkInfo.chg;
-    bool isPgood = pmGetBatteryVoltage() > PM_BAT_LOW_VOLTAGE;
+    float VBat = pmGetBatteryVoltage();
+    bool isPgood = VBat > PM_BAT_LOW_VOLTAGE;
     uint32_t batteryLowTime;
 
     batteryLowTime = xTaskGetTickCount() - batteryLowTimeStamp;
@@ -247,6 +250,12 @@ PMStates pmUpdateState()
         state = battery;
     }
 
+    p.channel = 1;
+    p.port = 1;
+    memcpy(&VBat, &p.data[2], sizeof(VBat));
+    memcpy(&batteryLowTime, &p.data[6], sizeof(batteryLowTime));
+    p.size = 10;
+    crtpSendPacket(&p);
     return state;
 }
 
@@ -374,13 +383,13 @@ void pmTask(void *param)
             case charging:
                 //ledseqStop(&seq_lowbat);
                 //ledseqStop(&seq_charged);
-               //! ledseqRunBlocking(&seq_charging);
+                //! ledseqRunBlocking(&seq_charging);
                 // soundSetEffect(SND_USB_CONN);
                 systemSetCanFly(false);
                 break;
 
             case lowPower:
-               //! ledseqRunBlocking(&seq_lowbat);
+                //! ledseqRunBlocking(&seq_lowbat);
                 // soundSetEffect(SND_BAT_LOW);
                 systemSetCanFly(true);
                 break;
@@ -404,8 +413,8 @@ void pmTask(void *param)
         case charging:
         {
             // Charge level between 0.0 and 1.0
-           // float chargeLevel = pmBatteryChargeFromVoltage(pmGetBatteryVoltage()) / 10.0f;
-          //!  ledseqSetChargeLevel(chargeLevel);
+            // float chargeLevel = pmBatteryChargeFromVoltage(pmGetBatteryVoltage()) / 10.0f;
+            //!  ledseqSetChargeLevel(chargeLevel);
         }
         break;
         case lowPower:

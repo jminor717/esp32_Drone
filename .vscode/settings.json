@@ -133,9 +133,16 @@
         "cstdbool": "cpp",
         "typeinfo": "cpp",
         "ledc.h": "c",
-        "esp_log.h": "c"
+        "esp_log.h": "c",
+        "esp_adc_cal.h": "c",
+        "adc_channel.h": "c",
+        "adc_esp32.h": "c"
     },
     "cSpell.words": [
+        "crtp",
+        "vbat",
+        "vref",
+        "Wunused",
         "XSHUT"
     ]
 }

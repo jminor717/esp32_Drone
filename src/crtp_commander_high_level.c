@@ -376,10 +376,11 @@ void crtpCommanderHighLevelTask(void * prm)
     crtpReceivePacketBlock(CRTP_PORT_SETPOINT_HL, &p);
 
     int ret = handleCommand(p.data[0], &p.data[1]);
-
     //answer
     p.data[3] = ret;
     p.size = 4;
+    DEBUG_PRINTI("Reply %d", ret);
+
     crtpSendPacket(&p);
   }
 }

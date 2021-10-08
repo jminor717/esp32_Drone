@@ -213,13 +213,17 @@ static void udp_server_tx_task(void *pvParameters)
                 DEBUG_PRINT_LOCAL("Error occurred during sending: errno %d", errno);
                 continue;
             }
-#ifdef DEBUG_UDP
-            DEBUG_PRINT_LOCAL("Send data to");
+            //#ifdef DEBUG_UDP
+            char *buf;
+            buf = (char *)malloc(300); // 3 * 64  with som extra
+            //memset(buf, 0, 300);
             for (size_t i = 0; i < outPacket.size + 1; i++)
             {
-                DEBUG_PRINT_LOCAL(" data_send[%d] = %02X ", i, tx_buffer[i]);
+                sprintf(buf + i*3, "%02X,", tx_buffer[i]);
             }
-#endif
+            DEBUG_PRINT_LOCAL(" data_send_Wifi size:%d , %s ", outPacket.size, buf);
+            free(buf);
+            //#endif
         }
     }
 }

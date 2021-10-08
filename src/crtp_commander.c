@@ -76,7 +76,7 @@ const static metaCommandDecoder_t metaCommandDecoders[] = {
 static void commanderCrtpCB(CRTPPacket* pk)
 {
   static setpoint_t setpoint;
-  DEBUG_PRINTI("commanderCrtpCB got type p%d, c%d, d%d", pk->port, pk->channel, pk->data[0]);
+  //DEBUG_PRINTI("commanderCrtpCB got type p%d, c%d, d%d", pk->port, pk->channel, pk->data[0]);
 
   if(pk->port == CRTP_PORT_SETPOINT && pk->channel == 0) {
     crtpCommanderRpytDecodeSetpoint(&setpoint, pk);

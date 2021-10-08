@@ -348,7 +348,7 @@ const static packetDecoder_t packetDecoders[] = {
 /* Decoder switch */
 void crtpCommanderGenericDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
 {
-    DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
+    //DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
 
     static int nTypes = positionType + 1;
 

@@ -58,7 +58,7 @@ void setup()
     //WiFi.setTxPower(WIFI_POWER_19_5dBm);
     // udp.begin(UDP_SERVER_PORT);
 
-    if (udp2.listen(UDP_SERVER_PORT))
+    if (udp2.listen(UDP_RECEIVE_PORT))
     {
         Serial.print("UDP Listening on IP: ");
         Serial.println(WiFi.localIP());

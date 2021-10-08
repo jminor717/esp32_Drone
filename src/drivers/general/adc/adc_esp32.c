@@ -23,6 +23,7 @@
 
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "soc/adc_channel.h"
 
 #include "adc_esp32.h"
 #include "config.h"
@@ -35,53 +36,85 @@ static bool isInit;
 
 static esp_adc_cal_characteristics_t *adc_chars;
 
-
-static const adc_channel_t channel = ADC_CHANNEL_7; //GPIO35 if ADC1
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 
-
-static const adc_atten_t atten = ADC_ATTEN_DB_11;   //11dB attenuation (ADC_ATTEN_DB_11) gives full-scale voltage 3.9V
+static const adc_atten_t atten = ADC_ATTEN_DB_11; //11dB attenuation (ADC_ATTEN_DB_11) gives full-scale voltage 3.9V
 static const adc_unit_t unit = ADC_UNIT_1;
 #define DEFAULT_VREF 1100 //Use adc2_vref_to_gpio() to obtain a better estimate
-#define NO_OF_SAMPLES   30          //Multisampling
+#define NO_OF_SAMPLES 30  //Multisampling
+
+const int8_t ADC_GPIO_TO_CHANNEL[] = {ADC2_CHANNEL_1, -1, ADC2_CHANNEL_2, -1, ADC2_CHANNEL_0, -1, -1, -1, -1, -1, -1, -1,
+                                      ADC2_CHANNEL_5, ADC2_CHANNEL_4, ADC2_CHANNEL_6, ADC2_CHANNEL_3, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                                      ADC2_CHANNEL_8, ADC2_CHANNEL_9, ADC2_CHANNEL_7, -1, -1, -1, -1,
+                                      ADC1_CHANNEL_4, ADC1_CHANNEL_5, ADC1_CHANNEL_6, ADC1_CHANNEL_7, ADC1_CHANNEL_0, ADC1_CHANNEL_1, ADC1_CHANNEL_2, ADC1_CHANNEL_3};
+
+const adc_unit_t GPIO_TO_ADC_UNIT[] = {ADC_UNIT_2, 8, ADC_UNIT_2, 8, ADC_UNIT_2, 8, 8, 8, 8, 8, 8, 8,
+                                       ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                                       ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, 8, 8, 8, 8,
+                                       ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1};
 
 static void checkEfuse(void)
 {
     //Check if TP is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
+    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK)
+    {
         printf("eFuse Two Point: Supported\n");
-    } else {
+    }
+    else
+    {
         printf("eFuse Two Point: NOT supported\n");
     }
     //Check Vref is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK) {
+    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK)
+    {
         printf("eFuse Vref: Supported\n");
-    } else {
+    }
+    else
+    {
         printf("eFuse Vref: NOT supported\n");
     }
 }
 
 static void print_char_val_type(esp_adc_cal_value_t val_type)
 {
-    if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
+    if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP)
+    {
         printf("Characterized using Two Point Value\n");
-    } else if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
+    }
+    else if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF)
+    {
         printf("Characterized using eFuse Vref\n");
-    } else {
+    }
+    else
+    {
         printf("Characterized using Default Vref\n");
     }
 }
 
 float analogReadVoltage(uint32_t pin)
 {
+    adc_unit_t adcUnit = GPIO_TO_ADC_UNIT[pin];
+    if (adcUnit == ADC_UNIT_MAX)
+    {
+        return 0;
+    }
+    int8_t adcChannel = ADC_GPIO_TO_CHANNEL[pin];
     uint32_t adc_reading = 0;
-    for (int i = 0; i < NO_OF_SAMPLES; i++) {
-        if (unit == ADC_UNIT_1) {
-            adc_reading += adc1_get_raw((adc1_channel_t)channel);
-        } else {
+    for (int i = 0; i < NO_OF_SAMPLES; i++)
+    {
+        if (adcUnit == ADC_UNIT_1)
+        {
+            adc_reading += adc1_get_raw((adc1_channel_t)adcChannel);
+        }
+        else if (adcUnit == ADC_UNIT_2)
+        {
             int raw;
-            adc2_get_raw((adc2_channel_t)channel, width, &raw);
+            adc2_get_raw((adc2_channel_t)adcChannel, width, &raw);
             adc_reading += raw;
+        }
+        else
+        {
+            return 0;
         }
     }
     adc_reading /= NO_OF_SAMPLES;
@@ -92,17 +125,28 @@ float analogReadVoltage(uint32_t pin)
 
 void adcInit(void)
 {
-    if (isInit) {
+    if (isInit)
+    {
         return;
     }
 
     checkEfuse();
     //Configure ADC
-    if (unit == ADC_UNIT_1) {
+    if (unit == ADC_UNIT_1)
+    {
         adc1_config_width(width);
-        adc1_config_channel_atten(channel, atten);
-    } else {
-        adc2_config_channel_atten((adc2_channel_t)channel, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_0, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_1, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_2, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_3, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_4, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_5, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_6, atten);
+        adc1_config_channel_atten(ADC_CHANNEL_7, atten);
+    }
+    else
+    {
+        adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_7, atten);
     }
 
     //Characterize ADC
