@@ -160,25 +160,26 @@ static void udp_server_rx_task(void *pvParameters)
             //copy part of the UDP packet
             rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string...
             memcpy(inPacket.data, rx_buffer, len);
-            //!cksum = inPacket.data[len - 1];
+            uint8_t cksum = inPacket.data[len - 1];
+            uint8_t cksumCalk = calculate_cksum(inPacket.data, len - 1);
             //remove cksum, do not belong to CRTP
             inPacket.size = len - 1;
             //check packet
-            //    if (cksum == calculate_cksum(inPacket.data, len - 1) && inPacket.size < 64)
-            //   {
-            // DEBUG_PRINTI("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-            //              inPacket.data[0], inPacket.data[1], inPacket.data[2], inPacket.data[3], inPacket.data[4], inPacket.data[5], inPacket.data[6], inPacket.data[7], inPacket.data[8], inPacket.data[9],
-            //              inPacket.data[10], inPacket.data[11], inPacket.data[12], inPacket.data[13], inPacket.data[14], inPacket.data[15], inPacket.data[16], inPacket.data[17], inPacket.data[18], inPacket.data[19],
-            //              inPacket.data[20], inPacket.data[21], inPacket.data[22], inPacket.data[23], inPacket.data[24], inPacket.data[25], inPacket.data[26], inPacket.data[27], inPacket.data[28], inPacket.data[29], inPacket.data[30]);
-            //DEBUG_PRINTI("xQueueSend udp_server_rx_task %d,%d,%d,%d,%d,%d", inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0]);
-            xQueueSend(udpDataRx, &inPacket, 2);
-            if (!isUDPConnected)
-                isUDPConnected = true;
-                //    }
-                //    else
-                //    {
-                //        DEBUG_PRINT_LOCAL("udp packet cksum unmatched");
-                //    }
+            if (cksum == cksumCalk && inPacket.size < 64)
+            {
+                // DEBUG_PRINTI("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+                //              inPacket.data[0], inPacket.data[1], inPacket.data[2], inPacket.data[3], inPacket.data[4], inPacket.data[5], inPacket.data[6], inPacket.data[7], inPacket.data[8], inPacket.data[9],
+                //              inPacket.data[10], inPacket.data[11], inPacket.data[12], inPacket.data[13], inPacket.data[14], inPacket.data[15], inPacket.data[16], inPacket.data[17], inPacket.data[18], inPacket.data[19],
+                //              inPacket.data[20], inPacket.data[21], inPacket.data[22], inPacket.data[23], inPacket.data[24], inPacket.data[25], inPacket.data[26], inPacket.data[27], inPacket.data[28], inPacket.data[29], inPacket.data[30]);
+                //DEBUG_PRINTI("xQueueSend udp_server_rx_task %d,%d,%d,%d,%d,%d", inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0]);
+                xQueueSend(udpDataRx, &inPacket, 2);
+                if (!isUDPConnected)
+                    isUDPConnected = true;
+            }
+            else
+            {
+                DEBUG_PRINT_LOCAL("udp packet cksum unmatched c1:%d, c2:%d", cksum, cksumCalk);
+            }
 
 #ifdef DEBUG_UDP
             DEBUG_PRINT_LOCAL("1.Received data size = %d  %02X \n cksum = %02X", len, inPacket.data[0], cksum);
@@ -219,7 +220,7 @@ static void udp_server_tx_task(void *pvParameters)
             //memset(buf, 0, 300);
             for (size_t i = 0; i < outPacket.size + 1; i++)
             {
-                sprintf(buf + i*3, "%02X,", tx_buffer[i]);
+                sprintf(buf + i * 3, "%02X,", tx_buffer[i]);
             }
             DEBUG_PRINT_LOCAL(" data_send_Wifi size:%d , %s ", outPacket.size, buf);
             free(buf);

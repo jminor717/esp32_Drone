@@ -104,34 +104,48 @@ struct zDistancePacket_s
  */
 typedef struct altHoldPacket_s
 {
-    uint8_t checksum;
-    uint8_t type;
+    uint8_t type;    // placeholder, not directly needed for the alt hold function but needs to be stored in the data array
     float roll;      // rad
     float pitch;     // ...
     float yawrate;   // deg/s
     float zVelocity; // m/s in the world frame of reference
-} __attribute__((packed));
+};
 typedef struct altHoldPacket_s altHoldPacket_s;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 static void altHoldPacket_Decode(altHoldPacket_s *packet, const uint8_t *data)
 {
-    packet->checksum = data[1];
     packet->type = data[0];
-    memcpy(&packet->roll, &data[2], sizeof(packet->roll));
-    memcpy(&packet->pitch, &data[6], sizeof(packet->pitch));
-    memcpy(&packet->yawrate, &data[10], sizeof(packet->yawrate));
-    memcpy(&packet->zVelocity, &data[14], sizeof(packet->zVelocity));
+    memcpy(&packet->roll, &data[1], sizeof(packet->roll));
+    memcpy(&packet->pitch, &data[5], sizeof(packet->pitch));
+    memcpy(&packet->yawrate, &data[9], sizeof(packet->yawrate));
+    memcpy(&packet->zVelocity, &data[13], sizeof(packet->zVelocity));
 }
 static void altHoldPacket_Encode(altHoldPacket_s *packet, uint8_t *data, packet_type type)
 {
     data[0] = type;
-    memcpy(&data[2], &packet->roll, sizeof(packet->roll));
-    memcpy(&data[6], &packet->pitch, sizeof(packet->pitch));
-    memcpy(&data[10], &packet->yawrate, sizeof(packet->yawrate));
-    memcpy(&data[14], &packet->zVelocity, sizeof(packet->zVelocity));
-    data[1] = calculate_cksum(data, CRTP_MAX_DATA_SIZE);
+    memcpy(&data[1], &packet->roll, sizeof(packet->roll));
+    memcpy(&data[5], &packet->pitch, sizeof(packet->pitch));
+    memcpy(&data[9], &packet->yawrate, sizeof(packet->yawrate));
+    memcpy(&data[13], &packet->zVelocity, sizeof(packet->zVelocity));
+}
+
+static void altHoldPacket_Decode_Min(altHoldPacket_s *packet, const uint8_t *data)
+{
+    packet->type = data[0];
+    packet->roll = ((int8_t)data[1]) / 62.5;
+    packet->pitch = ((int8_t)data[2]) / 62.5;
+    packet->yawrate = ((int8_t)data[3]) / 62.5;
+    packet->zVelocity = (data[4] / 510.0) - 0.1;
+}
+static void altHoldPacket_Encode_Min(int8_t r, int8_t p, int8_t y, uint8_t t, uint8_t *data, packet_type type)
+{
+    data[0] = type;
+    data[1] = r;
+    data[2] = p;
+    data[3] = y;
+    data[4] = t;
 }
 #pragma GCC diagnostic pop
 

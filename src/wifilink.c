@@ -122,19 +122,19 @@ static void wifilinkTask(void *param)
             //memcpy(&p.raw, wifiIn.data, wifiIn.size);
             memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
         }
-        uint8_t cksum = p.data[1];
-        p.data[1] = 0;
-        uint8_t cksum2 = calculate_cksum(p.data, CRTP_MAX_DATA_SIZE);
-        if (cksum == cksum2)
-        {
-            /* command step - receive 05 send to crtpPacketDelivery queue */
-            //?DEBUG_PRINTI("xQueueSend wifilinkTask");
-            xQueueSend(crtpPacketDelivery, &p, 0);
-        }
-        else
-        {
-            DEBUG_PRINTI("CRTP packet cksum unmatched c1%d, c2%d", cksum, cksum2);
-        }
+        // uint8_t cksum = p.data[1];
+        // p.data[1] = 0;
+        // uint8_t cksum2 = calculate_cksum(p.data, CRTP_MAX_DATA_SIZE);
+        // if (cksum == cksum2)
+        // {
+        /* command step - receive 05 send to crtpPacketDelivery queue */
+        //?DEBUG_PRINTI("xQueueSend wifilinkTask");
+        xQueueSend(crtpPacketDelivery, &p, 0);
+        // }
+        // else
+        // {
+        //     DEBUG_PRINTI("CRTP packet cksum unmatched c1%d, c2%d", cksum, cksum2);
+        // }
     }
 }
 

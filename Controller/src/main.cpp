@@ -192,10 +192,10 @@ void handleControlUpdate()
 
             inTransmit = true;
             struct altHoldPacket_s values;
-            values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            values.yawrate = lx / 62.5;            // map(lx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            values.zVelocity = (R2 / 510.0) - 0.1; //map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
+            // values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            // values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            // values.yawrate = lx / 62.5;            // map(lx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
+            // values.zVelocity = (R2 / 510.0) - 0.1; //map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
             // if (values.thrust == MIN_THRUST)
             // {
             //     values.thrust = 0;
@@ -210,12 +210,15 @@ void handleControlUpdate()
                 type = stopType;
             }
             //memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
-            
-            (&values, cmd.data, type);
 
-            uint8_t *buffer = (uint8_t *)calloc(1, sizeof(CRTPPacket));
-            memcpy(buffer, (const uint8_t *)&cmd, sizeof(CRTPPacket));
-            log_v("r%f,p%f,y%f,v%f, c2%d", values.roll, values.pitch, values.yawrate, values.zVelocity, cmd.data[1]);
+            altHoldPacket_Encode_Min(rx, ry, lx, R2, cmd.data, type);
+
+            altHoldPacket_Decode_Min(&values, cmd.data);
+
+            uint8_t *buffer = (uint8_t *)calloc(1, sizeof(cmd) + 1);
+            memcpy(buffer, (const uint8_t *)&cmd, sizeof(cmd));
+            buffer[sizeof(cmd)] = calculate_cksum(buffer, sizeof(cmd));
+            log_v("r%f,p%f,y%f,v%f, c2%d", values.roll, values.pitch, values.yawrate, values.zVelocity, buffer[sizeof(cmd)]);
 
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],

@@ -217,7 +217,7 @@ static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
 {
     struct altHoldPacket_s values;
 
-    altHoldPacket_Decode(&values, data);
+    altHoldPacket_Decode_Min(&values, data);
 
     DEBUG_PRINTI("altHold decode got values z%f, r%f, p%f, y%f", values.zVelocity, values.roll, values.pitch, values.yawrate);
 
