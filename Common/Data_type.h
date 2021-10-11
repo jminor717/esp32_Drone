@@ -102,7 +102,7 @@ struct zDistancePacket_s
 /* altHoldDecoder  altHoldType
  * Set the Crazyflie vertical velocity and roll/pitch angle
  */
-typedef struct altHoldPacket_s
+struct altHoldPacket_s
 {
     uint8_t type;    // placeholder, not directly needed for the alt hold function but needs to be stored in the data array
     float roll;      // rad

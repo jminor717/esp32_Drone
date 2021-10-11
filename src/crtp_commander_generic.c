@@ -82,7 +82,7 @@ static void stopDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char 
  */
 static void velocityDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct velocityPacket_s *values = data;
+    const struct velocityPacket_s *values = (void *)data;
 
     ASSERT(datalen == sizeof(struct velocityPacket_s));
 
@@ -104,7 +104,7 @@ static void velocityDecoder(setpoint_t *setpoint, uint8_t type, const unsigned c
  */
 static void zDistanceDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct zDistancePacket_s *values = data;
+    const struct zDistancePacket_s *values = (void *)data;
 
     ASSERT(datalen == sizeof(struct zDistancePacket_s));
 
@@ -166,7 +166,7 @@ static void cppmEmuDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
     bool isSelfLevelEnabled = true;
 
     ASSERT(datalen >= 9); // minimum 9 bytes expected - 1byte header + four 2byte channels
-    const struct cppmEmuPacket_s *values = data;
+    const struct cppmEmuPacket_s *values = (void *)data;
     ASSERT(datalen == 9 + (2 * values->hdr.numAuxChannels)); // Total size is 9 + number of active aux channels
 
     // Aux channel 0 is reserved for enabling/disabling self-leveling
@@ -243,7 +243,7 @@ static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
  */
 static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct hoverPacket_s *values = data;
+    const struct hoverPacket_s *values = (void *)data;
 
     ASSERT(datalen == sizeof(struct hoverPacket_s));
 
@@ -279,7 +279,7 @@ struct fullStatePacket_s
 } __attribute__((packed));
 static void fullStateDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct fullStatePacket_s *values = data;
+    const struct fullStatePacket_s *values = (void *)data;
 
     ASSERT(datalen == sizeof(struct fullStatePacket_s));
 
@@ -318,7 +318,7 @@ struct positionPacket_s
 } __attribute__((packed));
 static void positionDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct positionPacket_s *values = (const char *)data;
+    const struct positionPacket_s *values = (void *)data;
 
     setpoint->mode.x = modeAbs;
     setpoint->mode.y = modeAbs;

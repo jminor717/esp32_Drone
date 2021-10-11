@@ -6,3 +6,4 @@
 include/versioning
 include/buildVersion.h
 node_modules
+.vscode/
