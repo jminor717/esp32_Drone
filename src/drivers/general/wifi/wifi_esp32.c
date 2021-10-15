@@ -24,7 +24,6 @@
 #define UDP_SERVER_BUFSIZE 128
 
 static struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
-static struct sockaddr_in broadcast_addr;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -158,6 +157,13 @@ static void udp_server_rx_task(void *pvParameters)
         else
         {
             //copy part of the UDP packet
+            // DEBUG_PRINTI("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+            //              inPacket.data[0], inPacket.data[1], inPacket.data[2], inPacket.data[3], inPacket.data[4], inPacket.data[5], inPacket.data[6], inPacket.data[7], inPacket.data[8], inPacket.data[9],
+            //              inPacket.data[10], inPacket.data[11], inPacket.data[12], inPacket.data[13], inPacket.data[14], inPacket.data[15], inPacket.data[16], inPacket.data[17], inPacket.data[18], inPacket.data[19],
+            //              inPacket.data[20], inPacket.data[21], inPacket.data[22], inPacket.data[23], inPacket.data[24], inPacket.data[25], inPacket.data[26], inPacket.data[27], inPacket.data[28], inPacket.data[29], inPacket.data[30],
+            //              inPacket.data[31], inPacket.data[31], inPacket.data[32], inPacket.data[33], inPacket.data[34], inPacket.data[35], inPacket.data[36], inPacket.data[37], inPacket.data[38], inPacket.data[39]);
+
+            //uint8_t cksumPree = rx_buffer[len];
             rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string...
             memcpy(inPacket.data, rx_buffer, len);
             uint8_t cksum = inPacket.data[len - 1];
@@ -167,10 +173,7 @@ static void udp_server_rx_task(void *pvParameters)
             //check packet
             if (cksum == cksumCalk && inPacket.size < 64)
             {
-                // DEBUG_PRINTI("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-                //              inPacket.data[0], inPacket.data[1], inPacket.data[2], inPacket.data[3], inPacket.data[4], inPacket.data[5], inPacket.data[6], inPacket.data[7], inPacket.data[8], inPacket.data[9],
-                //              inPacket.data[10], inPacket.data[11], inPacket.data[12], inPacket.data[13], inPacket.data[14], inPacket.data[15], inPacket.data[16], inPacket.data[17], inPacket.data[18], inPacket.data[19],
-                //              inPacket.data[20], inPacket.data[21], inPacket.data[22], inPacket.data[23], inPacket.data[24], inPacket.data[25], inPacket.data[26], inPacket.data[27], inPacket.data[28], inPacket.data[29], inPacket.data[30]);
+
                 //DEBUG_PRINTI("xQueueSend udp_server_rx_task %d,%d,%d,%d,%d,%d", inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0], inPacket.data[0]);
                 xQueueSend(udpDataRx, &inPacket, 2);
                 if (!isUDPConnected)
@@ -208,7 +211,7 @@ static void udp_server_tx_task(void *pvParameters)
             tx_buffer[outPacket.size] = calculate_cksum((unsigned char *)tx_buffer, outPacket.size);
             tx_buffer[outPacket.size + 1] = 0;
 
-            int err = sendto(sock, tx_buffer, outPacket.size + 1, 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr));
+            int err = sendto(sock, tx_buffer, outPacket.size + 1, 0, (struct sockaddr *)&source_addr, sizeof(source_addr));
             if (err < 0)
             {
                 DEBUG_PRINT_LOCAL("Error occurred during sending: errno %d", errno);
@@ -235,10 +238,6 @@ void wifiInit(void)
     {
         return;
     }
-
-    broadcast_addr.sin_port = htons(UDP_SEND_PORT);
-    broadcast_addr.sin_family = AF_INET;
-    broadcast_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

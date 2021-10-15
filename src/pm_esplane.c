@@ -252,10 +252,11 @@ PMStates pmUpdateState()
 
     p.channel = 1;
     p.port = 1;
-    memcpy(&VBat, &p.data[2], sizeof(VBat));
-    memcpy(&batteryLowTime, &p.data[6], sizeof(batteryLowTime));
+    memcpy(&p.data[2], &VBat, sizeof(VBat));
+    memcpy(&p.data[6], &batteryLowTime, sizeof(batteryLowTime));
     p.size = 10;
     crtpSendPacket(&p);
+    //DEBUG_PRINTI("VBat %f batteryLowTime %d", VBat, batteryLowTime);
     return state;
 }
 

@@ -10,9 +10,9 @@
 #define WIFIssid "ESP-DRONE_BCDDC2D254AD"
 #define WIFIpassword "12345678"
 #define UDP_SERVER_PORT 2390
-#define UDP_RECEIVE_PORT 2391
+#define UDP_RECEIVE_PORT 2390
 
-#define WIFI_TRANSMIT_RATE_Us 40000
+#define WIFI_TRANSMIT_RATE_Us 40000 // 40ms = 25hz
 
 #define MIN_THRUST 1000
 #define MAX_THRUST 60000
@@ -32,21 +32,85 @@ high level independent command and setpoint transmition lops to allow commands t
 
 */
 IPAddress DroneAddress = IPAddress();
-//WiFiUDP udp = WiFiUDP();
-AsyncUDP udp2;
+WiFiUDP udp = WiFiUDP();
+// AsyncUDP udp;
 
 int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
 std::atomic<bool> inTransmit(false);
+bool Flying = false;
 
 void handleControlUpdate();
+
+void PacketCallback(AsyncUDPPacket &packet)
+{
+    char *buf;
+    buf = (char *)malloc(300); // 3 * 64  with som extra
+    // memset(buf, 0, 300);
+    for (size_t i = 0; i < packet.length(); i++)
+    {
+        sprintf(buf + i * 3, "%02X,", packet.data()[i]);
+    }
+    // Serial.printf(" data_send_Wifi size:%d , %s ", packet.length(), buf);
+    free(buf);
+
+    Serial.print("UDP Packet Type: ");
+    Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
+                                                                           : "Unicast");
+    Serial.print(", From: ");
+    Serial.print(packet.remoteIP());
+    Serial.print(":");
+    Serial.print(packet.remotePort());
+    Serial.print(", To: ");
+    Serial.print(packet.localIP());
+    Serial.print(":");
+    Serial.print(packet.localPort());
+    Serial.print(", Length: ");
+    Serial.print(packet.length());
+    Serial.print(", Data: ");
+    Serial.write(buf);
+    Serial.println();
+}
+
+void handleWifiConnected(system_event_t *event)
+{
+    // if (udp.listen(UDP_RECEIVE_PORT))
+    // {
+    //     Serial.print("UDP Listening on IP: ");
+    //     Serial.println(WiFi.localIP());
+    //     udp.onPacket(PacketCallback);
+    // }
+    // CRTPPacket cmd;
+    // memset(&cmd, 0, sizeof(CRTPPacket));
+    // cmd.channel = SET_SETPOINT_CHANNEL;
+    // cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+
+    // altHoldPacket_Encode_Min(0, 0, 0, 0, cmd.data, stopType);
+
+    // uint8_t cmdLength = sizeof(cmd);
+    // uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
+    // memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
+    // buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
+
+    // AsyncUDPMessage msg;
+    // msg.write(buffer, cmdLength + 1);
+    // udp.broadcastTo(msg, UDP_SERVER_PORT);
+
+    // free(buffer);
+}
+
+void handleWifiDropped(system_event_t *event)
+{
+    delay(5000);
+    WiFi.begin(WIFIssid, WIFIpassword);
+}
 
 void setup()
 {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
-    //"60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
-    //char mac[] = "60:5b:b4:d9:7b:14";
+    // "60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
+    // char mac[] = "60:5b:b4:d9:7b:14";
     char mac[] = "4C:11:AE:DF:8B:F4";
     PS4.begin(mac);
     Serial.println("Ready.");
@@ -55,35 +119,38 @@ void setup()
 
     DroneAddress.fromString("192.168.43.42");
     WiFi.begin(WIFIssid, WIFIpassword);
-    //WiFi.setTxPower(WIFI_POWER_19_5dBm);
-    // udp.begin(UDP_SERVER_PORT);
+    // WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    udp.begin(UDP_SERVER_PORT);
 
-    if (udp2.listen(UDP_RECEIVE_PORT))
-    {
-        Serial.print("UDP Listening on IP: ");
-        Serial.println(WiFi.localIP());
-        udp2.onPacket([](AsyncUDPPacket packet)
-                      {
-                          Serial.print("UDP Packet Type: ");
-                          Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
-                                                                                                 : "Unicast");
-                          Serial.print(", From: ");
-                          Serial.print(packet.remoteIP());
-                          Serial.print(":");
-                          Serial.print(packet.remotePort());
-                          Serial.print(", To: ");
-                          Serial.print(packet.localIP());
-                          Serial.print(":");
-                          Serial.print(packet.localPort());
-                          Serial.print(", Length: ");
-                          Serial.print(packet.length());
-                          Serial.print(", Data: ");
-                          Serial.write(packet.data(), packet.length());
-                          Serial.println();
-                          //reply to the client
-                          //packet.printf("Got %u bytes of data", packet.length());
-                      });
-    }
+    WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
+    WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
+
+    // if (udp2.listen(UDP_RECEIVE_PORT))
+    // {
+    //     Serial.print("UDP Listening on IP: ");
+    //     Serial.println(WiFi.localIP());
+    //     udp2.onPacket([](AsyncUDPPacket packet)
+    //                   {
+    //                       Serial.print("UDP Packet Type: ");
+    //                       Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
+    //                                                                                              : "Unicast");
+    //                       Serial.print(", From: ");
+    //                       Serial.print(packet.remoteIP());
+    //                       Serial.print(":");
+    //                       Serial.print(packet.remotePort());
+    //                       Serial.print(", To: ");
+    //                       Serial.print(packet.localIP());
+    //                       Serial.print(":");
+    //                       Serial.print(packet.localPort());
+    //                       Serial.print(", Length: ");
+    //                       Serial.print(packet.length());
+    //                       Serial.print(", Data: ");
+    //                       Serial.write(packet.data(), packet.length());
+    //                       Serial.println();
+    //                       //reply to the client
+    //                       //packet.printf("Got %u bytes of data", packet.length());
+    //                   });
+    // }
 
     log_v("Verbose");
     log_d("Debug");
@@ -164,7 +231,7 @@ void handleControlUpdate()
         // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
         //     Serial.printf("Right Stick y at %d\n", val);
         // ps4_sensor_t sense = PS4.SensorData();
-        //Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
+        // Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
         if (PS4.Charging())
             Serial.println("The controller is charging");
@@ -173,9 +240,11 @@ void handleControlUpdate()
         if (PS4.Mic())
             Serial.println("The controller has a mic attached");
 
-        //Serial.printf("Battery Level : %d\n", PS4.Battery());
+        // Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
+            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
+
             uint8_t R2 = 0;
             int8_t rx = 0, ry = 0, lx = 0;
             if (PS4.R2())
@@ -189,8 +258,9 @@ void handleControlUpdate()
             val = PS4.RStickY();
             if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 ry = val;
+            if (PS4.Cross())
+                Flying = false;
 
-            inTransmit = true;
             struct altHoldPacket_s values;
             // values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
             // values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
@@ -205,45 +275,81 @@ void handleControlUpdate()
             cmd.channel = SET_SETPOINT_CHANNEL;
             cmd.port = CRTP_PORT_SETPOINT_GENERIC;
             packet_type type = altHoldType;
-            if (!PS4.R2())
+            if (!PS4.R2() && !Flying)
             {
                 type = stopType;
             }
-            //memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
+            else if (PS4.R2())
+            {
+                Flying = true;
+            }
+            // memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
 
-            altHoldPacket_Encode_Min(rx, ry, lx, R2, cmd.data, type);
+            altHoldPacket_Encode_Min(rx, -ry, lx, R2, cmd.data, type);
 
             altHoldPacket_Decode_Min(&values, cmd.data);
+            //  log_v("r%f,p%f,y%f,v%f, c%d", values.roll, values.pitch, values.yawrate, values.zVelocity, buffer[cmdLength]);
 
-            uint8_t *buffer = (uint8_t *)calloc(1, sizeof(cmd) + 1);
-            memcpy(buffer, (const uint8_t *)&cmd, sizeof(cmd));
-            buffer[sizeof(cmd)] = calculate_cksum(buffer, sizeof(cmd));
-            log_v("r%f,p%f,y%f,v%f, c2%d", values.roll, values.pitch, values.yawrate, values.zVelocity, buffer[sizeof(cmd)]);
+            inTransmit = true; // atomic block around buffer and udp operations
+            uint8_t cmdLength = sizeof(cmd);
+            uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
+            memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
+            buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
 
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
             //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
             //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
-            //  udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
 
-            //  udp.write(buffer, sizeof(CRTPPacket));
-
-            //  udp.endPacket();
-            AsyncUDPMessage msg;
-            msg.write(buffer, sizeof(CRTPPacket));
-            udp2.broadcastTo(msg, UDP_SERVER_PORT);
+            udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+            udp.write(buffer, cmdLength + 1);
+            udp.endPacket();
+            // AsyncUDPMessage msg;
+            // msg.write(buffer, cmdLength + 1);
+            // udp.broadcastTo(msg, UDP_SERVER_PORT);
 
             free(buffer);
-            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
             inTransmit = false;
         }
     }
 }
 
+char packetBuffer[255];
 void loop()
 {
     while (true)
     {
-        delay(portMAX_DELAY);
+        int packetSize = udp.parsePacket();
+        if (packetSize)
+        {
+            int len = udp.read(packetBuffer, 255);
+            if (len > 0)
+            {
+                packetBuffer[len] = 0;
+            }
+            float VBat = 0;
+            uint32_t batteryLowTime = 0;
+
+            // cprt packet adds one extra byte for header
+            memcpy(&VBat, &packetBuffer[3], sizeof(VBat));
+            memcpy(&batteryLowTime, &packetBuffer[7], sizeof(batteryLowTime));
+
+            // char *buf;
+            // buf = (char *)malloc(300); // 3 * 64  with som extra
+            // for (size_t i = 0; i < len; i++)
+            // {
+            //     sprintf(buf + i * 3, "%02X,", packetBuffer[i]);
+            // }
+            // free(buf);
+
+            Serial.printf("VBat: %f    batteryLowTime: %d", VBat, batteryLowTime);
+            Serial.println();
+            // Serial.write(buf);
+            // Serial.println();
+        }
+        else
+        {
+            delay(50);
+        }
     }
 }

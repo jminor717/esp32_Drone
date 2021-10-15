@@ -37,7 +37,7 @@
 
 //battery voltage monitor
 #define CONFIG_VBat_PIN 34
-#define VBat_VOLTAGE_DIVIDER_RATIO 0.838 //measured
+#define VBat_VOLTAGE_DIVIDER_RATIO 1.193 //0.838 //measured
 
 #define CONFIG_DCDC_PGOOD_PIN 35
 
