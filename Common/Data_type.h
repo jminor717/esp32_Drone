@@ -46,18 +46,18 @@ typedef struct _CRTPPacket
     };
 } __attribute__((packed)) CRTPPacket;
 
-//data[0] type
-//data[1] checksum for data array
+// data[0] type
+// data[1] checksum for data array
 
 typedef enum
 {
     CRTP_PORT_CONSOLE = 0x00,
     CRTP_PORT_PARAM = 0x02,
-    CRTP_PORT_SETPOINT = 0x03, //raw setpoint comand for direct rol pitch yaw thrust control
+    CRTP_PORT_SETPOINT = 0x03, // raw setpoint comand for direct rol pitch yaw thrust control
     CRTP_PORT_MEM = 0x04,
     CRTP_PORT_LOG = 0x05,
     CRTP_PORT_LOCALIZATION = 0x06,
-    CRTP_PORT_SETPOINT_GENERIC = 0x07, //setpoint comands defined in packetType_e
+    CRTP_PORT_SETPOINT_GENERIC = 0x07, // setpoint comands defined in packetType_e
     CRTP_PORT_SETPOINT_HL = 0x08,      // high level comands defined in TrajectoryCommand_e
     CRTP_PORT_PLATFORM = 0x0D,
     CRTP_PORT_LINK = 0x0F,
@@ -133,19 +133,23 @@ static void altHoldPacket_Encode(altHoldPacket_s *packet, uint8_t *data, packet_
 
 static void altHoldPacket_Decode_Min(altHoldPacket_s *packet, const uint8_t *data)
 {
-    packet->type = data[0];
-    packet->roll = ((int8_t)data[1]) / 62.5;
-    packet->pitch = ((int8_t)data[2]) / 62.5;
-    packet->yawrate = ((int8_t)data[3]) / 62.5;
-    packet->zVelocity = (data[4] / 510.0) - 0.1;
+    packet->type = data[0];// note to self all the folowing options work the same (assuming you actually cast to int16 and not int8)
+    packet->roll = ((int16_t)(data[1] + (data[2] << 8))) / 62.5;
+    packet->pitch = ((int16_t)((data[4] << 8) + data[3])) / 62.5;
+    packet->yawrate = ((int16_t)((data[6] << 8) | data[5])) / 62.5;
+    packet->zVelocity = (data[7] / 510.0) - 0.1;
 }
-static void altHoldPacket_Encode_Min(int8_t r, int8_t p, int8_t y, uint8_t t, uint8_t *data, packet_type type)
+static uint8_t altHoldPacket_Encode_Min(int16_t r, int16_t p, int16_t y, uint8_t t, uint8_t *data, packet_type type)
 {
     data[0] = type;
-    data[1] = r;
-    data[2] = p;
-    data[3] = y;
-    data[4] = t;
+    data[1] = r & 0xFF;
+    data[2] = (r >> 8) & 0xFF;
+    data[3] = p & 0xFF;
+    data[4] = (p >> 8) & 0xFF;
+    data[5] = y & 0xFF;
+    data[6] = (y >> 8) & 0xFF;
+    data[7] = t;
+    return 8;
 }
 #pragma GCC diagnostic pop
 
@@ -221,5 +225,5 @@ enum crtpSetpointGenericChannel
 enum metaCommand_e
 {
     metaNotifySetpointsStop = 0,
-    nMetaCommands, //total number of meta comands, add new comands before this line
+    nMetaCommands, // total number of meta comands, add new comands before this line
 };

@@ -63,7 +63,7 @@ static uint32_t idleThrust = DEFAULT_IDLE_THRUST;
 
 void powerDistributionInit(void)
 {
-    //platformConfigGetMotorMapping()
+    // platformConfigGetMotorMapping()
     MotorPerifDef mtr[4];
     mtr[0].drvType = BRUSHED;
     mtr[1].drvType = BRUSHED;
@@ -100,20 +100,22 @@ void powerDistribution(const control_t *control)
     motorPower.m2 = limitThrust(control->thrust - r - p - control->yaw);
     motorPower.m3 = limitThrust(control->thrust + r - p + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + r + p - control->yaw);
-#else 
+#else
 #ifdef QUAD_FORMATION_TRI
+    // measured 160g thrust with one prop and 380g with 2 seprately powered contra rotating props, at 2.4 volts
+    float thrustScaled = control->thrust * 0.84;
     int16_t r = control->roll;
     int16_t p = control->pitch;
     motorPower.m1 = limitThrust(control->thrust - r + p + control->yaw);
-    motorPower.m2 = limitThrust(control->thrust - p - control->yaw);
-    motorPower.m3 = limitThrust(control->thrust - p + control->yaw);
+    motorPower.m2 = limitThrust(thrustScaled - p - control->yaw);
+    motorPower.m3 = limitThrust(thrustScaled - p + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + r + p - control->yaw);
 #else
     motorPower.m1 = limitThrust(control->thrust + control->pitch + control->yaw);
     motorPower.m2 = limitThrust(control->thrust - control->roll - control->yaw);
     motorPower.m3 = limitThrust(control->thrust - control->pitch + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + control->roll - control->yaw);
-#endif //QUAD_FORMATION_NORMAL
+#endif // QUAD_FORMATION_NORMAL
 #endif
 
     if (motorSetEnable)

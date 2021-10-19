@@ -131,7 +131,7 @@ void zRanger2Task(void* arg)
 
     range_last = zRanger2GetMeasurementAndRestart(&dev);
     rangeSet(rangeDown, range_last / 1000.0f);
-
+   // DEBUG_PRINTI("zRanger range_last: %d", range_last);
     // check if range is feasible and push into the estimator
     // the sensor should not be able to measure >5 [m], and outliers typically
     // occur as >8 [m] measurements

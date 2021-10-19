@@ -41,6 +41,7 @@ std::atomic<bool> inTransmit(false);
 bool Flying = false;
 
 void handleControlUpdate();
+void SendDataToDrone(CRTPPacket cmd, uint8_t len);
 
 void PacketCallback(AsyncUDPPacket &packet)
 {
@@ -246,7 +247,7 @@ void handleControlUpdate()
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
 
             uint8_t R2 = 0;
-            int8_t rx = 0, ry = 0, lx = 0;
+            int16_t rx = 0, ry = 0, lx = 0;
             if (PS4.R2())
                 R2 = PS4.R2Value(); // 0 - 255
             val = PS4.LStickX();
@@ -261,7 +262,6 @@ void handleControlUpdate()
             if (PS4.Cross())
                 Flying = false;
 
-            struct altHoldPacket_s values;
             // values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
             // values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
             // values.yawrate = lx / 62.5;            // map(lx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
@@ -285,30 +285,18 @@ void handleControlUpdate()
             }
             // memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
 
-            altHoldPacket_Encode_Min(rx, -ry, lx, R2, cmd.data, type);
+            altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data, type);
+            // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+            //       cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4], cmd.data[5], cmd.data[6], cmd.data[7], cmd.data[8], cmd.data[9]);
 
+            // log_v("%d,%d,   %d,%d,   %d,%d",
+            //       rx, (rx * 3), ry, (-ry * 3), lx, (lx * 3));
+            struct altHoldPacket_s values;
             altHoldPacket_Decode_Min(&values, cmd.data);
-            //  log_v("r%f,p%f,y%f,v%f, c%d", values.roll, values.pitch, values.yawrate, values.zVelocity, buffer[cmdLength]);
+            log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
 
             inTransmit = true; // atomic block around buffer and udp operations
-            uint8_t cmdLength = sizeof(cmd);
-            uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
-            memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
-            buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
-
-            // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-            //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
-            //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
-            //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
-
-            udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
-            udp.write(buffer, cmdLength + 1);
-            udp.endPacket();
-            // AsyncUDPMessage msg;
-            // msg.write(buffer, cmdLength + 1);
-            // udp.broadcastTo(msg, UDP_SERVER_PORT);
-
-            free(buffer);
+            SendDataToDrone(cmd, 30);
             inTransmit = false;
         }
     }
@@ -352,4 +340,25 @@ void loop()
             delay(50);
         }
     }
+}
+
+void SendDataToDrone(CRTPPacket cmd, uint8_t len)
+{
+    uint8_t *buffer = (uint8_t *)calloc(1, len + 1);
+    memcpy(buffer, (const uint8_t *)&cmd, len);
+    buffer[len] = calculate_cksum(buffer, len);
+
+    // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+    //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
+    //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
+    //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
+
+    udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+    udp.write(buffer, len + 1);
+    udp.endPacket();
+    // AsyncUDPMessage msg;
+    // msg.write(buffer, len + 1);
+    // udp.broadcastTo(msg, UDP_SERVER_PORT);
+
+    free(buffer);
 }
