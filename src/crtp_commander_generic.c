@@ -216,19 +216,14 @@ static void cppmEmuDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
 static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
     struct altHoldPacket_s values;
-
     altHoldPacket_Decode_Min(&values, data);
-
     DEBUG_PRINTI("altHold decode got values z%f, r%f, p%f, y%f", values.zVelocity, values.roll, values.pitch, values.yawrate);
-
     // ASSERT(datalen == sizeof(struct altHoldPacket_s));
 
     setpoint->mode.z = modeVelocity;
-
     setpoint->velocity.z = values.zVelocity;
 
     setpoint->mode.yaw = modeVelocity;
-
     setpoint->attitudeRate.yaw = -values.yawrate;
 
     setpoint->mode.roll = modeAbs;
@@ -243,20 +238,20 @@ static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
  */
 static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct hoverPacket_s *values = (void *)data;
-
-    ASSERT(datalen == sizeof(struct hoverPacket_s));
+    const struct hoverPacket_s values;
+    hoverPacket_Decode_Min(&values, data);
+    // ASSERT(datalen == sizeof(struct hoverPacket_s));
 
     setpoint->mode.z = modeAbs;
-    setpoint->position.z = values->zDistance;
+    setpoint->position.z = values.zDistance;
 
     setpoint->mode.yaw = modeVelocity;
-    setpoint->attitudeRate.yaw = -values->yawrate;
+    setpoint->attitudeRate.yaw = -values.yawrate;
 
     setpoint->mode.x = modeVelocity;
     setpoint->mode.y = modeVelocity;
-    setpoint->velocity.x = values->vx;
-    setpoint->velocity.y = values->vy;
+    setpoint->velocity.x = values.vx;
+    setpoint->velocity.y = values.vy;
 
     setpoint->velocity_body = true;
 }
@@ -348,7 +343,7 @@ const static packetDecoder_t packetDecoders[] = {
 /* Decoder switch */
 void crtpCommanderGenericDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
 {
-    //DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
+    // DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
 
     static int nTypes = positionType + 1;
 

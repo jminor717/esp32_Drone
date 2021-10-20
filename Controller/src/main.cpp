@@ -39,6 +39,7 @@ int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
 std::atomic<bool> inTransmit(false);
 bool Flying = false;
+uint8_t type = stopType;
 
 void handleControlUpdate();
 void SendDataToDrone(CRTPPacket cmd, uint8_t len);
@@ -260,32 +261,44 @@ void handleControlUpdate()
             if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
                 ry = val;
             if (PS4.Cross())
+            {
                 Flying = false;
+                type = stopType;
+            }
+            if (PS4.Right())
+                type = hoverType;
+            // if (PS4.Down())
+            // if (PS4.Up())
+            if (PS4.Left())
+                type = altHoldType;
 
-            // values.roll = rx / 62.5;               //map(rx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            // values.pitch = ry / 62.5;              // map(ry, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            // values.yawrate = lx / 62.5;            // map(lx, -125, 125, -(MIN_DEGREE), MAX_DEGREE) / 1000.0;
-            // values.zVelocity = (R2 / 510.0) - 0.1; //map(R2, 0, 125, MIN_THRUST, MAX_THRUST);
-            // if (values.thrust == MIN_THRUST)
-            // {
-            //     values.thrust = 0;
-            // }
             CRTPPacket cmd;
             memset(&cmd, 0, sizeof(CRTPPacket));
             cmd.channel = SET_SETPOINT_CHANNEL;
             cmd.port = CRTP_PORT_SETPOINT_GENERIC;
-            packet_type type = altHoldType;
-            if (!PS4.R2() && !Flying)
+
+            uint8_t len = 0;
+            switch (type)
             {
-                type = stopType;
+            case hoverType:
+                len = hoverPacket_Encode_Min(rx, -ry, lx, R2, cmd.data);
+                break;
+            case altHoldType:
+                len = altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data);
+                break;
+            default:
+                len = 1;
+                cmd.data[0] = stopType;
+                break;
             }
-            else if (PS4.R2())
+
+            if (PS4.R2())
             {
+                if (!Flying)
+                    type = altHoldType; // defaultcmd type and take off type
                 Flying = true;
             }
-            // memcpy(cmd.data + 1, (const uint8_t *)&values, sizeof(altHoldPacket_s));
 
-            altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data, type);
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4], cmd.data[5], cmd.data[6], cmd.data[7], cmd.data[8], cmd.data[9]);
 
@@ -296,7 +309,7 @@ void handleControlUpdate()
             log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
 
             inTransmit = true; // atomic block around buffer and udp operations
-            SendDataToDrone(cmd, 30);
+            SendDataToDrone(cmd, len);
             inTransmit = false;
         }
     }
@@ -342,8 +355,13 @@ void loop()
     }
 }
 
+/**
+ * cmd: cprt data to send to drone
+ * len: length of the cprt data not including
+ */
 void SendDataToDrone(CRTPPacket cmd, uint8_t len)
 {
+    len++; // add one byte to account for cprt header
     uint8_t *buffer = (uint8_t *)calloc(1, len + 1);
     memcpy(buffer, (const uint8_t *)&cmd, len);
     buffer[len] = calculate_cksum(buffer, len);

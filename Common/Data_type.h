@@ -110,38 +110,23 @@ struct altHoldPacket_s
     float yawrate;   // deg/s
     float zVelocity; // m/s in the world frame of reference
 };
+
 typedef struct altHoldPacket_s altHoldPacket_s;
+typedef struct hoverPacket_s hoverPacket_s;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-static void altHoldPacket_Decode(altHoldPacket_s *packet, const uint8_t *data)
-{
-    packet->type = data[0];
-    memcpy(&packet->roll, &data[1], sizeof(packet->roll));
-    memcpy(&packet->pitch, &data[5], sizeof(packet->pitch));
-    memcpy(&packet->yawrate, &data[9], sizeof(packet->yawrate));
-    memcpy(&packet->zVelocity, &data[13], sizeof(packet->zVelocity));
-}
-static void altHoldPacket_Encode(altHoldPacket_s *packet, uint8_t *data, packet_type type)
-{
-    data[0] = type;
-    memcpy(&data[1], &packet->roll, sizeof(packet->roll));
-    memcpy(&data[5], &packet->pitch, sizeof(packet->pitch));
-    memcpy(&data[9], &packet->yawrate, sizeof(packet->yawrate));
-    memcpy(&data[13], &packet->zVelocity, sizeof(packet->zVelocity));
-}
-
 static void altHoldPacket_Decode_Min(altHoldPacket_s *packet, const uint8_t *data)
 {
-    packet->type = data[0];// note to self all the folowing options work the same (assuming you actually cast to int16 and not int8)
+    packet->type = data[0]; // note to self all the folowing options work the same (assuming you actually cast to int16 and not int8)
     packet->roll = ((int16_t)(data[1] + (data[2] << 8))) / 62.5;
     packet->pitch = ((int16_t)((data[4] << 8) + data[3])) / 62.5;
     packet->yawrate = ((int16_t)((data[6] << 8) | data[5])) / 62.5;
     packet->zVelocity = (data[7] / 510.0) - 0.1;
 }
-static uint8_t altHoldPacket_Encode_Min(int16_t r, int16_t p, int16_t y, uint8_t t, uint8_t *data, packet_type type)
+static uint8_t altHoldPacket_Encode_Min(int16_t r, int16_t p, int16_t y, uint8_t t, uint8_t *data)
 {
-    data[0] = type;
+    data[0] = altHoldType;
     data[1] = r & 0xFF;
     data[2] = (r >> 8) & 0xFF;
     data[3] = p & 0xFF;
@@ -151,6 +136,28 @@ static uint8_t altHoldPacket_Encode_Min(int16_t r, int16_t p, int16_t y, uint8_t
     data[7] = t;
     return 8;
 }
+
+static void hoverPacket_Decode_Min(hoverPacket_s *packet, const uint8_t *data)
+{
+    packet->type = data[0];
+    packet->vx = ((int16_t)(data[1] + (data[2] << 8))) / 62.5;
+    packet->vy = ((int16_t)((data[4] << 8) + data[3])) / 62.5;
+    packet->yawrate = ((int16_t)((data[6] << 8) | data[5])) / 62.5;
+    packet->zDistance = (data[7] / 50.0);
+}
+
+static uint8_t hoverPacket_Encode_Min(int16_t vx, int16_t vy, int16_t y, uint8_t z, uint8_t *data)
+{
+    data[0] = hoverType;
+    data[1] = vx & 0xFF;
+    data[2] = (vx >> 8) & 0xFF;
+    data[3] = vy & 0xFF;
+    data[4] = (vy >> 8) & 0xFF;
+    data[5] = y & 0xFF;
+    data[6] = (y >> 8) & 0xFF;
+    data[7] = z;
+    return 9;
+}
 #pragma GCC diagnostic pop
 
 /* hoverDecoder  hoverType
@@ -158,11 +165,12 @@ static uint8_t altHoldPacket_Encode_Min(int16_t r, int16_t p, int16_t y, uint8_t
  */
 struct hoverPacket_s
 {
+    uint8_t type;    // placeholder, not directly needed for the alt hold function but needs to be stored in the data array
     float vx;        // m/s in the body frame of reference
     float vy;        // ...
     float yawrate;   // deg/s
     float zDistance; // m in the world frame of reference
-} __attribute__((packed));
+};
 
 /**
  * CRTP commander rpyt packet format
