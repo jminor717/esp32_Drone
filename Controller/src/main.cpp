@@ -1,10 +1,8 @@
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
 #include <WiFi.h>
-//#include <WiFiUdp.h>
-#include "AsyncUDP.h"
 #include <../Common/Data_type.h>
-#include <atomic>
+//#include <atomic>
 #include "esp32-hal-log.h"
 
 #define WIFIssid "ESP-DRONE_BCDDC2D254AD"
@@ -37,51 +35,16 @@ WiFiUDP udp = WiFiUDP();
 
 int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
-std::atomic<bool> inTransmit(false);
+// std::atomic<bool> inTransmit(false);
+bool inTransmit = false;
 bool Flying = false;
 uint8_t type = stopType;
 
 void handleControlUpdate();
 void SendDataToDrone(CRTPPacket cmd, uint8_t len);
 
-void PacketCallback(AsyncUDPPacket &packet)
-{
-    char *buf;
-    buf = (char *)malloc(300); // 3 * 64  with som extra
-    // memset(buf, 0, 300);
-    for (size_t i = 0; i < packet.length(); i++)
-    {
-        sprintf(buf + i * 3, "%02X,", packet.data()[i]);
-    }
-    // Serial.printf(" data_send_Wifi size:%d , %s ", packet.length(), buf);
-    free(buf);
-
-    Serial.print("UDP Packet Type: ");
-    Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
-                                                                           : "Unicast");
-    Serial.print(", From: ");
-    Serial.print(packet.remoteIP());
-    Serial.print(":");
-    Serial.print(packet.remotePort());
-    Serial.print(", To: ");
-    Serial.print(packet.localIP());
-    Serial.print(":");
-    Serial.print(packet.localPort());
-    Serial.print(", Length: ");
-    Serial.print(packet.length());
-    Serial.print(", Data: ");
-    Serial.write(buf);
-    Serial.println();
-}
-
 void handleWifiConnected(system_event_t *event)
 {
-    // if (udp.listen(UDP_RECEIVE_PORT))
-    // {
-    //     Serial.print("UDP Listening on IP: ");
-    //     Serial.println(WiFi.localIP());
-    //     udp.onPacket(PacketCallback);
-    // }
     // CRTPPacket cmd;
     // memset(&cmd, 0, sizeof(CRTPPacket));
     // cmd.channel = SET_SETPOINT_CHANNEL;
@@ -126,33 +89,6 @@ void setup()
 
     WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
     WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
-
-    // if (udp2.listen(UDP_RECEIVE_PORT))
-    // {
-    //     Serial.print("UDP Listening on IP: ");
-    //     Serial.println(WiFi.localIP());
-    //     udp2.onPacket([](AsyncUDPPacket packet)
-    //                   {
-    //                       Serial.print("UDP Packet Type: ");
-    //                       Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast"
-    //                                                                                              : "Unicast");
-    //                       Serial.print(", From: ");
-    //                       Serial.print(packet.remoteIP());
-    //                       Serial.print(":");
-    //                       Serial.print(packet.remotePort());
-    //                       Serial.print(", To: ");
-    //                       Serial.print(packet.localIP());
-    //                       Serial.print(":");
-    //                       Serial.print(packet.localPort());
-    //                       Serial.print(", Length: ");
-    //                       Serial.print(packet.length());
-    //                       Serial.print(", Data: ");
-    //                       Serial.write(packet.data(), packet.length());
-    //                       Serial.println();
-    //                       //reply to the client
-    //                       //packet.printf("Got %u bytes of data", packet.length());
-    //                   });
-    // }
 
     log_v("Verbose");
     log_d("Debug");
@@ -245,6 +181,7 @@ void handleControlUpdate()
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
+            inTransmit = true; // atomic block around buffer and udp operations
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
 
             uint8_t R2 = 0;
@@ -285,6 +222,9 @@ void handleControlUpdate()
                 break;
             case altHoldType:
                 len = altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data);
+                struct altHoldPacket_s values;
+                altHoldPacket_Decode_Min(&values, cmd.data);
+                log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
                 break;
             default:
                 len = 1;
@@ -304,11 +244,7 @@ void handleControlUpdate()
 
             // log_v("%d,%d,   %d,%d,   %d,%d",
             //       rx, (rx * 3), ry, (-ry * 3), lx, (lx * 3));
-            struct altHoldPacket_s values;
-            altHoldPacket_Decode_Min(&values, cmd.data);
-            log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
 
-            inTransmit = true; // atomic block around buffer and udp operations
             SendDataToDrone(cmd, len);
             inTransmit = false;
         }
@@ -361,7 +297,7 @@ void loop()
  */
 void SendDataToDrone(CRTPPacket cmd, uint8_t len)
 {
-    len++; // add one byte to account for cprt header
+    len = len + 2; // add one byte to account for cprt header and another for checksum
     uint8_t *buffer = (uint8_t *)calloc(1, len + 1);
     memcpy(buffer, (const uint8_t *)&cmd, len);
     buffer[len] = calculate_cksum(buffer, len);

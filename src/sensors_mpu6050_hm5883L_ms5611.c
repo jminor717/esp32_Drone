@@ -628,7 +628,7 @@ static void sensorsTaskInit(void)
 static void IRAM_ATTR sensors_inta_isr_handler(void *arg)
 {
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-    imuIntTimestamp = usecTimestamp(); //This function returns the number of microseconds since esp_timer was initialized
+    imuIntTimestamp = (uint64_t)esp_timer_get_time(); // This function returns the number of microseconds since esp_timer was initialized
     xSemaphoreGiveFromISR(sensorsDataReady, &xHigherPriorityTaskWoken);
 
     if (xHigherPriorityTaskWoken) {

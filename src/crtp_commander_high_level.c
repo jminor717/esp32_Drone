@@ -276,7 +276,7 @@ void crtpCommanderHighLevelTellState(const state_t *state)
 void crtpCommanderHighLevelGetSetpoint(setpoint_t* setpoint, const state_t *state)
 {
   xSemaphoreTake(lockTraj, portMAX_DELAY);
-  float t = usecTimestamp() / 1e6;
+  float t = (uint64_t)esp_timer_get_time() / 1e6;
   struct traj_eval ev = plan_current_goal(&planner, t);
   if (!is_traj_eval_valid(&ev)) {
     // programming error
@@ -398,7 +398,7 @@ int takeoff(const struct data_takeoff* data)
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
     DEBUG_PRINTD("take off !!!!!");
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
     result = plan_takeoff(&planner, pos, yaw, data->height, 0.0f, data->duration, t);
     xSemaphoreGive(lockTraj);
   }
@@ -410,7 +410,7 @@ int takeoff2(const struct data_takeoff_2* data)
   int result = 0;
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
 
     float hover_yaw = data->yaw;
     if (data->useCurrentYaw) {
@@ -428,7 +428,7 @@ int takeoff_with_velocity(const struct data_takeoff_with_velocity* data)
   int result = 0;
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
 
     float hover_yaw = data->yaw;
     if (data->useCurrentYaw) {
@@ -453,7 +453,7 @@ int land(const struct data_land* data)
   int result = 0;
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
     result = plan_land(&planner, pos, yaw, data->height, 0.0f, data->duration, t);
     xSemaphoreGive(lockTraj);
   }
@@ -465,7 +465,7 @@ int land2(const struct data_land_2* data)
   int result = 0;
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
 
     float hover_yaw = data->yaw;
     if (data->useCurrentYaw) {
@@ -483,7 +483,7 @@ int land_with_velocity(const struct data_land_with_velocity* data)
   int result = 0;
   if (isInGroup(data->groupMask)) {
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
 
     float hover_yaw = data->yaw;
     if (data->useCurrentYaw) {
@@ -526,7 +526,7 @@ int go_to(const struct data_go_to* data)
   if (isInGroup(data->groupMask)) {
     struct vec hover_pos = mkvec(data->x, data->y, data->z);
     xSemaphoreTake(lockTraj, portMAX_DELAY);
-    float t = usecTimestamp() / 1e6;
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
     if (plan_is_stopped(&planner)) {
       ev.pos = pos;
       ev.vel = vel;
@@ -550,7 +550,7 @@ int start_trajectory(const struct data_start_trajectory* data)
       if (   trajDesc->trajectoryLocation == TRAJECTORY_LOCATION_MEM
           && trajDesc->trajectoryType == CRTP_CHL_TRAJECTORY_TYPE_POLY4D) {
         xSemaphoreTake(lockTraj, portMAX_DELAY);
-        float t = usecTimestamp() / 1e6;
+        float t = (uint64_t)esp_timer_get_time() / 1e6;
         trajectory.t_begin = t;
         trajectory.timescale = data->timescale;
         trajectory.n_pieces = trajDesc->trajectoryIdentifier.mem.n_pieces;
@@ -578,7 +578,7 @@ int start_trajectory(const struct data_start_trajectory* data)
           result = ENOEXEC;
         } else {
           xSemaphoreTake(lockTraj, portMAX_DELAY);
-          float t = usecTimestamp() / 1e6;
+          float t = (uint64_t)esp_timer_get_time() / 1e6;
           piecewise_compressed_load(
             &compressed_trajectory,
             &trajectories_memory[trajDesc->trajectoryIdentifier.mem.offset]
@@ -800,8 +800,8 @@ bool crtpCommanderHighLevelReadTrajectory(const uint32_t offset, const uint32_t 
 }
 
 bool crtpCommanderHighLevelIsTrajectoryFinished() {
-  float t = usecTimestamp() / 1e6;
-  return plan_is_finished(&planner, t);
+    float t = (uint64_t)esp_timer_get_time() / 1e6;
+    return plan_is_finished(&planner, t);
 }
 
 PARAM_GROUP_START(hlCommander)

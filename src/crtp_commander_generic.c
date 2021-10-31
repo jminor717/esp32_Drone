@@ -217,7 +217,7 @@ static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
 {
     struct altHoldPacket_s values;
     altHoldPacket_Decode_Min(&values, data);
-    DEBUG_PRINTI("altHold decode got values z%f, r%f, p%f, y%f", values.zVelocity, values.roll, values.pitch, values.yawrate);
+    DEBUG_PRINTI("altHold decode got values r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
     // ASSERT(datalen == sizeof(struct altHoldPacket_s));
 
     setpoint->mode.z = modeVelocity;
@@ -240,6 +240,7 @@ static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char
 {
     const struct hoverPacket_s values;
     hoverPacket_Decode_Min(&values, data);
+    DEBUG_PRINTI("hover decode got values r%f,p%f,y%f,v%f", values.vx, values.vy, values.yawrate, values.zDistance);
     // ASSERT(datalen == sizeof(struct hoverPacket_s));
 
     setpoint->mode.z = modeAbs;

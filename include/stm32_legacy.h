@@ -61,7 +61,6 @@ typedef enum {
 #define assert_param(e)  if (e) ; \
     else assertFail( #e, __FILE__, __LINE__ )
 
-uint64_t usecTimestamp(void);
 
 /* GPIO */
 

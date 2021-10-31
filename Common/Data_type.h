@@ -111,6 +111,18 @@ struct altHoldPacket_s
     float zVelocity; // m/s in the world frame of reference
 };
 
+/* hoverDecoder  hoverType
+ * Set the Crazyflie absolute height and velocity in the body coordinate system
+ */
+struct hoverPacket_s
+{
+    uint8_t type;    // placeholder, not directly needed for the alt hold function but needs to be stored in the data array
+    float vx;        // m/s in the body frame of reference
+    float vy;        // ...
+    float yawrate;   // deg/s
+    float zDistance; // m in the world frame of reference
+};
+
 typedef struct altHoldPacket_s altHoldPacket_s;
 typedef struct hoverPacket_s hoverPacket_s;
 
@@ -156,21 +168,11 @@ static uint8_t hoverPacket_Encode_Min(int16_t vx, int16_t vy, int16_t y, uint8_t
     data[5] = y & 0xFF;
     data[6] = (y >> 8) & 0xFF;
     data[7] = z;
-    return 9;
+    return 8;
 }
 #pragma GCC diagnostic pop
 
-/* hoverDecoder  hoverType
- * Set the Crazyflie absolute height and velocity in the body coordinate system
- */
-struct hoverPacket_s
-{
-    uint8_t type;    // placeholder, not directly needed for the alt hold function but needs to be stored in the data array
-    float vx;        // m/s in the body frame of reference
-    float vy;        // ...
-    float yawrate;   // deg/s
-    float zDistance; // m in the world frame of reference
-};
+
 
 /**
  * CRTP commander rpyt packet format

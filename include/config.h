@@ -41,8 +41,8 @@
 
 
 #define PROTOCOL_VERSION 4
-//#define QUAD_FORMATION_X
-#define QUAD_FORMATION_TRI
+#define QUAD_FORMATION_X
+//#define QUAD_FORMATION_TRI
 //#define QUAD_FORMATION_NORMAL
 
 #ifdef CONFIG_TARGET_ESPLANE_V2_S2
@@ -68,7 +68,7 @@
 
   #define configGENERATE_RUN_TIME_STATS 1
   #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() initUsecTimer()
-  #define portGET_RUN_TIME_COUNTER_VALUE() usecTimestamp()
+#define portGET_RUN_TIME_COUNTER_VALUE() (uint64_t) esp_timer_get_time()
 #endif
 
 

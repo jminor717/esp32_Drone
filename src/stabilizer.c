@@ -151,7 +151,7 @@ static void testProps(sensorData_t *sensors);
 
 static void calcSensorToOutputLatency(const sensorData_t *sensorData)
 {
-    uint64_t outTimestamp = esp_log_timestamp(); //usecTimestamp();
+    uint64_t outTimestamp = (uint64_t)esp_timer_get_time(); //esp_log_timestamp(); // usecTimestamp();
     inToOutLatency = outTimestamp - sensorData->interruptTimestamp;
 }
 
