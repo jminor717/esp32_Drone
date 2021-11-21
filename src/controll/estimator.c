@@ -225,7 +225,7 @@ bool estimatorEnqueueFlow(const flowMeasurement_t *flow) {
   if (estimatorFunctions[currentEstimator].estimatorEnqueueFlow) {
     return estimatorFunctions[currentEstimator].estimatorEnqueueFlow(flow);
   }
-
+  
   return false;
 }
 
