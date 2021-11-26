@@ -96,6 +96,7 @@ void setup()
     log_w("Warning");
     log_e("Error");
     now = esp_timer_get_time();
+    map();
 }
 
 void handleControlUpdate()

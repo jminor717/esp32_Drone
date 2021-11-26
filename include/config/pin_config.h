@@ -24,22 +24,29 @@
  * 
  * And as a bonus hard-to-find figure, the internal pull-up and pull-down resistors are 45kOhms each.
 */
+#include "config/dev_config.h"
+
 
 #define CONFIG_LED_PIN_BLUE 0
 #define CONFIG_LED_PIN_GREEN 1
 #define CONFIG_LED_PIN_RED 2
 
-//motor outputs
+// battery voltage monitor
+#define CONFIG_VBat_PIN 34
+#define VBat_VOLTAGE_DIVIDER_RATIO 1.193 // 0.838 //measured
+
+#define CONFIG_DCDC_PGOOD_PIN 35
+
+// misc
+#define CONFIG_LED_DOUT 15
+
+
+#ifdef V1_BOARD
+// motor outputs
 #define CONFIG_MOTOR01_PIN 13
 #define CONFIG_MOTOR02_PIN 4
 #define CONFIG_MOTOR03_PIN 12
 #define CONFIG_MOTOR04_PIN 27
-
-//battery voltage monitor
-#define CONFIG_VBat_PIN 34
-#define VBat_VOLTAGE_DIVIDER_RATIO 1.193 //0.838 //measured
-
-#define CONFIG_DCDC_PGOOD_PIN 35
 
 //sensor pins
 #define CONFIG_MPU_PIN_INT 18
@@ -54,9 +61,19 @@
 //#define CONFIG_VL53_GPIO1 26
 //#define CONFIG_VL53_XSHUT 25
 
-//misc
-#define CONFIG_LED_DOUT 15
-#define CONFIG_Pgood 34
+#endif
+
+#ifdef V2_BOARD
+// STM32 IO expander
+#define STM32_SPI_SCK 4
+#define STM32_SPI_MISO 16
+#define STM32_SPI_MOSI 17
+
+
+#endif
+
+
+
 
 //
 #define CONFIG_PITCH_CALIB 0
