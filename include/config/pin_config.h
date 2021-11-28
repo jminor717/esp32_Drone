@@ -69,7 +69,14 @@
 #define STM32_SPI_MISO 16
 #define STM32_SPI_MOSI 17
 
+// sensor pins
+#define CONFIG_MPU_PIN_INT 21
+#define CONFIG_I2C0_PIN_SCL 18
+#define CONFIG_I2C0_PIN_SDA 19
 
+// vl53l1x
+#define CONFIG_I2C1_PIN_SCL 23
+#define CONFIG_I2C1_PIN_SDA 22
 #endif
 
 

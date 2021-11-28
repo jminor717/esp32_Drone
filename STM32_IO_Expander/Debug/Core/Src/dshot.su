@@ -1,0 +1,12 @@
+dshot.c:38:6:dshot_init	16	static
+dshot.c:45:6:dshot_write	16	static
+dshot.c:54:17:dshot_choose_type	16	static
+dshot.c:70:13:dshot_set_timer	32	static
+dshot.c:97:13:dshot_dma_tc_callback	24	static
+dshot.c:119:13:dshot_put_tc_callback_function	4	static
+dshot.c:128:13:dshot_start_pwm	8	static
+dshot.c:138:17:dshot_prepare_packet	32	static
+dshot.c:162:13:dshot_prepare_dmabuffer	24	static
+dshot.c:177:13:dshot_prepare_dmabuffer_all	16	static
+dshot.c:185:13:dshot_dma_start	8	static
+dshot.c:193:13:dshot_enable_dma_request	4	static

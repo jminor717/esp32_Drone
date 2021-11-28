@@ -19,22 +19,38 @@
 // Timer Clock
 #define TIMER_CLOCK				100000000	// 100MHz
 
-// MOTOR 1 (PA3) - TIM5 Channel 4, DMA1 Stream 3
-#define MOTOR_1_TIM             (&htim5)
-#define MOTOR_1_TIM_CHANNEL     TIM_CHANNEL_4
+//// MOTOR 1 (PA3) - TIM5 Channel 4, DMA1 Stream 3
+//#define MOTOR_1_TIM             (&htim5)
+//#define MOTOR_1_TIM_CHANNEL     TIM_CHANNEL_4
+//
+//// MOTOR 2 (PA2) - TIM2 Channel 3, DMA1 Stream 1
+//#define MOTOR_2_TIM             (&htim2)
+//#define MOTOR_2_TIM_CHANNEL     TIM_CHANNEL_3
+//
+//// MOTOR 3 (PA0) - TIM2 Channel 1, DMA1 Stream 5
+//#define MOTOR_3_TIM             (&htim2)
+//#define MOTOR_3_TIM_CHANNEL     TIM_CHANNEL_1
+//
+//// MOTOR 4 (PA1) - TIM5 Channel 2, DMA1 Stream 4
+//#define MOTOR_4_TIM             (&htim5)
+//#define MOTOR_4_TIM_CHANNEL     TIM_CHANNEL_2
 
-// MOTOR 2 (PA2) - TIM2 Channel 3, DMA1 Stream 1
-#define MOTOR_2_TIM             (&htim2)
-#define MOTOR_2_TIM_CHANNEL     TIM_CHANNEL_3
 
-// MOTOR 3 (PA0) - TIM2 Channel 1, DMA1 Stream 5
-#define MOTOR_3_TIM             (&htim2)
-#define MOTOR_3_TIM_CHANNEL     TIM_CHANNEL_1
+// MOTOR 1 (PA3) - TIM4 Channel 3, DMA1 Stream 7
+#define MOTOR_1_TIM (&htim4)
+#define MOTOR_1_TIM_CHANNEL TIM_CHANNEL_3
 
-// MOTOR 4 (PA1) - TIM5 Channel 2, DMA1 Stream 4
-#define MOTOR_4_TIM             (&htim5)
-#define MOTOR_4_TIM_CHANNEL     TIM_CHANNEL_2
+// MOTOR 2 (PA2) - TIM4 Channel 1, DMA1 Stream 0
+#define MOTOR_2_TIM (&htim3)
+#define MOTOR_2_TIM_CHANNEL TIM_CHANNEL_2
 
+// MOTOR 3 (PA0) - TIM1 Channel 2, DMA2 Stream 2
+#define MOTOR_3_TIM (&htim1)
+#define MOTOR_3_TIM_CHANNEL TIM_CHANNEL_2
+
+// MOTOR 4 (PA1) - TIM1 Channel 1, DMA2 Stream 1
+#define MOTOR_4_TIM (&htim1)
+#define MOTOR_4_TIM_CHANNEL TIM_CHANNEL_1
 
 /* Definition */
 #define MHZ_TO_HZ(x) 			((x) * 1000000)
