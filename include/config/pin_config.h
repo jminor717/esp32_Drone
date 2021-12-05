@@ -10,22 +10,21 @@
  * There are three "power domains" on the chip, i.e. three separate power input sections.
  * Domain VDD3P3_CPU in on pin 37 (NOT GPIO 37) supplies power to GPIO5; GPIO18; GPIO23; GPIO19; GPIO22; GPIO3; GPIO1; and GPIO21.
  * This domain can SOURCE up to 40mA and SINK up to 28mA on STRENGTH 3
- * 
+ *
  * Domain VDD3P3_RTC in on pin 19 (NOT GPIO 19) supplies power to GPIO36; GPIO37; GPIO38; GPIO39 ; GPIO34; GPIO35; GPIO32; GPIO33; GPIO25; GPIO26; GPIO27;GPIO14; GPIO12; GPIO13; GPIO15; GPIO2; GPIO0; and GPIO4.
  * Remember GPIO34..GPIO39 are inputs only, so cannot be used to source or sink current meaningfully.
  * This domain can SOURCE 40mA and SINK up to 28mA on STRENGTH 3
- * 
- * Domain VDD_SDIO in on pin 26 (NOT GPIO 26) is a special bidirectional power pin which can be driven by 3.3V externally, route VDD3P3_RTC via an internal network, or supply 1.8V via a LDO regulator. 
+ *
+ * Domain VDD_SDIO in on pin 26 (NOT GPIO 26) is a special bidirectional power pin which can be driven by 3.3V externally, route VDD3P3_RTC via an internal network, or supply 1.8V via a LDO regulator.
  * The LDO regulator can only supply 40mA. If using power through VDD3P3_RTC, the internal network will cause a voltage drop; the higher the current drawn, the more voltage will be lost in the chip and more heat generated.
  * Domain VDD_SDIO supplies power to GPIO16; GPIO17; GPIO9; GPIO10; GPIO11; GPIO6; GPIO7; and GPIO8
  * This domain can SOURCE up to 20mA and SINK up to 28mA on STRENGTH 3 (Remember the 40mA total limit at 1.8V)
- * 
+ *
  * The sum of all the I/O current may not exceed 1200mA
- * 
+ *
  * And as a bonus hard-to-find figure, the internal pull-up and pull-down resistors are 45kOhms each.
-*/
+ */
 #include "config/dev_config.h"
-
 
 #define CONFIG_LED_PIN_BLUE 0
 #define CONFIG_LED_PIN_GREEN 1
@@ -35,27 +34,26 @@
 #define CONFIG_VBat_PIN 34
 #define VBat_VOLTAGE_DIVIDER_RATIO 1.193 // 0.838 //measured
 
-#define CONFIG_DCDC_PGOOD_PIN 35
-
 // misc
 #define CONFIG_LED_DOUT 15
 
-
 #ifdef V1_BOARD
+#define CONFIG_DCDC_PGOOD_PIN 35
+
 // motor outputs
 #define CONFIG_MOTOR01_PIN 13
 #define CONFIG_MOTOR02_PIN 4
 #define CONFIG_MOTOR03_PIN 12
 #define CONFIG_MOTOR04_PIN 27
 
-//sensor pins
+// sensor pins
 #define CONFIG_MPU_PIN_INT 18
 #define CONFIG_I2C0_PIN_SCL 21
 #define CONFIG_I2C0_PIN_SDA 19
 //#define CONFIG_MPU_Fsync 22
 //#define CONFIG_MPU_DRDY 23
 
-//vl53l1x 
+// vl53l1x
 #define CONFIG_I2C1_PIN_SCL 26
 #define CONFIG_I2C1_PIN_SDA 25
 //#define CONFIG_VL53_GPIO1 26
@@ -70,18 +68,34 @@
 #define STM32_SPI_MOSI 17
 
 // sensor pins
-#define CONFIG_MPU_PIN_INT 21
-#define CONFIG_I2C0_PIN_SCL 18
-#define CONFIG_I2C0_PIN_SDA 19
+#define CONFIG_MPU_PIN_INT 26
+#define CONFIG_I2C0_PIN_SCL 27
+#define CONFIG_I2C0_PIN_SDA 12
 
 // vl53l1x
 #define CONFIG_I2C1_PIN_SCL 23
 #define CONFIG_I2C1_PIN_SDA 22
+
+// Servos
+#define SERVO1 5
+#define SERVO2 25
+#define SERVO3 2
+
+// Extra DC Motors
+#define ALT_M1 19
+#define ALT_M2 21
+
+// STM32 Controlls
+#define STM32_RST 13
+#define STM32_BOOT_MODE 18
+// Shared With STM32
+#define PROG_TX 1
+#define PROG_RX 3
+
+// GPS
+#define GPS_RX 35
+#define GPS_TX 14
 #endif
 
-
-
-
-//
 #define CONFIG_PITCH_CALIB 0
 #define CONFIG_ROLL_CALIB 0
