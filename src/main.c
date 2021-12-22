@@ -1,7 +1,7 @@
 /*
  * ESP-Drone Firmware
- * 
- * Copyright 2019-2020  Espressif Systems (Shanghai) 
+ *
+ * Copyright 2019-2020  Espressif Systems (Shanghai)
  * Copyright (C) 2011-2012 Bitcraze AB
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,12 +18,10 @@
  *
  */
 
-//#include <stdint.h>
-//#include <stdio.h>
 //#include <stdlib.h>
 
-
 #include <stdio.h>
+#include <string.h>
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
@@ -33,7 +31,7 @@
 #include "freertos/portmacro.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-
+#include "driver/spi_master.h"
 
 #include "wifi_esp32.h"
 
@@ -44,7 +42,32 @@
 
 #define SENSOR_INCLUDED_MPU9250_LPS25H
 
-void app_main() {
+/* Send data to the LCD. Uses spi_device_polling_transmit, which waits until the
+ * transfer is complete.
+ *
+ * Since data transactions are usually small, they are handled in polling
+ * mode for higher speed. The overhead of interrupt transactions is more than
+ * just waiting for the transaction to complete.
+ */
+void spi_sent_data(spi_device_handle_t spi, const uint8_t *data, int len)
+{
+    esp_err_t ret;
+    spi_transaction_t t;
+    if (len == 0)
+        return;               // no need to send anything
+    memset(&t, 0, sizeof(t)); // Zero out the transaction
+    t.length = len * 8;       // Len is in bytes, transaction length is in bits.
+    t.tx_buffer = data;       // Data
+    // t.user = (void *)1;                         // D/C needs to be set to 1
+    t.addr = 0b1001101001010101;
+    ret = spi_device_polling_transmit(spi, &t); // Transmit!
+    assert(ret == ESP_OK);                      // Should have had no issues.
+}
+
+uint8_t data2[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+
+void app_main()
+{
 
     esp_log_level_set("*", ESP_LOG_VERBOSE);
 
@@ -64,13 +87,13 @@ void app_main() {
     printf("Free heap: %d\n", esp_get_free_heap_size());
 
     fflush(stdout);
-    
-    //esp_restart();
+
+    // esp_restart();
 
     /*
-    * Initialize the platform and Launch the system task
-    * app_main will initialize and start everything
-    */
+     * Initialize the platform and Launch the system task
+     * app_main will initialize and start everything
+     */
 
     /* initialize nvs flash prepare for Wi-Fi */
     esp_err_t ret = nvs_flash_init();
@@ -83,17 +106,65 @@ void app_main() {
 
     ESP_ERROR_CHECK(ret);
 
-    //wifiInit();
+    // wifiInit();
 
     /*Initialize the platform.*/
     if (platformInit() == false)
     {
         printf("platformInit failed");
         while (1)
-            ; //if  firmware is running on the wrong hardware, Halt
+            ; // if  firmware is running on the wrong hardware, Halt
     }
 
+    gpio_set_direction(STM32_SPI_MOSI, GPIO_MODE_OUTPUT);
+    gpio_set_direction(STM32_SPI_SCK, GPIO_MODE_OUTPUT);
+    gpio_set_direction(STM32_SPI_MISO, GPIO_MODE_INPUT);
+
+    spi_device_handle_t spi;
+    spi_bus_config_t buscfg = {
+        .miso_io_num = STM32_SPI_MISO,
+        .mosi_io_num = STM32_SPI_MOSI,
+        .sclk_io_num = STM32_SPI_SCK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4096};
+    spi_device_interface_config_t devcfg = {
+#ifdef CONFIG_LCD_OVERCLOCK
+        .clock_speed_hz = 26 * 1000 * 1000, // Clock out at 26 MHz
+#else
+        .clock_speed_hz = 500 * 1000, // Clock out at 1 MHz
+#endif
+        .mode = 0,          // SPI mode 0
+        .spics_io_num = -1, // CS pin
+        .queue_size = 7,    // We want to be able to queue 7 transactions at a time
+        .address_bits = 16,
+        .dummy_bits = 8
+        //.pre_cb = lcd_spi_pre_transfer_callback, // Specify pre-transfer callback to handle D/C line
+    };
+    // Initialize the SPI bus
+    ret = spi_bus_initialize(BUSS_1_HOST, &buscfg, DMA_CHAN);
+    ESP_ERROR_CHECK(ret);
+    // Attach the LCD to the SPI bus
+    ret = spi_bus_add_device(BUSS_1_HOST, &devcfg, &spi);
+    ESP_ERROR_CHECK(ret);
+
     printf("prepairing to Launch system");
+
+    fflush(stdout);
+
+    // uint32_t i = 0;
+    // while (true)
+    // {
+    //     uint8_t *dat = (uint8_t *)malloc(sizeof(uint8_t) * 5);
+    //     dat[0] = 0xff;
+    //     dat[1] = (++i & 0xff00) >> 8;
+    //     dat[2] = i & 0x00ff;
+    //     dat[3] = 0b01010101;
+    //     dat[4] = 0b10101010;
+    //     vTaskDelay(1);
+    //     spi_sent_data(spi, dat, 5);
+    //     free(dat);
+    // }
 
     /*launch the system task */
     systemLaunch();

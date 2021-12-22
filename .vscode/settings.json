@@ -138,7 +138,8 @@
         "adc_channel.h": "c",
         "adc_esp32.h": "c",
         "zranger2.h": "c",
-        "com_helper.h": "c"
+        "com_helper.h": "c",
+        "spi_master.h": "c"
     },
     "cSpell.words": [
         "crtp",

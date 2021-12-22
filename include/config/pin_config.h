@@ -1,6 +1,6 @@
 // https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 // 20, 24, 28, 29, 30, 31 are not exposed on the qfn package
-// 0, 2, 5, 12, 15 can affect boot sequence if used improperly (Strapping Pins)
+// 0, 2, 5, 12, 15, 14 can affect boot sequence if used improperly (Strapping Pins)
 // 6, 7, 8, 9, 10, 11 are connected to internal spi flash
 // 32, 33 are connected to intrenal crystal and cannot be used
 // 34, 35, 36, 39 are input only
@@ -25,6 +25,7 @@
  * And as a bonus hard-to-find figure, the internal pull-up and pull-down resistors are 45kOhms each.
  */
 #include "config/dev_config.h"
+#include "hal/spi_types.h"
 
 #define CONFIG_LED_PIN_BLUE 0
 #define CONFIG_LED_PIN_GREEN 1
@@ -70,7 +71,7 @@
 // sensor pins
 #define CONFIG_MPU_PIN_INT 26
 #define CONFIG_I2C0_PIN_SCL 27
-#define CONFIG_I2C0_PIN_SDA 12
+#define CONFIG_I2C0_PIN_SDA 25
 
 // vl53l1x
 #define CONFIG_I2C1_PIN_SCL 23
@@ -78,7 +79,7 @@
 
 // Servos
 #define SERVO1 5
-#define SERVO2 25
+//#define SERVO2 25
 #define SERVO3 2
 
 // Extra DC Motors
@@ -99,3 +100,6 @@
 
 #define CONFIG_PITCH_CALIB 0
 #define CONFIG_ROLL_CALIB 0
+
+#define BUSS_1_HOST HSPI_HOST
+#define DMA_CHAN 2

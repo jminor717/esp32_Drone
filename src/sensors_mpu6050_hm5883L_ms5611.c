@@ -84,7 +84,7 @@
 // #define SENSORS_ENABLE_MAG_HM5883L
 // #define SENSORS_ENABLE_PRESSURE_MS5611
 //#define SENSORS_ENABLE_RANGE_VL53L0X
-#define SENSORS_ENABLE_RANGE_VL53L1X
+//!#define SENSORS_ENABLE_RANGE_VL53L1X
 //! #define SENSORS_ENABLE_FLOW_PMW3901
 
 #define SENSORS_GYRO_FS_CFG MPU6050_GYRO_FS_2000
@@ -245,7 +245,7 @@ bool sensorsMpu6050Hmc5883lMs5611AreCalibrated()
 static void sensorsTask(void *param)
 {
     //TODO:
-    systemWaitStart();
+    //systemWaitStart();
     DEBUG_PRINTI("xTaskCreate sensorsTask IN");
     vTaskDelay(M2T(200));
     sensorsSetupSlaveRead(); //
@@ -267,6 +267,7 @@ static void sensorsTask(void *param)
             processAccGyroMeasurements(&(buffer[0]));
 
             //?DEBUG_PRINTI(" %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13]);
+            DEBUG_PRINTI(" %f %f %f", sensorData.acc.x, sensorData.acc.y, sensorData.acc.z);
 
             if (isMagnetometerPresent) {
                 processMagnetometerMeasurements(&(buffer[SENSORS_MPU6050_BUFF_LEN]));
@@ -622,7 +623,7 @@ static void sensorsTaskInit(void)
   barometerDataQueue = STATIC_MEM_QUEUE_CREATE(barometerDataQueue);
 
   STATIC_MEM_TASK_CREATE(sensorsTask, sensorsTask, SENSORS_TASK_NAME, NULL, SENSORS_TASK_PRI);
-  DEBUG_PRINTD("xTaskCreate sensorsTask \n");
+  DEBUG_PRINTI("xTaskCreate sensorsTask \n");
 }
 
 static void IRAM_ATTR sensors_inta_isr_handler(void *arg)

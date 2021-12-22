@@ -56,12 +56,13 @@
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-#define BUFFER_SIZE 16
-uint8_t Buffer[BUFFER_SIZE] = {0};
+#define BUFFER_SIZE 8//16
+uint8_t Buffer[BUFFER_SIZE] = "12345678";
 uint8_t RX_Buffer[BUFFER_SIZE] = {0};
 uint8_t RX_Buffer2[BUFFER_SIZE] = {0};
 uint8_t RX_Buffer3[BUFFER_SIZE] = {0};
-uint8_t aTxBuffer[BUFFER_SIZE] = "123456gdgdrgdrg";
+//uint8_t aTxBuffer[BUFFER_SIZE] = "123456gdgdrgdrg";
+uint8_t aTxBuffer[BUFFER_SIZE] = "12345678";
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
 uint32_t AD_RES = 0;
@@ -101,19 +102,19 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* hadc){
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
-//{
-//	//HAL_SPI_Receive_DMA(&hspi2, RX_Buffer, BUFFER_SIZE);
-//	//HAL_SPI_Transmit(&hspi2, Buffer, BUFFER_SIZE);
-//	//HAL_SPI_Transmit_DMA(&hspi2, Buffer, BUFFER_SIZE);
-//	HAL_SPI_TransmitReceive_DMA(&hspi2, Buffer, RX_Buffer, BUFFER_SIZE);
-//	// Will copy 18 characters from RX_Buffer to Buffer
-//	memcpy( Buffer, RX_Buffer, sizeof(RX_Buffer) );
-//
-//  //  if(RX_Buffer[1] == aTxBuffer[1])
-//   // 	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-//    HAL_UART_Transmit_IT(&huart6, RX_Buffer, BUFFER_SIZE);
-//}
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+	//HAL_SPI_Receive_DMA(&hspi2, RX_Buffer, BUFFER_SIZE);
+	//HAL_SPI_Transmit(&hspi2, Buffer, BUFFER_SIZE);
+	//HAL_SPI_Transmit_DMA(&hspi2, Buffer, BUFFER_SIZE);
+	HAL_SPI_TransmitReceive_DMA(&hspi1, Buffer, RX_Buffer, BUFFER_SIZE);
+	// Will copy 18 characters from RX_Buffer to Buffer
+	//memcpy( Buffer, RX_Buffer, sizeof(RX_Buffer) );
+
+    if(RX_Buffer[4] < 50)
+    	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+   // HAL_UART_Transmit_IT(&huart6, RX_Buffer, BUFFER_SIZE);
+}
 
 #define MA780_RW_CMD_SIZE 4
 #define MA780_CMD_SIZE 2
@@ -201,8 +202,8 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_SPI_Receive_DMA(&hspi2, RX_Buffer, BUFFER_SIZE);
-  dshot_init(DSHOT600);
+  HAL_SPI_Receive_DMA(&hspi1, RX_Buffer, BUFFER_SIZE);
+  //dshot_init(DSHOT600);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -216,24 +217,25 @@ int main(void)
 	  aTxBuffer[0] = itter;
 	  HAL_Delay(100);
 	  //HAL_SPI_TransmitReceive(&hspi1, aTxBuffer,RX_Buffer3, BUFFER_SIZE, 100);
-	  HAL_SPI_Transmit(&hspi1, aTxBuffer, BUFFER_SIZE, 100);
+// // //  //	  HAL_SPI_Transmit(&hspi1, aTxBuffer, BUFFER_SIZE, 100);
 	//    while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY)
 	//    {}
 //	  HAL_SPI_Receive(&hspi1,RX_Buffer2, BUFFER_SIZE, 100);
 //	  if(RX_Buffer2[1] - 1 == aTxBuffer[1])
 //			HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-	  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
+	//  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
 	    // Get ADC value
 //	    HAL_ADC_Start(&hadc1);
 //	    HAL_ADC_PollForConversion(&hadc1, 100);
 //	    AD_RES = HAL_ADC_GetValue(&hadc1);
       HAL_Delay(1);
-      dshot_write(my_motor_value);
-      GPIO_PinState PinState = GPIO_PIN_SET ;
-      if(AD_RES > 2000){
-    	  PinState = GPIO_PIN_RESET;
-      }
-      HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
+      //dshot_write(my_motor_value);
+   //   GPIO_PinState PinState = GPIO_PIN_SET ;
+   //   if(AD_RES > 2000){
+    ///	  PinState = GPIO_PIN_RESET;
+    //	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
+    //  }
+      //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
   }
   /* USER CODE END 3 */
 }
