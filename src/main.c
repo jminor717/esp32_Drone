@@ -123,6 +123,8 @@ void app_main()
     gpio_set_direction(STM32_SPI_MOSI, GPIO_MODE_OUTPUT);
     gpio_set_direction(STM32_SPI_SCK, GPIO_MODE_OUTPUT);
     gpio_set_direction(STM32_SPI_MISO, GPIO_MODE_INPUT);
+    gpio_set_direction(STM32_SPI_SS, GPIO_MODE_OUTPUT);
+    gpio_set_level(STM32_SPI_SS, 1);
 
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
@@ -136,10 +138,10 @@ void app_main()
 #ifdef CONFIG_LCD_OVERCLOCK
         .clock_speed_hz = 26 * 1000 * 1000, // Clock out at 26 MHz
 #else
-        .clock_speed_hz = 500 * 1000, // Clock out at 1 MHz
+        .clock_speed_hz = 100 * 1000, // Clock out at 1 MHz
 #endif
         .mode = 0,                    // SPI mode 0
-        .spics_io_num = STM32_SPI_SS, // CS pin
+        .spics_io_num = -1, // CS pin
         .queue_size = 7,              // We want to be able to queue 7 transactions at a time
         .address_bits = 0,            // 16,
         .dummy_bits = 0               // 8
@@ -155,10 +157,11 @@ void app_main()
     printf("prepairing to Launch system");
 
     fflush(stdout);
-    uint32_t i = 0, nextSize = 5, defaultSize = 5;
+    uint32_t i = 0, nextSize = 6, defaultSize = 6;
     while (true)
     {
-        vTaskDelay(100);
+        vTaskDelay(10);
+        // STM32_SPI_SS
         uint8_t *dat = (uint8_t *)malloc(sizeof(uint8_t) * nextSize);
         uint8_t *dout = (uint8_t *)malloc(sizeof(uint8_t) * nextSize);
         dat[0] = 0xaa;
@@ -166,8 +169,13 @@ void app_main()
         dat[2] = nextSize;
         dat[3] = (++i & 0xff00) >> 8;
         dat[4] = i & 0x00ff;
+        gpio_set_level(STM32_SPI_SS, 0);
+        ets_delay_us(20);
         spi_sent_data(spi, dat, dout, nextSize);
-        printf(" %d %d %d %d %d  ||  %d %d %d %d %d \n", dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4]);
+        ets_delay_us(80);
+        gpio_set_level(STM32_SPI_SS, 1);
+        // if (i % 10 == 0)
+        printf(" %d %d %d %d %d  ||  %d %d %d %d %d %d \n", dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5]);
 
         if (nextSize == defaultSize && dout[0] == 0xaa)
         {
