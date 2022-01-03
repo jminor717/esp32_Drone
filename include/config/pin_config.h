@@ -67,6 +67,7 @@
 #define STM32_SPI_SCK 4
 #define STM32_SPI_MISO 16
 #define STM32_SPI_MOSI 17
+#define STM32_SPI_SS 5
 
 // sensor pins
 #define CONFIG_MPU_PIN_INT 26
@@ -78,7 +79,7 @@
 #define CONFIG_I2C1_PIN_SDA 22
 
 // Servos
-#define SERVO1 5
+//#define SERVO1 5
 //#define SERVO2 25
 #define SERVO3 2
 

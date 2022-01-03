@@ -139,7 +139,10 @@
         "adc_esp32.h": "c",
         "zranger2.h": "c",
         "com_helper.h": "c",
-        "spi_master.h": "c"
+        "spi_master.h": "c",
+        "math.h": "c",
+        "log.h": "c",
+        "nvicconf.h": "c"
     },
     "cSpell.words": [
         "crtp",

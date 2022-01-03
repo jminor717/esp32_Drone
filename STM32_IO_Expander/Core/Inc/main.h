@@ -82,8 +82,6 @@ void Error_Handler(void);
 #define M1P_GPIO_Port GPIOA
 #define M1N_Pin GPIO_PIN_10
 #define M1N_GPIO_Port GPIOA
-#define M2P_Pin GPIO_PIN_15
-#define M2P_GPIO_Port GPIOA
 #define SENSE_4_CS_Pin GPIO_PIN_4
 #define SENSE_4_CS_GPIO_Port GPIOB
 #define SENSE_3_CS_Pin GPIO_PIN_5

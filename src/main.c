@@ -49,17 +49,18 @@
  * mode for higher speed. The overhead of interrupt transactions is more than
  * just waiting for the transaction to complete.
  */
-void spi_sent_data(spi_device_handle_t spi, const uint8_t *data, int len)
+void spi_sent_data(spi_device_handle_t spi, const uint8_t *data, uint8_t *out_data, int len)
 {
+    if (len == 0)
+        return; // no need to send anything
     esp_err_t ret;
     spi_transaction_t t;
-    if (len == 0)
-        return;               // no need to send anything
     memset(&t, 0, sizeof(t)); // Zero out the transaction
     t.length = len * 8;       // Len is in bytes, transaction length is in bits.
     t.tx_buffer = data;       // Data
-    // t.user = (void *)1;                         // D/C needs to be set to 1
-    t.addr = 0b1001101001010101;
+    t.rx_buffer = out_data;
+    //  t.user = (void *)1;                         // D/C needs to be set to 1
+    //  t.addr = 0b1001101001010101;
     ret = spi_device_polling_transmit(spi, &t); // Transmit!
     assert(ret == ESP_OK);                      // Should have had no issues.
 }
@@ -70,6 +71,9 @@ void app_main()
 {
 
     esp_log_level_set("*", ESP_LOG_VERBOSE);
+    // esp_pm_config_esp32 cfg;
+
+    // esp_pm_configure();
 
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
@@ -134,11 +138,11 @@ void app_main()
 #else
         .clock_speed_hz = 500 * 1000, // Clock out at 1 MHz
 #endif
-        .mode = 0,          // SPI mode 0
-        .spics_io_num = -1, // CS pin
-        .queue_size = 7,    // We want to be able to queue 7 transactions at a time
-        .address_bits = 16,
-        .dummy_bits = 8
+        .mode = 0,                    // SPI mode 0
+        .spics_io_num = STM32_SPI_SS, // CS pin
+        .queue_size = 7,              // We want to be able to queue 7 transactions at a time
+        .address_bits = 0,            // 16,
+        .dummy_bits = 0               // 8
         //.pre_cb = lcd_spi_pre_transfer_callback, // Specify pre-transfer callback to handle D/C line
     };
     // Initialize the SPI bus
@@ -151,20 +155,36 @@ void app_main()
     printf("prepairing to Launch system");
 
     fflush(stdout);
+    uint32_t i = 0, nextSize = 5, defaultSize = 5;
+    while (true)
+    {
+        vTaskDelay(100);
+        uint8_t *dat = (uint8_t *)malloc(sizeof(uint8_t) * nextSize);
+        uint8_t *dout = (uint8_t *)malloc(sizeof(uint8_t) * nextSize);
+        dat[0] = 0xaa;
+        dat[1] = 0xaa;
+        dat[2] = nextSize;
+        dat[3] = (++i & 0xff00) >> 8;
+        dat[4] = i & 0x00ff;
+        spi_sent_data(spi, dat, dout, nextSize);
+        printf(" %d %d %d %d %d  ||  %d %d %d %d %d \n", dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4]);
 
-    // uint32_t i = 0;
-    // while (true)
-    // {
-    //     uint8_t *dat = (uint8_t *)malloc(sizeof(uint8_t) * 5);
-    //     dat[0] = 0xff;
-    //     dat[1] = (++i & 0xff00) >> 8;
-    //     dat[2] = i & 0x00ff;
-    //     dat[3] = 0b01010101;
-    //     dat[4] = 0b10101010;
-    //     vTaskDelay(1);
-    //     spi_sent_data(spi, dat, 5);
-    //     free(dat);
-    // }
+        if (nextSize == defaultSize && dout[0] == 0xaa)
+        {
+           // nextSize = 16;
+        }
+        else if (nextSize != defaultSize)
+        {
+            nextSize = defaultSize;
+        }
+        if (dout[0] != 0xaa)
+        {
+            nextSize = defaultSize;
+        }
+        free(dat);
+        free(dout);
+        fflush(stdout);
+    }
 
     /*launch the system task */
     systemLaunch();
