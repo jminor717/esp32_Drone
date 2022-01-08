@@ -25,7 +25,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include "Data_type.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
@@ -56,10 +56,11 @@
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-#define BUFFER_SIZE 6
+#define BUFFER_SIZE 128
 uint8_t RX_Buffer[BUFFER_SIZE] = {0};
 uint8_t TX_Buffer[BUFFER_SIZE] = {0};
-uint8_t nextSpiSize = 6, defaultSpiSize = 6;
+uint8_t nextSpiSize =5, defaultSpiSize = 5, previousSpiSize = 5;
+uint32_t  SpiErrorCode =0;
 volatile bool SpiRxCplt = false, SpiError = false;
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
@@ -116,15 +117,21 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	if (RX_Buffer[1] == 170){
-		nextSpiSize = defaultSpiSize;//RX_Buffer[2];
+		//nextSpiSize = RX_Buffer[2];
     //if (RX_Buffer[3] == 50)
       //  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	}
 	//HAL_SPI_DMAStop(&hspi1);
-	//TX_Buffer[1] = RX_Buffer[0];
-	//TX_Buffer[2] = RX_Buffer[2];
-	//TX_Buffer[3] = RX_Buffer[3];
-	//TX_Buffer[4] = RX_Buffer[4];
+//	TX_Buffer[0] = RX_Buffer[0];
+//	TX_Buffer[1] = RX_Buffer[1];
+//	TX_Buffer[2] = RX_Buffer[2];
+//	TX_Buffer[3] = RX_Buffer[3];
+//	TX_Buffer[4] = RX_Buffer[4];
+//	TX_Buffer[5] = RX_Buffer[5];
+//	TX_Buffer[6] = RX_Buffer[6];
+//	TX_Buffer[7] = RX_Buffer[7];
+//	TX_Buffer[8] = RX_Buffer[8];
+	memcpy(TX_Buffer,RX_Buffer, previousSpiSize);
 	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
 
     SpiRxCplt = true;
@@ -133,7 +140,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, nextSpiSize);
+	//HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, nextSpiSize);
     //if (RX_Buffer[3] == 50)
        // HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     SpiRxCplt = true;
@@ -142,12 +149,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-	nextSpiSize = defaultSpiSize;
+	//nextSpiSize = defaultSpiSize;
 	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     SpiRxCplt = true;
-    TX_Buffer[1] = (hspi->ErrorCode & 0xff00) >> 8;
-    TX_Buffer[2] = (hspi->ErrorCode & 0x00ff);
+    SpiErrorCode = hspi->ErrorCode;
     SpiError = true;
 }
 
@@ -249,12 +255,17 @@ int main(void)
 	TX_Buffer[3] = 3;
 	TX_Buffer[4] = 4;
 	TX_Buffer[5] = 5;
+	TX_Buffer[6] = 6;
+	TX_Buffer[7] = 7;
+	TX_Buffer[8] = 8;
   //HAL_SPI_RegisterCallback();
 
-	HAL_SPI_Receive_DMA(&hspi1, RX_Buffer, nextSpiSize);
+	HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
   //HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
   //HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
     // dshot_init(DSHOT600);
+	bool lenghtState = false;
+	uint8_t crcIn= 0 , crcOut= 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -267,27 +278,66 @@ int main(void)
     	//
         if (SpiRxCplt)
         {
-    		TX_Buffer[0] = 0;
-    		TX_Buffer[1] = 1;
-    		TX_Buffer[2] = 2;
-    		TX_Buffer[3] = 3;
-    		TX_Buffer[4] = 4;
-    		TX_Buffer[5] = 5;
+        	//HAL_SPI_MspDeInit(&hspi1);
+        	//HAL_SPI_MspInit(&hspi1);
+        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+//    		TX_Buffer[0] = 1;
+//    		TX_Buffer[1] = 2;//0xaa;
+//    		TX_Buffer[2] = 4;
+//    		TX_Buffer[3] = 8;
+//    		TX_Buffer[4] = 16;
+//    		TX_Buffer[5] = 32;
         	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
         	//HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
         	//HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, BUFFER_SIZE);
         	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
             SpiRxCplt = false;
             itter++;
-           // TX_Buffer[0] = itter;
+        	lenghtState = !lenghtState;
         }
 
         if(SpiError){
         	SpiError = false;
         	//HAL_SPI_MspDeInit(&hspi1);
         	//  MX_SPI1_Init();
+            TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
+            TX_Buffer[6] = (SpiRxCplt & 0x00ff);
+        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+        }
 
-        	HAL_SPI_Receive_DMA(&hspi1, RX_Buffer, nextSpiSize);
+
+
+
+        TX_Buffer[7] = crcOut;
+        TX_Buffer[6] = crcIn;
+        TX_Buffer[2] = itter;
+        TX_Buffer[1] = nextSpiSize;
+        TX_Buffer[0] = calculate_cksum(TX_Buffer+1, 4-1);
+
+        HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+        previousSpiSize = nextSpiSize;
+
+        HAL_Delay(100);
+
+        crcIn = RX_Buffer[0];
+        crcOut = calculate_cksum(RX_Buffer+1, 4-1);
+        if (crcOut == crcIn && RX_Buffer[1] != 0)
+        {
+//        	if(lenghtState){
+//        		nextSpiSize = 9;
+//        	}
+//        	else{
+//        		nextSpiSize = defaultSpiSize;
+//        	}
+        	nextSpiSize++;
+        	if(nextSpiSize >= 30 -1){
+        		nextSpiSize = defaultSpiSize;
+        	}
+        }
+        else
+        {
+        	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+        	nextSpiSize = defaultSpiSize;
         }
 
     	//HAL_StatusTypeDef x = HAL_SPI_TransmitReceive(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize, 2000);
@@ -300,7 +350,7 @@ int main(void)
         //HAL_SPI_Receive_DMA(&hspi1, RX_Buffer, BUFFER_SIZE);
     	//itter++;
         //TX_Buffer[nextSpiSize - 2] = itter;
-        //HAL_Delay(100);
+
 
         //  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
         // Get ADC value
