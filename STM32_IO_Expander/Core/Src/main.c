@@ -25,11 +25,12 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "Data_type.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include "dshot.h"
+#include "Data_type.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,8 +60,8 @@ void SystemClock_Config(void);
 #define BUFFER_SIZE 128
 uint8_t RX_Buffer[BUFFER_SIZE] = {0};
 uint8_t TX_Buffer[BUFFER_SIZE] = {0};
-uint8_t nextSpiSize =5, defaultSpiSize = 5, previousSpiSize = 5;
-uint32_t  SpiErrorCode =0;
+uint8_t nextSpiSize = 5, defaultSpiSize = 5, previousSpiSize = 5;
+uint32_t SpiErrorCode = 0;
 volatile bool SpiRxCplt = false, SpiError = false;
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
@@ -102,61 +103,213 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	if (RX_Buffer[1] == 170){
-		nextSpiSize = defaultSpiSize;//RX_Buffer[2];
-    //if (RX_Buffer[3] == 50)
-      //  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-	}
-	HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, nextSpiSize);
-    SpiRxCplt = true;
-    SpiError = false;
-}
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	if (RX_Buffer[1] == 170){
-		//nextSpiSize = RX_Buffer[2];
-    //if (RX_Buffer[3] == 50)
-      //  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-	}
-	//HAL_SPI_DMAStop(&hspi1);
-//	TX_Buffer[0] = RX_Buffer[0];
-//	TX_Buffer[1] = RX_Buffer[1];
-//	TX_Buffer[2] = RX_Buffer[2];
-//	TX_Buffer[3] = RX_Buffer[3];
-//	TX_Buffer[4] = RX_Buffer[4];
-//	TX_Buffer[5] = RX_Buffer[5];
-//	TX_Buffer[6] = RX_Buffer[6];
-//	TX_Buffer[7] = RX_Buffer[7];
-//	TX_Buffer[8] = RX_Buffer[8];
-	memcpy(TX_Buffer,RX_Buffer, previousSpiSize);
-	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
 
-    SpiRxCplt = true;
-    SpiError = false;
-}
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	//HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, nextSpiSize);
-    //if (RX_Buffer[3] == 50)
-       // HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+    memcpy(TX_Buffer, RX_Buffer, previousSpiSize);
+
+
     SpiRxCplt = true;
     SpiError = false;
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-	//nextSpiSize = defaultSpiSize;
-	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+    // nextSpiSize = defaultSpiSize;
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     SpiRxCplt = true;
     SpiErrorCode = hspi->ErrorCode;
     SpiError = true;
 }
 
+/* USER CODE END 0 */
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
+{
+    /* USER CODE BEGIN 1 */
+    uint16_t itter = 0;
+    uint32_t badTransactions = 0;
+    /* USER CODE END 1 */
+
+    /* MCU Configuration--------------------------------------------------------*/
+
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
+
+    /* USER CODE BEGIN Init */
+
+    /* USER CODE END Init */
+
+    /* Configure the system clock */
+    SystemClock_Config();
+
+    /* USER CODE BEGIN SysInit */
+
+    /* USER CODE END SysInit */
+
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_DMA_Init();
+    MX_SPI1_Init();
+    MX_SPI2_Init();
+    MX_USART6_UART_Init();
+    MX_TIM1_Init();
+    MX_TIM3_Init();
+    MX_TIM4_Init();
+    MX_TIM5_Init();
+    MX_ADC1_Init();
+    /* USER CODE BEGIN 2 */
+    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+    TX_Buffer[0] = 0;
+    TX_Buffer[1] = 1;
+    TX_Buffer[2] = 2;
+    TX_Buffer[3] = 3;
+    TX_Buffer[4] = 4;
+    TX_Buffer[5] = 5;
+    TX_Buffer[6] = 6;
+    TX_Buffer[7] = 7;
+    TX_Buffer[8] = 8;
+    // HAL_SPI_RegisterCallback();
+
+    HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+    // HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
+    // HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
+    //  dshot_init(DSHOT600);
+    uint8_t crcIn = 0, crcOut = 0;
+    bool switchc = false;
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    while (1)
+    {
+        /* USER CODE END WHILE */
+
+        /* USER CODE BEGIN 3 */
+        //
+        if (SpiRxCplt)
+        {
+            SpiRxCplt = false;
+            itter++;
+            crcIn = RX_Buffer[0];
+            crcOut = calculate_cksum(RX_Buffer + 1, 4 - 1);
+            if (crcOut == crcIn && RX_Buffer[1] != 0)
+            {
+                nextSpiSize++;
+                if (nextSpiSize >= 30 - 1)
+                {
+                    nextSpiSize = defaultSpiSize;
+                }
+            }
+            else
+            {
+                HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+                nextSpiSize = defaultSpiSize;
+            }
+            if (crcOut != crcIn)
+            {
+                badTransactions++;
+            }
+
+            if (switchc)
+            {
+                WRITE_REG(hspi1.Instance->CR1, hspi1.Instance->CR1 & ~SPI_CR1_BR_Msk);
+                WRITE_REG(hspi1.Instance->CR1, hspi1.Instance->CR1 | (SPI_BAUDRATEPRESCALER_16 & SPI_CR1_BR_Msk));
+            }
+            else
+            {
+                WRITE_REG(hspi1.Instance->CR1, hspi1.Instance->CR1 & ~SPI_CR1_BR_Msk);
+                WRITE_REG(hspi1.Instance->CR1, hspi1.Instance->CR1 | (SPI_BAUDRATEPRESCALER_128 & SPI_CR1_BR_Msk));
+            }
+
+            switchc = !switchc;
+        }
+
+        if (SpiError)
+        {
+            SpiError = false;
+            // HAL_SPI_MspDeInit(&hspi1);
+            //   MX_SPI1_Init();
+            TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
+            TX_Buffer[6] = (SpiRxCplt & 0x00ff);
+            // HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+        }
+
+        TX_Buffer[9] = crcOut;
+        TX_Buffer[8] = crcIn;
+        TX_Buffer[7] = (++itter & 0xff00) >> 8;
+        TX_Buffer[6] = itter & 0x00ff;
+        TX_Buffer[2] = badTransactions;
+        TX_Buffer[1] = nextSpiSize;
+        TX_Buffer[0] = calculate_cksum(TX_Buffer + 1, 4 - 1);
+
+        HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+        previousSpiSize = nextSpiSize;
+
+        HAL_Delay(1);
+
+        //  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
+        // Get ADC value
+        //	    HAL_ADC_Start(&hadc1);
+        //	    HAL_ADC_PollForConversion(&hadc1, 100);
+        //	    AD_RES = HAL_ADC_GetValue(&hadc1);
+        // HAL_Delay(1);
+        // dshot_write(my_motor_value);
+        //   GPIO_PinState PinState = GPIO_PIN_SET ;
+        //   if(AD_RES > 2000){
+        ///	  PinState = GPIO_PIN_RESET;
+        //	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
+        //  }
+        // HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
+    }
+    /* USER CODE END 3 */
+}
+
+/**
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void)
+{
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+    /** Configure the main internal regulator output voltage
+     */
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+    /** Initializes the RCC Oscillators according to the specified parameters
+     * in the RCC_OscInitTypeDef structure.
+     */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /** Initializes the CPU, AHB and APB buses clocks
+     */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+/* USER CODE BEGIN 4 */
 #define MA780_RW_CMD_SIZE 4
 #define MA780_CMD_SIZE 2
 uint8_t MA780_ReadReg_Blocking(uint8_t reg)
@@ -208,239 +361,37 @@ uint16_t MA780_ReadAngle_Blocking()
     uint16_t ret = 0 || outBuf[1] || outBuf[0] < 8;
     return ret;
 }
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-    uint8_t itter = 0;
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_SPI1_Init();
-  MX_SPI2_Init();
-  MX_USART6_UART_Init();
-  MX_TIM1_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
-  MX_TIM5_Init();
-  MX_ADC1_Init();
-  /* USER CODE BEGIN 2 */
-  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-	TX_Buffer[0] = 0;
-	TX_Buffer[1] = 1;
-	TX_Buffer[2] = 2;
-	TX_Buffer[3] = 3;
-	TX_Buffer[4] = 4;
-	TX_Buffer[5] = 5;
-	TX_Buffer[6] = 6;
-	TX_Buffer[7] = 7;
-	TX_Buffer[8] = 8;
-  //HAL_SPI_RegisterCallback();
-
-	HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
-  //HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
-  //HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
-    // dshot_init(DSHOT600);
-	bool lenghtState = false;
-	uint8_t crcIn= 0 , crcOut= 0;
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-    while (1)
-    {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-    	//
-        if (SpiRxCplt)
-        {
-        	//HAL_SPI_MspDeInit(&hspi1);
-        	//HAL_SPI_MspInit(&hspi1);
-        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
-//    		TX_Buffer[0] = 1;
-//    		TX_Buffer[1] = 2;//0xaa;
-//    		TX_Buffer[2] = 4;
-//    		TX_Buffer[3] = 8;
-//    		TX_Buffer[4] = 16;
-//    		TX_Buffer[5] = 32;
-        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
-        	//HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
-        	//HAL_SPI_Transmit_DMA(&hspi1, TX_Buffer, BUFFER_SIZE);
-        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
-            SpiRxCplt = false;
-            itter++;
-        	lenghtState = !lenghtState;
-        }
-
-        if(SpiError){
-        	SpiError = false;
-        	//HAL_SPI_MspDeInit(&hspi1);
-        	//  MX_SPI1_Init();
-            TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
-            TX_Buffer[6] = (SpiRxCplt & 0x00ff);
-        	//HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
-        }
-
-
-
-
-        TX_Buffer[7] = crcOut;
-        TX_Buffer[6] = crcIn;
-        TX_Buffer[2] = itter;
-        TX_Buffer[1] = nextSpiSize;
-        TX_Buffer[0] = calculate_cksum(TX_Buffer+1, 4-1);
-
-        HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
-        previousSpiSize = nextSpiSize;
-
-        HAL_Delay(100);
-
-        crcIn = RX_Buffer[0];
-        crcOut = calculate_cksum(RX_Buffer+1, 4-1);
-        if (crcOut == crcIn && RX_Buffer[1] != 0)
-        {
-//        	if(lenghtState){
-//        		nextSpiSize = 9;
-//        	}
-//        	else{
-//        		nextSpiSize = defaultSpiSize;
-//        	}
-        	nextSpiSize++;
-        	if(nextSpiSize >= 30 -1){
-        		nextSpiSize = defaultSpiSize;
-        	}
-        }
-        else
-        {
-        	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-        	nextSpiSize = defaultSpiSize;
-        }
-
-    	//HAL_StatusTypeDef x = HAL_SPI_TransmitReceive(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize, 2000);
-    	//if(x != HAL_OK){
-    	//	itter++;
-    	//}
-    	//TX_Buffer[BUFFER_SIZE - 1] = 0x10;
-       // HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
-        //
-        //HAL_SPI_Receive_DMA(&hspi1, RX_Buffer, BUFFER_SIZE);
-    	//itter++;
-        //TX_Buffer[nextSpiSize - 2] = itter;
-
-
-        //  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
-        // Get ADC value
-        //	    HAL_ADC_Start(&hadc1);
-        //	    HAL_ADC_PollForConversion(&hadc1, 100);
-        //	    AD_RES = HAL_ADC_GetValue(&hadc1);
-        //HAL_Delay(1);
-        // dshot_write(my_motor_value);
-        //   GPIO_PinState PinState = GPIO_PIN_SET ;
-        //   if(AD_RES > 2000){
-        ///	  PinState = GPIO_PIN_RESET;
-        //	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
-        //  }
-        // HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, PinState);
-    }
-  /* USER CODE END 3 */
-}
-
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
+    /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1)
     {
     }
-  /* USER CODE END Error_Handler_Debug */
+    /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
+    /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
        ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+    /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 

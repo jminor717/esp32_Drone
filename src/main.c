@@ -227,7 +227,7 @@ void app_main()
 
     fflush(stdout);
     uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
-
+    uint32_t badTransactions = 0;
     uint8_t *dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
     uint8_t *dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
 
@@ -259,7 +259,6 @@ void app_main()
         uint8_t crcIn = dout[0];
         uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
 
-        printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", crcIn == crcOut, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16]);
 
         if (crcOut == crcIn && dout[1] != 0)
         {
@@ -268,6 +267,11 @@ void app_main()
         else
         {
             nextSize = defaultSize;
+        }
+        if (crcOut != crcIn)
+        {
+            badTransactions++;
+            printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16]);
         }
 
         fflush(stdout);
