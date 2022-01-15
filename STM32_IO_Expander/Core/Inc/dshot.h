@@ -17,7 +17,7 @@
 
 /* User Configuration */
 // Timer Clock
-#define TIMER_CLOCK				100000000	// 100MHz
+#define TIMER_CLOCK				80000000	// 80MHz
 
 //// MOTOR 1 (PA3) - TIM5 Channel 4, DMA1 Stream 3
 //#define MOTOR_1_TIM             (&htim5)

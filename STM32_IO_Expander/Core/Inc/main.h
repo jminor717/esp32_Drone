@@ -111,6 +111,10 @@ void CustomTickHandler(uint32_t);
 #define SPI1_CLK_Pin_NUM 3
 #define SPI1_MISO_Pin_NUM 4
 #define SPI1_MOSI_Pin_NUM 5
+
+
+
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

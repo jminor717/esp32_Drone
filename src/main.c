@@ -247,7 +247,7 @@ void app_main()
         // dat[5] = 0x11;
 
         tx.nextSpiSize = nextSize;
-        tx.radioSendData = 1;
+        tx.radioSendData = 0;
         tx.altCmd = 0xaa;
         memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
         dat[0] = calculate_cksum(dat + 1, 4 - 1);

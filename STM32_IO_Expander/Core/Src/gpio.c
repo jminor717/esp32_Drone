@@ -73,7 +73,7 @@ void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 2 */
 
-void Set_Mode( GPIO_TypeDef * PORT, uint8_t pin, uint8_t direction )
+void Set_GPIO_Mode( GPIO_TypeDef * PORT, uint8_t pin, uint8_t direction )
 {
     PORT->MODER |= ( direction<< ( pin * 2 ) );
 
