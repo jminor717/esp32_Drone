@@ -26,6 +26,8 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 
+
+
 #include <../Common/Data_type.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -91,6 +93,7 @@ void Slave_Transaction(uint8_t *dat, uint8_t *dout, uint32_t nextSize)
     data.
     */
     spi_slave_transmit(BUSS_1_HOST, &t, portMAX_DELAY);
+    spi_slave_queue_trans(BUSS_1_HOST, &t, portMAX_DELAY);
 }
 
 // Called after a transaction is queued and ready for pickup by master. We use this to set the handshake line high.
@@ -248,6 +251,7 @@ void app_main()
 
         tx.nextSpiSize = nextSize;
         tx.radioSendData = 0;
+        tx.motorSpeeed = 1;
         tx.altCmd = 0xaa;
         memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
         dat[0] = calculate_cksum(dat + 1, 4 - 1);
@@ -269,8 +273,8 @@ void app_main()
         if (crcOut != crcIn)
         {
             badTransactions++;
-            printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16]);
         }
+        printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16]);
 
         fflush(stdout);
     }

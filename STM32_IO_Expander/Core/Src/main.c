@@ -289,7 +289,7 @@ int main(void)
             }
             else
             {
-                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
+               // SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
             }
 
             switchc = !switchc;

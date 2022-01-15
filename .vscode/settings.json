@@ -144,7 +144,8 @@
         "log.h": "c",
         "nvicconf.h": "c",
         "spi_slave.h": "c",
-        "data_type.h": "c"
+        "data_type.h": "c",
+        "stm32_interconnect.h": "c"
     },
     "cSpell.words": [
         "crtp",
