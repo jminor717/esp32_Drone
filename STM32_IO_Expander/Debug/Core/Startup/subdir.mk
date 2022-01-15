@@ -7,11 +7,11 @@
 S_SRCS += \
 ../Core/Startup/startup_stm32f401ccux.s 
 
-OBJS += \
-./Core/Startup/startup_stm32f401ccux.o 
-
 S_DEPS += \
 ./Core/Startup/startup_stm32f401ccux.d 
+
+OBJS += \
+./Core/Startup/startup_stm32f401ccux.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

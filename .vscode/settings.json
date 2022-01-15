@@ -143,7 +143,8 @@
         "math.h": "c",
         "log.h": "c",
         "nvicconf.h": "c",
-        "spi_slave.h": "c"
+        "spi_slave.h": "c",
+        "data_type.h": "c"
     },
     "cSpell.words": [
         "crtp",

@@ -228,37 +228,35 @@ void app_main()
     fflush(stdout);
     uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
     uint32_t badTransactions = 0;
+    SPI_ESP_PACKET_HEADER tx;
     uint8_t *dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
     uint8_t *dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
 
     while (true)
     {
-        // vTaskDelay(10);
-        //  STM32_SPI_SS
         // dat = (uint8_t *)heap_caps_realloc(dat, sizeof(uint8_t) * nextSize, MALLOC_CAP_DMA);
         // dout = (uint8_t *)heap_caps_realloc(dout, sizeof(uint8_t) * nextSize, MALLOC_CAP_DMA);
         memset(dat, 0, 5);
+        memset(&tx, 0, sizeof(SPI_ESP_PACKET_HEADER));
         memset(dout, 0, 120);
-        // memset(&dat, 0, sizeof(dat));
-        // memset(&dout, 0, sizeof(dout));
-        //  for (size_t i = 0; i < nextSize + 2; i++)
-        //  {
-        //      dout[i]= 0;
-        //  }
 
-        dat[1] = nextSize;
-        dat[2] = 0xaa;
-        dat[3] = (++i & 0xff00) >> 8;
-        dat[4] = i & 0x00ff;
-        dat[5] = 0x11;
+        // dat[1] = nextSize;
+        // dat[2] = 0xaa;
+        // dat[3] = (++i & 0xff00) >> 8;
+        // dat[4] = i & 0x00ff;
+        // dat[5] = 0x11;
 
+        tx.nextSpiSize = nextSize;
+        tx.radioSendData = 1;
+        tx.altCmd = 0xaa;
+        memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
         dat[0] = calculate_cksum(dat + 1, 4 - 1);
+
         // Master_Transaction(spi, dat, dout, nextSize);
         Slave_Transaction(dat, dout, nextSize);
 
         uint8_t crcIn = dout[0];
         uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
-
 
         if (crcOut == crcIn && dout[1] != 0)
         {

@@ -172,8 +172,6 @@ static uint8_t hoverPacket_Encode_Min(int16_t vx, int16_t vy, int16_t y, uint8_t
 }
 #pragma GCC diagnostic pop
 
-
-
 /**
  * CRTP commander rpyt packet format
  */
@@ -236,4 +234,99 @@ enum metaCommand_e
 {
     metaNotifySetpointsStop = 0,
     nMetaCommands, // total number of meta comands, add new comands before this line
+};
+
+enum STM32_SPI_CMD
+{
+    defaultTransmition = 0,
+    configServos = 0x11
+};
+
+typedef struct _SPI_ESP_PACKET_HEADER
+{
+    uint8_t PacketCRC;
+    uint8_t nextSpiSize; //< Size of data
+    uint8_t altCmd;
+    union
+    {
+        uint8_t RX_Contents; //< Header selecting channel and port
+        struct
+        {
+            uint8_t motorSpeeed : 1;
+            uint8_t servoAngle : 1;
+            uint8_t radioSendData : 1;
+            uint8_t reserved : 4;
+            uint8_t specialData : 1;//?
+        };
+    };
+
+    union
+    {
+        uint8_t TX_Request; //< Header selecting channel and port
+        struct
+        {
+            uint8_t motorSpeeed_TX : 1;
+            uint8_t servoAngle_TX : 1;
+            uint8_t radioSendData_TX : 1;
+            uint8_t reserved_TX : 5;
+        };
+    };
+} __attribute__((packed)) SPI_ESP_PACKET_HEADER;
+
+enum MotorPacket
+{
+    motor1RPM_a,
+    motor1RPM_b,
+    motor2RPM_a,
+    motor2RPM_b,
+    motor3RPM_a,
+    motor3RPM_b,
+    motor4RPM_a,
+    motor4RPM_b
+};
+
+enum ServoPacket
+{
+    servo1Angle_a,
+    servo1Angle_b,
+    servo2Angle_a,
+    servo2Angle_b,
+    servo3Angle_a,
+    servo3Angle_b,
+    servo4Angle_a,
+    servo4Angle_b
+};
+
+// 16 bit spi buffer
+enum registers
+{
+    // output
+
+    // inputs
+    motor1Setpoint_a,
+    motor1Setpoint_b,
+    motor2Setpoint_a,
+    motor2Setpoint_b,
+    motor3Setpoint_a,
+    motor3Setpoint_b,
+    motor4Setpoint_a,
+    motor4Setpoint_b,
+    servo1Setpoint_a,
+    servo1Setpoint_b,
+    servo2Setpoint_a,
+    servo2Setpoint_b,
+    servo3Setpoint_a,
+    servo3Setpoint_b,
+    servo4Setpoint_a,
+    servo4Setpoint_b,
+    // cfg
+    motor1CFG,
+    motor2CFG,
+    motor3CFG,
+    motor4CFG,
+    servo1CFG,
+    servo2CFG,
+    servo3CFG,
+    servo4CFG,
+
 };

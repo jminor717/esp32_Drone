@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -47,14 +47,22 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#define SERVO_PID_PERIOD 10
+#define SERVO_PID_OFFSET 2
+#define SERVO_NUM_DIVISIONS 5 //SERVO_PID_PERIOD / SERVO_PID_OFFSET
+#define HUMAN_READABLE_SPI 100
 
+
+extern bool SPI_REFRESH;
+extern bool DSHOT_MOTOR_REFRESH;
+extern bool SERVO_REFRESH[SERVO_NUM_DIVISIONS];
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void CustomTickHandler(uint32_t);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -68,32 +76,41 @@ void Error_Handler(void);
 #define Dshot3_GPIO_Port GPIOA
 #define Dshot4_Pin GPIO_PIN_3
 #define Dshot4_GPIO_Port GPIOA
+#define AIN1_Pin GPIO_PIN_5
+#define AIN1_GPIO_Port GPIOA
+#define AIN3_Pin GPIO_PIN_6
+#define AIN3_GPIO_Port GPIOA
+#define AIN2_Pin GPIO_PIN_7
+#define AIN2_GPIO_Port GPIOA
 #define M3P_Pin GPIO_PIN_0
 #define M3P_GPIO_Port GPIOB
-#define SPI2_SCK_SLAVE_Pin GPIO_PIN_13
-#define SPI2_SCK_SLAVE_GPIO_Port GPIOB
-#define SPI2_MISO_SLAVE_Pin GPIO_PIN_14
-#define SPI2_MISO_SLAVE_GPIO_Port GPIOB
-#define SPI2_MOSI_SLAVE_Pin GPIO_PIN_15
-#define SPI2_MOSI_SLAVE_GPIO_Port GPIOB
+#define ESP32_SPI_MODE_Pin GPIO_PIN_15
+#define ESP32_SPI_MODE_GPIO_Port GPIOB
+#define ESP32_SPI_MODE_EXTI_IRQn EXTI15_10_IRQn
 #define M2N_Pin GPIO_PIN_8
 #define M2N_GPIO_Port GPIOA
 #define M1P_Pin GPIO_PIN_9
 #define M1P_GPIO_Port GPIOA
 #define M1N_Pin GPIO_PIN_10
 #define M1N_GPIO_Port GPIOA
-#define SENSE_4_CS_Pin GPIO_PIN_4
-#define SENSE_4_CS_GPIO_Port GPIOB
-#define SENSE_3_CS_Pin GPIO_PIN_5
-#define SENSE_3_CS_GPIO_Port GPIOB
+#define M2P_Pin GPIO_PIN_15
+#define M2P_GPIO_Port GPIOA
+#define SPI1_CLK_Pin GPIO_PIN_3
+#define SPI1_CLK_GPIO_Port GPIOB
+#define SPI1_MISO_Pin GPIO_PIN_4
+#define SPI1_MISO_GPIO_Port GPIOB
+#define SPI1_MOSI_Pin GPIO_PIN_5
+#define SPI1_MOSI_GPIO_Port GPIOB
 #define M3N_Pin GPIO_PIN_6
 #define M3N_GPIO_Port GPIOB
 #define M4N_Pin GPIO_PIN_7
 #define M4N_GPIO_Port GPIOB
-#define M4P_Pin GPIO_PIN_9
+#define M4P_Pin GPIO_PIN_8
 #define M4P_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+#define SPI1_CLK_Pin_NUM 3
+#define SPI1_MISO_Pin_NUM 4
+#define SPI1_MOSI_Pin_NUM 5
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

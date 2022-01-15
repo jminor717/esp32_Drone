@@ -52,9 +52,6 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SENSE_4_CS_Pin|SENSE_3_CS_Pin, GPIO_PIN_RESET);
-
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = LED1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -62,16 +59,43 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PBPin PBPin */
-  GPIO_InitStruct.Pin = SENSE_4_CS_Pin|SENSE_3_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = ESP32_SPI_MODE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(ESP32_SPI_MODE_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
 /* USER CODE BEGIN 2 */
+
+void Set_Mode( GPIO_TypeDef * PORT, uint8_t pin, uint8_t direction )
+{
+    PORT->MODER |= ( direction<< ( pin * 2 ) );
+
+//    uint32_t ioposition = 0x00U;
+//    uint32_t iocurrent = 0x00U;
+//    uint32_t position;
+//    uint32_t temp = 0x00U;
+//    /* Get the IO position */
+//    ioposition = 0x01U << position;
+//    /* Get the current IO position */
+//    iocurrent = (uint32_t)(GPIO_Init->Pin) & ioposition;
+//
+//    //if(iocurrent == ioposition)
+//
+//
+//    temp = GPIOx->MODER;
+//    temp &= ~(GPIO_MODER_MODER0 << (position * 2U));
+//    temp |= ((direction & GPIO_MODE) << (position * 2U));
+//    GPIOx->MODER = temp;
+
+}
+
 
 /* USER CODE END 2 */
 
