@@ -148,6 +148,7 @@
         "stm32_interconnect.h": "c"
     },
     "cSpell.words": [
+        "CLPT",
         "crtp",
         "vbat",
         "vref",
