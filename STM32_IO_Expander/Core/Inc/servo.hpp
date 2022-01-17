@@ -11,7 +11,8 @@ extern "C"
 {
 #endif
 
-void f(uint16_t);
+void ServosInit();
+void SetServoAngle(int16_t angle, uint16_t servoNum);
 
 #ifdef __cplusplus
 }

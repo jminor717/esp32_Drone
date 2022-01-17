@@ -17,6 +17,7 @@
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
 #include "driver/gpio.h"
+#include "esp_timer.h"
 
 #define DEBUG_MODULE "SPI"
 
@@ -28,19 +29,28 @@
 static void spiTask(void *arg);
 volatile bool SPI_SLAVE_RX_CLPT = true;
 
+static xSemaphoreHandle SPI_READY;
 STATIC_MEM_TASK_ALLOC(spiTask, SYSTEM_TASK_STACKSIZE);
 
 // Called after a transaction is queued and ready for pickup by master. We use this to set the handshake line high.
 void slave_post_setup_cb(spi_slave_transaction_t *trans)
 {
-    WRITE_PERI_REG(GPIO_OUT_W1TS_REG, (1 << GPIO_HANDSHAKE));
+    WRITE_PERI_REG(GPIO_OUT_W1TS_REG, (1 << STM32_SPI_ALT));
 }
 
 // Called after transaction is sent/received.
 void slave_post_trans_cb(spi_slave_transaction_t *trans)
 {
     SPI_SLAVE_RX_CLPT = true;
-    WRITE_PERI_REG(GPIO_OUT_W1TC_REG, (1 << GPIO_HANDSHAKE));
+    WRITE_PERI_REG(GPIO_OUT_W1TC_REG, (1 << STM32_SPI_ALT));
+
+    //portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+    //xSemaphoreGiveFromISR(SPI_READY, &xHigherPriorityTaskWoken);
+    //xSemaphoreGive(SPI_READY);
+    // if (xHigherPriorityTaskWoken)
+    // {
+    //     portYIELD_FROM_ISR();
+    // }
 }
 
 uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
@@ -138,7 +148,7 @@ void SPI_INIT(void)
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = (1 << GPIO_HANDSHAKE)};
+        .pin_bit_mask = (1 << STM32_SPI_ALT)};
 
     // Configure handshake line as output
     gpio_config(&io_conf);
@@ -166,9 +176,12 @@ void spiTask(void *arg)
     memset(dout, 0, maxSize);
 
     spi_slave_transaction_t PreviousSlaveTransaction = Slave_Transaction(dat, dout, nextSize);
-    spi_slave_transaction_t *Transaction= &PreviousSlaveTransaction;
+    spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction;
+    uint64_t now = esp_timer_get_time(), last = esp_timer_get_time();
     while (true)
     {
+        //xSemaphoreGive(SPI_READY);
+        //xSemaphoreTake(SPI_READY, portMAX_DELAY);
         if (SPI_SLAVE_RX_CLPT)
         {
             SPI_SLAVE_RX_CLPT = false;
@@ -189,9 +202,19 @@ void spiTask(void *arg)
             {
                 badTransactions++;
             }
-            printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16]);
+            now = esp_timer_get_time();
+            printf("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f\n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
+            last = now;
 
             fflush(stdout);
+
+            spi_slave_free(BUSS_1_HOST);
+
+            spi_bus_add_device();
+
+                esp_err_t ret = spi_slave_initialize(BUSS_1_HOST, &buscfg, &slvcfg, SPI_DMA_CH_AUTO); // SPI_DMA_DISABLED SPI_DMA_CH_AUTO
+            assert(ret == ESP_OK);
+
             // dat = (uint8_t *)heap_caps_realloc(dat, sizeof(uint8_t) * nextSize, MALLOC_CAP_DMA);
             // dout = (uint8_t *)heap_caps_realloc(dout, sizeof(uint8_t) * nextSize, MALLOC_CAP_DMA);
             memset(dat, 0, 5);
@@ -207,9 +230,8 @@ void spiTask(void *arg)
 
             // Master_Transaction(spi, dat, dout, nextSize);
             PreviousSlaveTransaction = Slave_Transaction(dat, dout, nextSize);
-
-
         }
-        vTaskDelay(1);
+        // taskYIELD();
+         vTaskDelay(1);
     }
 }

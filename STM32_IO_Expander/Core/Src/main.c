@@ -28,7 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-//#include <servo.hpp>
+#include <servo.hpp>
 #include <string.h>
 #include "dshot.h"
 #include "Data_type.h"
@@ -49,6 +49,7 @@
 
 bool SPI_REFRESH = false;
 bool DSHOT_MOTOR_REFRESH = false;
+bool CHECK_SPI_MODE_PIN = false;
 bool SERVO_REFRESH[SERVO_NUM_DIVISIONS] = {false};
 /* USER CODE END PD */
 
@@ -74,7 +75,7 @@ uint8_t nextSpiSize = 5, defaultSpiSize = 5, previousSpiSize = 5;
 uint8_t ServoIndex = 0;
 uint32_t SpiErrorCode = 0;
 bool SpiAvalable = true, ESP32HasBus = false;
-volatile bool SpiRxCplt = false, SpiError = false, ESP32_MODE_LOW_TO_HIGH = false, ESP32_MODE_HIGH_TO_LOW = false;
+volatile bool SpiRxCplt = false, SpiError = false, ESP32_MODE_NOW_LOW = false, ESP32_MODE_NOW_HIGH = false;
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
 uint32_t AD_RES = 0;
@@ -92,6 +93,7 @@ uint16_t map(uint32_t x, uint32_t in_min, uint32_t in_max, uint16_t out_min, uin
 void CustomTickHandler(uint32_t tick)
 {
     DSHOT_MOTOR_REFRESH = true;
+    CHECK_SPI_MODE_PIN = true;
     if (uwTick % HUMAN_READABLE_SPI == 0)
     {
         SPI_REFRESH = true;
@@ -164,22 +166,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
 //    {
 //    }
 	// this assumes that when we read the GPIO state the result will represent the value after the transition
-    if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_SET)
-    	ESP32_MODE_LOW_TO_HIGH = true;
-    else
-    	ESP32_MODE_HIGH_TO_LOW = true;
+//    if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
+//    	ESP32_MODE_LOW_TO_HIGH = true;
+//    else
+//    	ESP32_MODE_HIGH_TO_LOW = true;
 
 }
 
 void RELEASE_SPI_BUS()
 {
-    Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_INPUT);
-    Set_GPIO_Mode(SPI1_MOSI_GPIO_Port, SPI1_MOSI_Pin_NUM, GPIO_MODE_INPUT);
+    Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_OD);
+    Set_GPIO_Mode(SPI1_MOSI_GPIO_Port, SPI1_MOSI_Pin_NUM, GPIO_MODE_AF_OD);
 }
 
 void Take_SPI_BUS()
 {
-
+    Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_PP);
+    Set_GPIO_Mode(SPI1_MOSI_GPIO_Port, SPI1_MOSI_Pin_NUM, GPIO_MODE_AF_PP);
 }
 /* USER CODE END 0 */
 
@@ -241,6 +244,8 @@ int main(void)
     uint8_t crcIn = 0, crcOut = 0;
     bool switchc = false;
     SPI_ESP_PACKET_HEADER rxHeader;
+    ServosInit();
+    int16_t CH1_DC = 0, incremnt = 8;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -285,7 +290,7 @@ int main(void)
 
             if (switchc)
             {
-                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_16);
+                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_64);
             }
             else
             {
@@ -320,11 +325,15 @@ int main(void)
             HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
             previousSpiSize = nextSpiSize;
         }
-        if(ESP32_MODE_LOW_TO_HIGH){
+        if(ESP32_MODE_NOW_LOW){
+        	ESP32_MODE_NOW_LOW = false;
         	RELEASE_SPI_BUS();
+        	ESP32HasBus = true;
         }
-        if(ESP32_MODE_HIGH_TO_LOW){
+        if(ESP32_MODE_NOW_HIGH){
+        	ESP32_MODE_NOW_HIGH = false;
         	Take_SPI_BUS();
+        	ESP32HasBus = false;
         }
 
         if (DSHOT_MOTOR_REFRESH)
@@ -335,8 +344,28 @@ int main(void)
             HAL_ADC_PollForConversion(&hadc1, 100);
             AD_RES = HAL_ADC_GetValue(&hadc1);
         }
+        if(CHECK_SPI_MODE_PIN){
+        	CHECK_SPI_MODE_PIN = false;
+            if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
+            	ESP32_MODE_NOW_LOW = true;
+            else
+            	ESP32_MODE_NOW_HIGH = true;
+        }
 
-         HAL_Delay(100);
+
+        if(CH1_DC > 2048)
+        {
+        	incremnt = -8;
+        }
+        if(CH1_DC < -2048)
+        {
+        	incremnt = 8;
+
+        }
+
+        CH1_DC += incremnt;
+        SetServoAngle(CH1_DC,1);
+         //HAL_Delay(100);
 
         //  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
         // Get ADC value
@@ -372,7 +401,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 160;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -381,12 +415,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }

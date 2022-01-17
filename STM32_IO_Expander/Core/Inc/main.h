@@ -84,9 +84,9 @@ void CustomTickHandler(uint32_t);
 #define AIN2_GPIO_Port GPIOA
 #define M3P_Pin GPIO_PIN_0
 #define M3P_GPIO_Port GPIOB
-#define ESP32_SPI_MODE_Pin GPIO_PIN_15
+#define ESP32_SPI_MODE_Pin GPIO_PIN_2
 #define ESP32_SPI_MODE_GPIO_Port GPIOB
-#define ESP32_SPI_MODE_EXTI_IRQn EXTI15_10_IRQn
+#define ESP32_SPI_MODE_EXTI_IRQn EXTI2_IRQn
 #define M2N_Pin GPIO_PIN_8
 #define M2N_GPIO_Port GPIOA
 #define M1P_Pin GPIO_PIN_9

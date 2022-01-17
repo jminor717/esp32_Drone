@@ -66,8 +66,8 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(ESP32_SPI_MODE_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
 }
 
@@ -75,7 +75,13 @@ void MX_GPIO_Init(void)
 
 void Set_GPIO_Mode( GPIO_TypeDef * PORT, uint8_t pin, uint8_t direction )
 {
-    PORT->MODER |= ( direction<< ( pin * 2 ) );
+   // PORT->MODER |= ( direction<< ( pin * 2 ) );
+
+    uint32_t temp = 0x00U;
+    temp = PORT->MODER;
+    temp &= ~(GPIO_MODER_MODER0 << (pin * 2U));
+    temp |= ((direction & GPIO_MODE) << (pin * 2U));
+    PORT->MODER = temp;
 
 //    uint32_t ioposition = 0x00U;
 //    uint32_t iocurrent = 0x00U;
@@ -89,11 +95,6 @@ void Set_GPIO_Mode( GPIO_TypeDef * PORT, uint8_t pin, uint8_t direction )
 //    //if(iocurrent == ioposition)
 //
 //
-//    temp = GPIOx->MODER;
-//    temp &= ~(GPIO_MODER_MODER0 << (position * 2U));
-//    temp |= ((direction & GPIO_MODE) << (position * 2U));
-//    GPIOx->MODER = temp;
-
 }
 
 

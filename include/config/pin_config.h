@@ -68,6 +68,14 @@
 #define STM32_SPI_MISO 16
 #define STM32_SPI_MOSI 17
 #define STM32_SPI_SS 5
+#define STM32_SPI_ALT 18 //shared with boot mode
+// STM32 Controlls
+#define STM32_RST 13
+#define STM32_BOOT_MODE 18
+// Shared With STM32
+#define PROG_TX 1
+#define PROG_RX 3
+
 
 // sensor pins
 #define CONFIG_MPU_PIN_INT 26
@@ -87,12 +95,7 @@
 #define ALT_M1 19
 #define ALT_M2 21
 
-// STM32 Controlls
-#define STM32_RST 13
-#define STM32_BOOT_MODE 18
-// Shared With STM32
-#define PROG_TX 1
-#define PROG_RX 3
+
 
 // GPS
 #define GPS_RX 35
