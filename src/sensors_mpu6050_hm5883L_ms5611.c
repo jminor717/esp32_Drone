@@ -84,7 +84,7 @@
 // #define SENSORS_ENABLE_MAG_HM5883L
 // #define SENSORS_ENABLE_PRESSURE_MS5611
 //#define SENSORS_ENABLE_RANGE_VL53L0X
-//!#define SENSORS_ENABLE_RANGE_VL53L1X
+#define SENSORS_ENABLE_RANGE_VL53L1X
 //! #define SENSORS_ENABLE_FLOW_PMW3901
 
 #define SENSORS_GYRO_FS_CFG MPU6050_GYRO_FS_2000
@@ -256,7 +256,7 @@ static void sensorsTask(void *param)
         /* mpu6050 interrupt trigger: data is ready to be read */
         if (pdTRUE == xSemaphoreTake(sensorsDataReady, portMAX_DELAY)) {
             sensorData.interruptTimestamp = imuIntTimestamp;
-
+            //DEBUG_PRINTI("Data Ready");
             /* sensors step 1-read data from I2C */
             uint8_t dataLen = (uint8_t)(SENSORS_MPU6050_BUFF_LEN +
                                         (isMagnetometerPresent ? SENSORS_MAG_BUFF_LEN : 0) +
@@ -266,8 +266,8 @@ static void sensorsTask(void *param)
             /* sensors step 2-process the respective data */
             processAccGyroMeasurements(&(buffer[0]));
 
-            //?DEBUG_PRINTI(" %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13]);
-            DEBUG_PRINTI(" %f %f %f", sensorData.acc.x, sensorData.acc.y, sensorData.acc.z);
+            //DEBUG_PRINTI(" %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13]);
+            //DEBUG_PRINTI(" %f %f %f", sensorData.acc.x, sensorData.acc.y, sensorData.acc.z);
 
             if (isMagnetometerPresent) {
                 processMagnetometerMeasurements(&(buffer[SENSORS_MPU6050_BUFF_LEN]));

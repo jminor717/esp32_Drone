@@ -50,7 +50,9 @@ typedef struct {
 } I2cDrv;
 
 // Definitions of i2c busses found in c file.
+#ifndef SENSOR_AND_DECK_ON_ONE_BUS
 extern I2cDrv deckBus;
+#endif
 extern I2cDrv sensorsBus;
 
 /**

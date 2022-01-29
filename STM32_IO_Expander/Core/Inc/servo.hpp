@@ -12,7 +12,7 @@ extern "C"
 #endif
 
 void ServosInit();
-void SetServoAngle(int16_t angle, uint16_t servoNum);
+void SetServoAngle(int16_t angle, uint16_t servoNum, int16_t Measurment);
 
 #ifdef __cplusplus
 }

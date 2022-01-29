@@ -75,6 +75,7 @@ uint8_t nextSpiSize = 5, defaultSpiSize = 5, previousSpiSize = 5;
 uint8_t ServoIndex = 0;
 uint32_t SpiErrorCode = 0;
 bool SpiAvalable = true, ESP32HasBus = false;
+bool nextTransmitToRFM = false;
 volatile bool SpiRxCplt = false, SpiError = false, ESP32_MODE_NOW_LOW = false, ESP32_MODE_NOW_HIGH = false;
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
@@ -100,7 +101,6 @@ void CustomTickHandler(uint32_t tick)
     }
     if (uwTick + (ServoIndex * SERVO_PID_OFFSET) % SERVO_PID_PERIOD == 0)
     {
-        SERVO_REFRESH[ServoIndex] = true;
         if (ServoIndex < SERVO_NUM_DIVISIONS - 1)
         {
             ServoIndex++;
@@ -109,6 +109,8 @@ void CustomTickHandler(uint32_t tick)
         {
             ServoIndex = 0;
         }
+        SERVO_REFRESH[ServoIndex] = true;
+
     }
 }
 
@@ -143,7 +145,7 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-
+	HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port,SPI1_NSS_Pin, 1);
     memcpy(TX_Buffer, RX_Buffer, previousSpiSize);
 
     SpiRxCplt = true;
@@ -154,7 +156,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
     // nextSpiSize = defaultSpiSize;
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-
+    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port,SPI1_NSS_Pin, 1);
     SpiRxCplt = true;
     SpiErrorCode = hspi->ErrorCode;
     SpiError = true;
@@ -175,13 +177,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin)
 
 void RELEASE_SPI_BUS()
 {
-    Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_OD);
+    //Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_OD);
     Set_GPIO_Mode(SPI1_MOSI_GPIO_Port, SPI1_MOSI_Pin_NUM, GPIO_MODE_AF_OD);
 }
 
 void Take_SPI_BUS()
 {
-    Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_PP);
+    //Set_GPIO_Mode(SPI1_CLK_GPIO_Port, SPI1_CLK_Pin_NUM, GPIO_MODE_AF_PP);
     Set_GPIO_Mode(SPI1_MOSI_GPIO_Port, SPI1_MOSI_Pin_NUM, GPIO_MODE_AF_PP);
 }
 /* USER CODE END 0 */
@@ -223,7 +225,6 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM5_Init();
   MX_ADC1_Init();
-  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     TX_Buffer[0] = 0;
@@ -238,11 +239,11 @@ int main(void)
     // HAL_SPI_RegisterCallback();
 
     HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
+    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port,SPI1_NSS_Pin, 0);
     // HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
     // HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
     //  dshot_init(DSHOT600);
     uint8_t crcIn = 0, crcOut = 0;
-    bool switchc = false;
     SPI_ESP_PACKET_HEADER rxHeader;
     ServosInit();
     int16_t CH1_DC = 0, incremnt = 8;
@@ -256,53 +257,49 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
         //
-        if (SpiRxCplt)
         {
             SpiRxCplt = false;
             SpiAvalable = true;
             itter++;
-            crcIn = RX_Buffer[0];
-            crcOut = calculate_cksum(RX_Buffer + 1, 4 - 1);
-            if (crcOut == crcIn && RX_Buffer[1] != 0)
-            {
-                memcpy(&rxHeader, RX_Buffer, sizeof(SPI_ESP_PACKET_HEADER));
-                if (rxHeader.radioSendData == 1)
+            if(nextTransmitToRFM){
+            	nextTransmitToRFM = false;
+            	SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_32);
+            	Take_SPI_BUS();
+            }else{
+                crcIn = RX_Buffer[0];
+                crcOut = calculate_cksum(RX_Buffer + 1, 4 - 1);
+                if (crcOut == crcIn && RX_Buffer[1] != 0)
                 {
-                    ESP32HasBus = true;
-                    RELEASE_SPI_BUS();
-                }
+                    memcpy(&rxHeader, RX_Buffer, sizeof(SPI_ESP_PACKET_HEADER));
+                    if (rxHeader.radioSendData == 1)
+                    {
+                    	SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
+                    	nextTransmitToRFM = true;
+                        RELEASE_SPI_BUS();
+                    }
 
-                nextSpiSize++;
-                if (nextSpiSize >= 30 - 1)
+                    nextSpiSize++;
+                    if (nextSpiSize >= 30 - 1)
+                    {
+                        nextSpiSize = defaultSpiSize;
+                    }
+                }
+                else
                 {
+                    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
                     nextSpiSize = defaultSpiSize;
                 }
+                if (crcOut != crcIn)
+                {
+                    badTransactions++;
+                }
             }
-            else
-            {
-                HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-                nextSpiSize = defaultSpiSize;
-            }
-            if (crcOut != crcIn)
-            {
-                badTransactions++;
-            }
-
-            if (switchc)
-            {
-                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_64);
-            }
-            else
-            {
-               // SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
-            }
-
-            switchc = !switchc;
         }
 
         if (SpiError)
         {
             SpiError = false;
+            SpiAvalable = true;
             // HAL_SPI_MspDeInit(&hspi1);
             //   MX_SPI1_Init();
             TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
@@ -310,29 +307,37 @@ int main(void)
             // HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
         }
 
-        if (SPI_REFRESH && SpiAvalable && !ESP32HasBus)
+        if ((SPI_REFRESH || nextTransmitToRFM) && SpiAvalable)//&& !ESP32HasBus
         {
-            SPI_REFRESH = false;
             SpiAvalable = false;
-            TX_Buffer[9] = crcOut;
-            TX_Buffer[8] = crcIn;
-            TX_Buffer[7] = (++itter & 0xff00) >> 8;
-            TX_Buffer[6] = itter & 0x00ff;
-            TX_Buffer[2] = badTransactions;
-            TX_Buffer[1] = nextSpiSize;
-            TX_Buffer[0] = calculate_cksum(TX_Buffer + 1, 4 - 1);
+        	HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port,SPI1_NSS_Pin, 0);
+        	if(nextTransmitToRFM){
+        		memset(TX_Buffer, 0,nextSpiSize);
+        		HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+        	}
+        	else{
+                SPI_REFRESH = false;
+                TX_Buffer[9] = crcOut;
+                TX_Buffer[8] = crcIn;
+                TX_Buffer[7] = (++itter & 0xff00) >> 8;
+                TX_Buffer[6] = itter & 0x00ff;
+                TX_Buffer[2] = badTransactions;
+                TX_Buffer[1] = nextSpiSize;
+                TX_Buffer[0] = calculate_cksum(TX_Buffer + 1, 4 - 1);
 
-            HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+                HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+        	}
+
             previousSpiSize = nextSpiSize;
         }
         if(ESP32_MODE_NOW_LOW){
         	ESP32_MODE_NOW_LOW = false;
-        	RELEASE_SPI_BUS();
+        	//RELEASE_SPI_BUS();
         	ESP32HasBus = true;
         }
         if(ESP32_MODE_NOW_HIGH){
         	ESP32_MODE_NOW_HIGH = false;
-        	Take_SPI_BUS();
+        	//Take_SPI_BUS();
         	ESP32HasBus = false;
         }
 
@@ -352,19 +357,22 @@ int main(void)
             	ESP32_MODE_NOW_HIGH = true;
         }
 
+        if(SERVO_REFRESH[ServoIndex]){
+        	SERVO_REFRESH[ServoIndex] = false;
+            if(CH1_DC > 2048)
+            {
+            	incremnt = -8;
+            }
+            if(CH1_DC < -2048)
+            {
+            	incremnt = 8;
 
-        if(CH1_DC > 2048)
-        {
-        	incremnt = -8;
+            }
+
+            CH1_DC += incremnt;
+            SetServoAngle(CH1_DC,ServoIndex, 0);
         }
-        if(CH1_DC < -2048)
-        {
-        	incremnt = 8;
 
-        }
-
-        CH1_DC += incremnt;
-        SetServoAngle(CH1_DC,1);
          //HAL_Delay(100);
 
         //  HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);

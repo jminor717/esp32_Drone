@@ -47,9 +47,9 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-#define SERVO_PID_PERIOD 10
-#define SERVO_PID_OFFSET 2
-#define SERVO_NUM_DIVISIONS 5 //SERVO_PID_PERIOD / SERVO_PID_OFFSET
+#define SERVO_PID_PERIOD 32
+#define SERVO_PID_OFFSET 8
+#define SERVO_NUM_DIVISIONS 4 //SERVO_PID_PERIOD / SERVO_PID_OFFSET
 #define HUMAN_READABLE_SPI 100
 
 
@@ -93,8 +93,8 @@ void CustomTickHandler(uint32_t);
 #define M1P_GPIO_Port GPIOA
 #define M1N_Pin GPIO_PIN_10
 #define M1N_GPIO_Port GPIOA
-#define M2P_Pin GPIO_PIN_15
-#define M2P_GPIO_Port GPIOA
+#define SPI1_NSS_Pin GPIO_PIN_15
+#define SPI1_NSS_GPIO_Port GPIOA
 #define SPI1_CLK_Pin GPIO_PIN_3
 #define SPI1_CLK_GPIO_Port GPIOB
 #define SPI1_MISO_Pin GPIO_PIN_4

@@ -145,7 +145,8 @@
         "nvicconf.h": "c",
         "spi_slave.h": "c",
         "data_type.h": "c",
-        "stm32_interconnect.h": "c"
+        "stm32_interconnect.h": "c",
+        "sensors_mpu6050_hm5883l_ms5611.h": "c"
     },
     "cSpell.words": [
         "CLPT",

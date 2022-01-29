@@ -68,6 +68,7 @@ I2cDrv sensorsBus = {
     .def                = &sensorBusDef,
 };
 
+#ifndef SENSOR_AND_DECK_ON_ONE_BUS
 static const I2cDef deckBusDef = {
     .i2cPort            = I2C_NUM_1,
     .i2cClockSpeed      = I2C_DEFAULT_DECK_CLOCK_SPEED,
@@ -79,6 +80,8 @@ static const I2cDef deckBusDef = {
 I2cDrv deckBus = {
     .def                = &deckBusDef,
 };
+#endif
+
 
 static void i2cdrvInitBus(I2cDrv *i2c)
 {

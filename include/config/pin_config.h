@@ -35,9 +35,56 @@
 #define CONFIG_VBat_PIN 34
 #define VBat_VOLTAGE_DIVIDER_RATIO 1.193 // 0.838 //measured
 
-// misc
-#define CONFIG_LED_DOUT 15
+#ifdef V2_BOARD
+// Unused 2, 12, 22, 23, 36, 39
+//  STM32 IO expander
+#define STM32_SPI_SCK 4
+#define STM32_SPI_MISO 16
+#define STM32_SPI_MOSI 17
+#define STM32_SPI_SS 35
+#define STM32_SPI_ALT 18 // shared with boot mode
+// STM32 Controlls
+#define STM32_RST 13
+#define STM32_BOOT_MODE 18
+// Shared With STM32
+#define PROG_TX 1
+#define PROG_RX 3
 
+// COM-13909
+#define COM13909_SS 15
+
+// sensor pins, i2c shared with vl53l1x
+#define CONFIG_MPU_PIN_INT 26
+#define CONFIG_I2C0_PIN_SCL 27
+#define CONFIG_I2C0_PIN_SDA 25
+
+// Servos
+//#define SERVO1 5  1,
+//#define SERVO2 25
+//#define SERVO3 2
+
+// Extra DC Motors
+#define ALT_M1 19
+#define ALT_M2 21
+
+// GPS
+#define GPS_RX 35
+#define GPS_TX 14
+
+#ifndef SENSOR_AND_DECK_ON_ONE_BUS
+//  vl53l1x
+#define CONFIG_I2C1_PIN_SCL 23
+#define CONFIG_I2C1_PIN_SDA 22
+#endif
+#endif
+
+#define CONFIG_PITCH_CALIB 0
+#define CONFIG_ROLL_CALIB 0
+
+#define BUSS_1_HOST HSPI_HOST
+#define DMA_CHAN 2
+
+// V1
 #ifdef V1_BOARD
 #define CONFIG_DCDC_PGOOD_PIN 35
 
@@ -60,50 +107,6 @@
 //#define CONFIG_VL53_GPIO1 26
 //#define CONFIG_VL53_XSHUT 25
 
+// misc
+#define CONFIG_LED_DOUT 15
 #endif
-
-#ifdef V2_BOARD
-// STM32 IO expander
-#define STM32_SPI_SCK 4
-#define STM32_SPI_MISO 16
-#define STM32_SPI_MOSI 17
-#define STM32_SPI_SS 5
-#define STM32_SPI_ALT 18 //shared with boot mode
-// STM32 Controlls
-#define STM32_RST 13
-#define STM32_BOOT_MODE 18
-// Shared With STM32
-#define PROG_TX 1
-#define PROG_RX 3
-
-
-// sensor pins
-#define CONFIG_MPU_PIN_INT 26
-#define CONFIG_I2C0_PIN_SCL 27
-#define CONFIG_I2C0_PIN_SDA 25
-
-// vl53l1x
-#define CONFIG_I2C1_PIN_SCL 23
-#define CONFIG_I2C1_PIN_SDA 22
-
-// Servos
-//#define SERVO1 5
-//#define SERVO2 25
-#define SERVO3 2
-
-// Extra DC Motors
-#define ALT_M1 19
-#define ALT_M2 21
-
-
-
-// GPS
-#define GPS_RX 35
-#define GPS_TX 14
-#endif
-
-#define CONFIG_PITCH_CALIB 0
-#define CONFIG_ROLL_CALIB 0
-
-#define BUSS_1_HOST HSPI_HOST
-#define DMA_CHAN 2
