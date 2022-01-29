@@ -167,8 +167,8 @@ void systemTask(void *arg)
 {
   bool pass = true;
 
-  //ledInit();
-  //ledSet(CHG_LED, 1);
+  ledInit();
+  ledSet(CHG_LED, 1);
   wifiInit();
   vTaskDelay(M2T(500));
 

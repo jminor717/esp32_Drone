@@ -34,11 +34,6 @@ static unsigned int led_pin[] = {
     [LED_RED]   = LED_GPIO_RED,
     [LED_GREEN] = LED_GPIO_GREEN,
 };
-static int led_polarity[] = {
-    [LED_BLUE] = LED_POL_BLUE,
-    [LED_RED]   = LED_POL_RED,
-    [LED_GREEN] = LED_POL_GREEN,
-};
 
 static bool isInit = false;
 
@@ -49,23 +44,6 @@ void ledInit()
 
     if (isInit) {
         return;
-    }
-
-    for (i = 0; i < LED_NUM; i++) {
-        gpio_config_t io_conf;
-        //disable interrupt
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
-        //bit mask of the pins that you want to set,e.g.GPIO18/19
-        io_conf.pin_bit_mask = (1ULL << led_pin[i]);
-        //disable pull-down mode
-        io_conf.pull_down_en = 0;
-        //disable pull-up mode
-        io_conf.pull_up_en = 0;
-        //set as output mode
-        io_conf.mode = GPIO_MODE_OUTPUT;
-        //configure GPIO with the given settings
-        gpio_config(&io_conf);
-        ledSet(i, 0);
     }
 
     isInit = true;
@@ -107,19 +85,7 @@ void ledSetAll(void)
 }
 void ledSet(led_t led, bool value)
 {
-    if (led > LED_NUM || led == LED_NUM) {
-        return;
-    }
 
-    if (led_polarity[led] == LED_POL_NEG) {
-        value = !value;
-    }
-
-    if (value) {
-        gpio_set_level(led_pin[led], 1);
-    } else {
-        gpio_set_level(led_pin[led], 0);
-    }
 }
 
 

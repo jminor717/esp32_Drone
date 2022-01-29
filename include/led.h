@@ -25,18 +25,10 @@
 #include <stdbool.h>
 #include "config/pin_config.h"
 
-//Led polarity configuration constant
-#define LED_POL_POS 0
-#define LED_POL_NEG 1
+#define LED_GPIO_BLUE  0
+#define LED_GPIO_GREEN 1  
+#define LED_GPIO_RED   2
 
-
-
-#define LED_GPIO_BLUE  CONFIG_LED_PIN_BLUE
-#define LED_POL_BLUE   LED_POL_POS
-#define LED_GPIO_GREEN CONFIG_LED_PIN_GREEN  //different from pcb design
-#define LED_POL_GREEN  LED_POL_POS
-#define LED_GPIO_RED   CONFIG_LED_PIN_RED
-#define LED_POL_RED    LED_POL_POS
 
 #define LINK_LED         LED_GREEN
 #define CHG_LED          LED_RED

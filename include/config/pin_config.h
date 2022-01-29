@@ -27,9 +27,7 @@
 #include "config/dev_config.h"
 #include "hal/spi_types.h"
 
-#define CONFIG_LED_PIN_BLUE 0
-#define CONFIG_LED_PIN_GREEN 1
-#define CONFIG_LED_PIN_RED 2
+
 
 // battery voltage monitor
 #define CONFIG_VBat_PIN 34
