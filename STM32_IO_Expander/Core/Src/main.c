@@ -95,10 +95,11 @@ void CustomTickHandler(uint32_t tick)
 {
     DSHOT_MOTOR_REFRESH = true;
     CHECK_SPI_MODE_PIN = true;
-    if (uwTick % HUMAN_READABLE_SPI == 0)
-    {
-        SPI_REFRESH = true;
-    }
+    SPI_REFRESH = true;
+//    if (uwTick % HUMAN_READABLE_SPI == 0)
+//    {
+//        SPI_REFRESH = true;
+//    }
     if (uwTick + (ServoIndex * SERVO_PID_OFFSET) % SERVO_PID_PERIOD == 0)
     {
         if (ServoIndex < SERVO_NUM_DIVISIONS - 1)
@@ -255,6 +256,7 @@ int main(void)
 
         /* USER CODE BEGIN 3 */
         //
+    	if(SpiRxCplt)
         {
             SpiRxCplt = false;
             SpiAvalable = true;

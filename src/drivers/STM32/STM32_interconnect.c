@@ -29,7 +29,10 @@
 /* Private functions */
 static void spiTask(void *arg);
 volatile bool SPI_SLAVE_RX_CLPT = true;
-
+bool NexSpiToRF = false;
+spi_slave_transaction_t PreviousSlaveTransaction;
+spi_slave_transaction_t *Transaction;
+uint64_t now, last;
 static xSemaphoreHandle spiDataReady;
 
 STATIC_MEM_TASK_ALLOC(spiTask, SYSTEM_TASK_STACKSIZE);
@@ -47,7 +50,7 @@ static inline void Lower_STM32_SPI_ALT_Pin()
 // Called after a transaction is queued and ready for pickup by master. We use this to set the handshake line high.
 IRAM_ATTR void slave_post_setup_cb(spi_slave_transaction_t *trans)
 {
-    // Raise_STM32_SPI_ALT_Pin();
+    Raise_STM32_SPI_ALT_Pin();
 }
 
 // Called after transaction is sent/received.
@@ -55,15 +58,16 @@ IRAM_ATTR void slave_post_trans_cb(spi_slave_transaction_t *trans)
 {
     SPI_SLAVE_RX_CLPT = true;
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-    // imuIntTimestamp = (uint64_t)esp_timer_get_time(); // This function returns the number of microseconds since esp_timer was initialized
-
+    Lower_STM32_SPI_ALT_Pin();
     xSemaphoreGiveFromISR(spiDataReady, &xHigherPriorityTaskWoken);
-
     if (xHigherPriorityTaskWoken)
     {
         portYIELD_FROM_ISR();
     }
 }
+
+void receiveFromSTM32();
+void sendToRFM69();
 
 uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
 uint32_t badTransactions = 0;
@@ -77,7 +81,9 @@ spi_bus_config_t buscfg = {
     .sclk_io_num = STM32_SPI_SCK,
     .quadwp_io_num = -1,
     .quadhd_io_num = -1,
-    .max_transfer_sz = 4096};
+    .max_transfer_sz = 4096,
+    .flags = 0,
+    .intr_flags = ESP_INTR_FLAG_IRAM};
 // COM13909_SS
 
 // Configuration for the SPI slave interface
@@ -119,7 +125,7 @@ void SPI_INIT(void)
         .pin_bit_mask = (1 << STM32_SPI_ALT)};
 
     // Configure handshake line as output
-    // gpio_config(&io_conf);
+     gpio_config(&io_conf);
 
     gpio_set_direction(STM32_SPI_MOSI, GPIO_MODE_INPUT);
     gpio_set_direction(STM32_SPI_SCK, GPIO_MODE_INPUT);
@@ -130,7 +136,7 @@ void SPI_INIT(void)
     gpio_set_pull_mode(STM32_SPI_SCK, GPIO_PULLDOWN_ONLY);
 
     // Initialize SPI slave interface
-    esp_err_t ret = spi_slave_initialize(BUSS_1_HOST, &buscfg, &slvcfg, SPI_DMA_CH2); // SPI_DMA_DISABLED SPI_DMA_CH_AUTO
+    esp_err_t ret = spi_slave_initialize(BUSS_1_HOST, &buscfg, &slvcfg, SPI_DMA_CH_AUTO); // SPI_DMA_DISABLED SPI_DMA_CH_AUTO
     ESP_ERROR_CHECK(ret);
 
     dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
@@ -143,10 +149,10 @@ void spiTask(void *arg)
     memset(dat, 0, 5);
     memset(dout, 0, maxSize);
 
-    spi_slave_transaction_t PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
+    PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
     vTaskDelay(200);
-    spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction;
-    uint64_t now = esp_timer_get_time(), last = esp_timer_get_time();
+    Transaction = &PreviousSlaveTransaction;
+    now = last = esp_timer_get_time();
     while (true)
     {
         // xSemaphoreGive(SPI_READY);
@@ -155,44 +161,59 @@ void spiTask(void *arg)
         {
             SPI_SLAVE_RX_CLPT = false;
             spi_slave_get_trans_result(BUSS_1_HOST, &Transaction, 1);
-
-            uint8_t crcIn = dout[0];
-            uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
-
-            if (crcOut == crcIn && dout[1] != 0)
+            if (NexSpiToRF)
             {
-                nextSize = dout[1];
+                NexSpiToRF = false;
             }
             else
             {
-                nextSize = defaultSize;
+                receiveFromSTM32();
             }
-            if (crcOut != crcIn)
-            {
-                badTransactions++;
-                now = esp_timer_get_time();
-                DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
-            }
-
-            last = esp_timer_get_time();
-
-            memset(dat, 0, 5);
-            memset(&tx, 0, sizeof(SPI_ESP_PACKET_HEADER));
-            memset(dout, 0, 120);
-
-            tx.nextSpiSize = nextSize;
-            tx.radioSendData = 0;
-            tx.motorSpeeed = 1;
-            tx.altCmd = 0xaa;
-            memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
-            dat[0] = calculate_cksum(dat + 1, 4 - 1);
-
-            // Master_Transaction(spi, dat, dout, nextSize);
-            PreviousSlaveTransaction = Slave_Transaction(dat, dout, nextSize + 4);
             //  fflush(stdout);
         }
         // taskYIELD();
         // vTaskDelay(1);
         // portYIELD();
     }
+}
+
+void sendToRFM69()
+{
+}
+
+void receiveFromSTM32()
+{
+    uint8_t crcIn = dout[0];
+    uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
+
+    if (crcOut == crcIn && dout[1] != 0)
+    {
+        nextSize = dout[1];
+    }
+    else
+    {
+        nextSize = defaultSize;
+    }
+    if (crcOut != crcIn)
+    {
+        badTransactions++;
+        now = esp_timer_get_time();
+        DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
+    }
+    PreviousSlaveTransaction = Slave_Transaction(dat, dout, nextSize + 4);
+
+    last = esp_timer_get_time();
+
+    memset(dat, 0, 5);
+    memset(&tx, 0, sizeof(SPI_ESP_PACKET_HEADER));
+    memset(dout, 0, 120);
+
+    tx.nextSpiSize = nextSize;
+    NexSpiToRF = false;
+    tx.radioSendData = NexSpiToRF;
+    tx.motorSpeeed = 1;
+    tx.altCmd = 0xaa;
+    memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
+    dat[0] = calculate_cksum(dat + 1, 4 - 1);
+
 }
