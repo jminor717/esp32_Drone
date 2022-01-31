@@ -30,8 +30,6 @@
 static void spiTask(void *arg);
 volatile bool SPI_SLAVE_RX_CLPT = true;
 bool NexSpiToRF = false;
-spi_slave_transaction_t PreviousSlaveTransaction;
-spi_slave_transaction_t *Transaction;
 uint64_t now, last;
 static xSemaphoreHandle spiDataReady;
 
@@ -66,7 +64,7 @@ IRAM_ATTR void slave_post_trans_cb(spi_slave_transaction_t *trans)
     }
 }
 
-void receiveFromSTM32();
+spi_slave_transaction_t receiveFromSTM32();
 void sendToRFM69();
 
 uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
@@ -149,9 +147,9 @@ void spiTask(void *arg)
     memset(dat, 0, 5);
     memset(dout, 0, maxSize);
 
-    PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
+    spi_slave_transaction_t PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
     vTaskDelay(200);
-    Transaction = &PreviousSlaveTransaction;
+    spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction; // these need to be on the stack inside this tasks memory
     now = last = esp_timer_get_time();
     while (true)
     {
@@ -167,7 +165,7 @@ void spiTask(void *arg)
             }
             else
             {
-                receiveFromSTM32();
+                PreviousSlaveTransaction = receiveFromSTM32();
             }
             //  fflush(stdout);
         }
@@ -181,7 +179,7 @@ void sendToRFM69()
 {
 }
 
-void receiveFromSTM32()
+spi_slave_transaction_t receiveFromSTM32()
 {
     uint8_t crcIn = dout[0];
     uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
@@ -200,7 +198,7 @@ void receiveFromSTM32()
         now = esp_timer_get_time();
         DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
     }
-    PreviousSlaveTransaction = Slave_Transaction(dat, dout, nextSize + 4);
+    spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
 
     last = esp_timer_get_time();
 
@@ -215,5 +213,5 @@ void receiveFromSTM32()
     tx.altCmd = 0xaa;
     memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
     dat[0] = calculate_cksum(dat + 1, 4 - 1);
-
+    return PreviousTransaction;
 }
