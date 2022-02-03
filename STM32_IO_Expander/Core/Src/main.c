@@ -71,12 +71,13 @@ void SystemClock_Config(void);
 #define BUFFER_SIZE 128
 uint8_t RX_Buffer[BUFFER_SIZE] = {0};
 uint8_t TX_Buffer[BUFFER_SIZE] = {0};
-uint8_t nextSpiSize = 5, defaultSpiSize = 5, previousSpiSize = 5;
+uint8_t nextSpiSize = 5, defaultSpiSize = 5, previousSpiSize = 5, nextSpiSizeToRF = 0;
 uint8_t ServoIndex = 0;
 uint32_t SpiErrorCode = 0;
 bool SpiAvalable = true, ESP32HasBus = false;
 bool nextTransmitToRFM = false;
 volatile bool SpiRxCplt = false, SpiError = false, ESP32_MODE_NOW_LOW = false, ESP32_MODE_NOW_HIGH = false;
+volatile bool transmitOnNextRefresh = false;
 
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
 uint32_t AD_RES = 0;
@@ -95,11 +96,14 @@ void CustomTickHandler(uint32_t tick)
 {
     DSHOT_MOTOR_REFRESH = true;
     CHECK_SPI_MODE_PIN = true;
-    SPI_REFRESH = true;
-//    if (uwTick % HUMAN_READABLE_SPI == 0)
-//    {
-//        SPI_REFRESH = true;
-//    }
+    if(transmitOnNextRefresh){
+    	transmitOnNextRefresh = false;
+    	SPI_REFRESH = true;
+    }
+    if (uwTick % HUMAN_READABLE_SPI == 0)
+    {
+        SPI_REFRESH = true;
+    }
     if (uwTick + (ServoIndex * SERVO_PID_OFFSET) % SERVO_PID_PERIOD == 0)
     {
         if (ServoIndex < SERVO_NUM_DIVISIONS - 1)
@@ -263,6 +267,7 @@ int main(void)
             itter++;
             if (nextTransmitToRFM)
             {
+            	//this is the return from the transaction to the RF module so take the buss back
                 nextTransmitToRFM = false;
                 SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_32);
                 Take_SPI_BUS();
@@ -277,7 +282,9 @@ int main(void)
                     if (rxHeader.radioSendData == 1)
                     {
                         SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
+                        nextSpiSizeToRF = rxHeader.altCmd;
                         nextTransmitToRFM = true;
+                        transmitOnNextRefresh = true;
                         RELEASE_SPI_BUS();
                     }
 
@@ -317,8 +324,8 @@ int main(void)
             HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
             if (nextTransmitToRFM)
             {
-                memset(TX_Buffer, 0, nextSpiSize);
-                HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
+                memset(TX_Buffer, 0, nextSpiSizeToRF);
+                HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSizeToRF);
             }
             else
             {
@@ -326,6 +333,7 @@ int main(void)
                 TX_Buffer[8] = crcIn;
                 TX_Buffer[7] = (++itter & 0xff00) >> 8;
                 TX_Buffer[6] = itter & 0x00ff;
+                TX_Buffer[3] = nextSpiSizeToRF;
                 TX_Buffer[2] = badTransactions;
                 TX_Buffer[1] = nextSpiSize;
                 TX_Buffer[0] = calculate_cksum(TX_Buffer + 1, 4 - 1);

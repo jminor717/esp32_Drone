@@ -65,7 +65,7 @@ IRAM_ATTR void slave_post_trans_cb(spi_slave_transaction_t *trans)
 }
 
 spi_slave_transaction_t receiveFromSTM32();
-void sendToRFM69();
+spi_slave_transaction_t sendToRFM69();
 
 uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
 uint32_t badTransactions = 0;
@@ -123,7 +123,7 @@ void SPI_INIT(void)
         .pin_bit_mask = (1 << STM32_SPI_ALT)};
 
     // Configure handshake line as output
-     gpio_config(&io_conf);
+    gpio_config(&io_conf);
 
     gpio_set_direction(STM32_SPI_MOSI, GPIO_MODE_INPUT);
     gpio_set_direction(STM32_SPI_SCK, GPIO_MODE_INPUT);
@@ -153,6 +153,7 @@ void spiTask(void *arg)
     now = last = esp_timer_get_time();
     while (true)
     {
+        i++;
         // xSemaphoreGive(SPI_READY);
         // xSemaphoreTake(SPI_READY, portMAX_DELAY);
         if (pdTRUE == xSemaphoreTake(spiDataReady, portMAX_DELAY))
@@ -162,6 +163,7 @@ void spiTask(void *arg)
             if (NexSpiToRF)
             {
                 NexSpiToRF = false;
+                PreviousSlaveTransaction = sendToRFM69();
             }
             else
             {
@@ -175,8 +177,25 @@ void spiTask(void *arg)
     }
 }
 
-void sendToRFM69()
+spi_slave_transaction_t sendToRFM69()
 {
+
+    now = esp_timer_get_time();
+    DEBUG_PRINTI("%d   22=22 || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions,  dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
+    last = esp_timer_get_time();
+
+    memset(dat, 0, 5);
+    memset(dout, 0, 120);
+    dat[0] = 0xaa;
+    dat[1] = 0;
+    dat[2] = 0xf0;
+    dat[3] = 0x0f;
+    dat[4] = 0;
+    dat[5] = 0xaa;
+
+    spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, 12 + 4);
+
+    return PreviousTransaction;
 }
 
 spi_slave_transaction_t receiveFromSTM32()
@@ -187,31 +206,46 @@ spi_slave_transaction_t receiveFromSTM32()
     if (crcOut == crcIn && dout[1] != 0)
     {
         nextSize = dout[1];
+        NexSpiToRF = i % 6 == 0;
     }
     else
     {
+        NexSpiToRF = false;
         nextSize = defaultSize;
     }
     if (crcOut != crcIn)
     {
         badTransactions++;
-        now = esp_timer_get_time();
-        DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
     }
-    spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
 
+    now = esp_timer_get_time();
+    DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
     last = esp_timer_get_time();
+
+    // doing this before setting the contents of dat and dout assumes that the next transaction will not come for a while after this is setup
+    //spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
+
 
     memset(dat, 0, 5);
     memset(&tx, 0, sizeof(SPI_ESP_PACKET_HEADER));
     memset(dout, 0, 120);
 
     tx.nextSpiSize = nextSize;
-    NexSpiToRF = false;
+    NexSpiToRF = true;
     tx.radioSendData = NexSpiToRF;
+    if (NexSpiToRF)
+    {
+        tx.altCmd = 12;
+    }
+    else
+    {
+        tx.altCmd = 0xaa;
+    }
     tx.motorSpeeed = 1;
-    tx.altCmd = 0xaa;
+
     memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
     dat[0] = calculate_cksum(dat + 1, 4 - 1);
+
+    spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
     return PreviousTransaction;
 }
