@@ -164,7 +164,7 @@ void spiTask(void *arg)
         {
             SPI_SLAVE_RX_CLPT = false;
             spi_slave_get_trans_result(BUSS_1_HOST, &Transaction, 1);
-            memcpy(outputBuffer, dout, maxSize);//Transaction->length);
+            memcpy(outputBuffer, dout, maxSize); // Transaction->length);
             bool previousSpiToRFM69 = previousSpiToRF;
             if (NextSpiToRF)
             {
@@ -211,8 +211,13 @@ spi_slave_transaction_t SetupTransactionWithRFM69()
 void ProcessTransactionFromRFM69(uint8_t *outputBuffer)
 {
     now = esp_timer_get_time();
-    DEBUG_PRINTI("%d   00=00 || %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
-    last = esp_timer_get_time();
+    if ((now - last) > 1900)
+    {
+        DEBUG_PRINTI("     00=00 ||     %f n", ((now - last) / 1000.0));
+    }
+    last = now;
+    // DEBUG_PRINTI("%d   00=00 || %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
+    // last = esp_timer_get_time();
 }
 
 spi_slave_transaction_t SetupTransactionWithSTM32()
@@ -249,6 +254,7 @@ void ProcessTransactionFromSTM32(uint8_t *outputBuffer)
 {
     uint8_t crcIn = outputBuffer[0];
     uint8_t crcOut = calculate_cksum(outputBuffer + 1, 4 - 1);
+    now = esp_timer_get_time();
 
     if (crcOut == crcIn && outputBuffer[1] != 0)
     {
@@ -261,9 +267,7 @@ void ProcessTransactionFromSTM32(uint8_t *outputBuffer)
     if (crcOut != crcIn)
     {
         badTransactions++;
+        DEBUG_PRINTI("%d   %d=%d ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
     }
-
-    now = esp_timer_get_time();
-    DEBUG_PRINTI("%d   %d=%d ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
-    last = esp_timer_get_time();
+    last = now;
 }

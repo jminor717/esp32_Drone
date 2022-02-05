@@ -50,12 +50,8 @@ extern "C" {
 #define SERVO_PID_PERIOD 32
 #define SERVO_PID_OFFSET 8
 #define SERVO_NUM_DIVISIONS 4 //SERVO_PID_PERIOD / SERVO_PID_OFFSET
-#define HUMAN_READABLE_SPI 200
+#define HUMAN_READABLE_SPI 5
 
-
-//extern bool SPI_REFRESH;
-//extern bool DSHOT_MOTOR_REFRESH;
-//extern bool SERVO_REFRESH[SERVO_NUM_DIVISIONS];
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -84,9 +80,6 @@ void CustomTickHandler(uint32_t);
 #define AIN2_GPIO_Port GPIOA
 #define M3P_Pin GPIO_PIN_0
 #define M3P_GPIO_Port GPIOB
-#define ESP32_SPI_MODE_Pin GPIO_PIN_2
-#define ESP32_SPI_MODE_GPIO_Port GPIOB
-#define ESP32_SPI_MODE_EXTI_IRQn EXTI2_IRQn
 #define M2N_Pin GPIO_PIN_8
 #define M2N_GPIO_Port GPIOA
 #define M1P_Pin GPIO_PIN_9
