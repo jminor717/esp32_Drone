@@ -7,6 +7,7 @@
 #include "driver/i2c.h"
 
 #include "stm32_legacy.h"
+#include "config/dev_config.h"
 
 #define I2C_NO_INTERNAL_ADDRESS   0xFFFF
 

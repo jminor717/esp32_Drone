@@ -45,6 +45,7 @@
 #include "debug_cf.h"
 
 #include "config/pin_config.h"
+#include "config/dev_config.h"
 
 // Definitions of sensors I2C bus
 #define I2C_DEFAULT_SENSORS_CLOCK_SPEED             400000

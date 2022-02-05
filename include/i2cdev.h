@@ -28,6 +28,7 @@
 #include <stdbool.h>
 
 #include "i2c_drv.h"
+#include "config/dev_config.h"
 
 #define I2CDEV_NO_MEM_ADDR  0xFF
 
