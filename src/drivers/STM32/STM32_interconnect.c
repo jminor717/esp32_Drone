@@ -29,7 +29,7 @@
 /* Private functions */
 static void spiTask(void *arg);
 volatile bool SPI_SLAVE_RX_CLPT = true;
-bool NexSpiToRF = false;
+bool NextSpiToRF = false, previousSpiToRF = false;
 uint64_t now, last;
 static xSemaphoreHandle spiDataReady;
 
@@ -64,8 +64,10 @@ IRAM_ATTR void slave_post_trans_cb(spi_slave_transaction_t *trans)
     }
 }
 
-spi_slave_transaction_t receiveFromSTM32();
-spi_slave_transaction_t sendToRFM69();
+spi_slave_transaction_t SetupTransactionWithSTM32();
+spi_slave_transaction_t SetupTransactionWithRFM69();
+void ProcessTransactionFromSTM32(uint8_t *outputBuffer);
+void ProcessTransactionFromRFM69(uint8_t *outputBuffer);
 
 uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
 uint32_t badTransactions = 0;
@@ -151,6 +153,8 @@ void spiTask(void *arg)
     vTaskDelay(200);
     spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction; // these need to be on the stack inside this tasks memory
     now = last = esp_timer_get_time();
+    uint8_t *outputBuffer = malloc(sizeof(uint8_t) * maxSize);
+    memset(outputBuffer, 0, maxSize);
     while (true)
     {
         i++;
@@ -160,15 +164,26 @@ void spiTask(void *arg)
         {
             SPI_SLAVE_RX_CLPT = false;
             spi_slave_get_trans_result(BUSS_1_HOST, &Transaction, 1);
-            if (NexSpiToRF)
+            memcpy(outputBuffer, dout, maxSize);//Transaction->length);
+            bool previousSpiToRFM69 = previousSpiToRF;
+            if (NextSpiToRF)
             {
-                NexSpiToRF = false;
-                PreviousSlaveTransaction = sendToRFM69();
+                NextSpiToRF = false;
+                PreviousSlaveTransaction = SetupTransactionWithRFM69();
             }
             else
             {
-                PreviousSlaveTransaction = receiveFromSTM32();
+                PreviousSlaveTransaction = SetupTransactionWithSTM32();
             }
+            if (previousSpiToRFM69)
+            {
+                ProcessTransactionFromRFM69(outputBuffer);
+            }
+            else
+            {
+                ProcessTransactionFromSTM32(outputBuffer);
+            }
+
             //  fflush(stdout);
         }
         // taskYIELD();
@@ -177,13 +192,8 @@ void spiTask(void *arg)
     }
 }
 
-spi_slave_transaction_t sendToRFM69()
+spi_slave_transaction_t SetupTransactionWithRFM69()
 {
-
-    now = esp_timer_get_time();
-    DEBUG_PRINTI("%d   22=22 || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions,  dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
-    last = esp_timer_get_time();
-
     memset(dat, 0, 5);
     memset(dout, 0, 120);
     dat[0] = 0xaa;
@@ -194,46 +204,30 @@ spi_slave_transaction_t sendToRFM69()
     dat[5] = 0xaa;
 
     spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, 12 + 4);
-
+    previousSpiToRF = true;
     return PreviousTransaction;
 }
 
-spi_slave_transaction_t receiveFromSTM32()
+void ProcessTransactionFromRFM69(uint8_t *outputBuffer)
 {
-    uint8_t crcIn = dout[0];
-    uint8_t crcOut = calculate_cksum(dout + 1, 4 - 1);
-
-    if (crcOut == crcIn && dout[1] != 0)
-    {
-        nextSize = dout[1];
-        NexSpiToRF = i % 6 == 0;
-    }
-    else
-    {
-        NexSpiToRF = false;
-        nextSize = defaultSize;
-    }
-    if (crcOut != crcIn)
-    {
-        badTransactions++;
-    }
-
     now = esp_timer_get_time();
-    DEBUG_PRINTI("%d   %d=%d || %d %d %d %d %d  ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, dat[0], dat[1], dat[2], dat[3], dat[4], dout[0], dout[1], dout[2], dout[3], dout[4], dout[5], dout[6], dout[7], dout[8], dout[9], dout[10], dout[11], dout[12], dout[13], dout[14], dout[15], dout[16], ((now - last) / 1000.0));
+    DEBUG_PRINTI("%d   00=00 || %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
     last = esp_timer_get_time();
+}
 
+spi_slave_transaction_t SetupTransactionWithSTM32()
+{
     // doing this before setting the contents of dat and dout assumes that the next transaction will not come for a while after this is setup
-    //spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
-
+    // spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
 
     memset(dat, 0, 5);
     memset(&tx, 0, sizeof(SPI_ESP_PACKET_HEADER));
     memset(dout, 0, 120);
 
     tx.nextSpiSize = nextSize;
-    NexSpiToRF = true;
-    tx.radioSendData = NexSpiToRF;
-    if (NexSpiToRF)
+    NextSpiToRF = true;
+    tx.radioSendData = NextSpiToRF;
+    if (NextSpiToRF)
     {
         tx.altCmd = 12;
     }
@@ -247,5 +241,29 @@ spi_slave_transaction_t receiveFromSTM32()
     dat[0] = calculate_cksum(dat + 1, 4 - 1);
 
     spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
+    previousSpiToRF = false;
     return PreviousTransaction;
+}
+
+void ProcessTransactionFromSTM32(uint8_t *outputBuffer)
+{
+    uint8_t crcIn = outputBuffer[0];
+    uint8_t crcOut = calculate_cksum(outputBuffer + 1, 4 - 1);
+
+    if (crcOut == crcIn && outputBuffer[1] != 0)
+    {
+        nextSize = outputBuffer[1];
+    }
+    else
+    {
+        nextSize = defaultSize;
+    }
+    if (crcOut != crcIn)
+    {
+        badTransactions++;
+    }
+
+    now = esp_timer_get_time();
+    DEBUG_PRINTI("%d   %d=%d ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
+    last = esp_timer_get_time();
 }

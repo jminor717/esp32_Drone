@@ -47,7 +47,7 @@
 // extern const uint8_t SERVO_PID_OFFSET = 2; //instead of running all servos at the same time offset them
 // extern const uint8_t SERVO_NUM_DIVISION = SERVO_NUM_DIVISIONS;// SERVO_PID_PERIOD / SERVO_PID_OFFSET; //
 
-bool SPI_REFRESH = false;
+volatile bool SPI_REFRESH = false;
 bool DSHOT_MOTOR_REFRESH = false;
 bool CHECK_SPI_MODE_PIN = false;
 bool SERVO_REFRESH[SERVO_NUM_DIVISIONS] = {false};
@@ -97,25 +97,25 @@ void CustomTickHandler(uint32_t tick)
     DSHOT_MOTOR_REFRESH = true;
     CHECK_SPI_MODE_PIN = true;
     if(transmitOnNextRefresh){
-    	transmitOnNextRefresh = false;
+    	//transmitOnNextRefresh = false;
     	SPI_REFRESH = true;
     }
     if (uwTick % HUMAN_READABLE_SPI == 0)
     {
         SPI_REFRESH = true;
     }
-    if (uwTick + (ServoIndex * SERVO_PID_OFFSET) % SERVO_PID_PERIOD == 0)
-    {
-        if (ServoIndex < SERVO_NUM_DIVISIONS - 1)
-        {
-            ServoIndex++;
-        }
-        else
-        {
-            ServoIndex = 0;
-        }
-        SERVO_REFRESH[ServoIndex] = true;
-    }
+//    if (uwTick + (ServoIndex * SERVO_PID_OFFSET) % SERVO_PID_PERIOD == 0)
+//    {
+//        if (ServoIndex < SERVO_NUM_DIVISIONS - 1)
+//        {
+//            ServoIndex++;
+//        }
+//        else
+//        {
+//            ServoIndex = 0;
+//        }
+//        SERVO_REFRESH[ServoIndex] = true;
+//    }
 }
 
 #define SET_SPI_SPEED(spi, Speed) ({WRITE_REG(spi.Instance->CR1, spi.Instance->CR1 & ~SPI_CR1_BR_Msk); WRITE_REG(spi.Instance->CR1, spi.Instance->CR1 | (Speed & SPI_CR1_BR_Msk)); })
@@ -168,14 +168,19 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
-    //    if (pin == ESP32_SPI_MODE_Pin)
-    //    {
-    //    }
-    // this assumes that when we read the GPIO state the result will represent the value after the transition
-    //    if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
-    //    	ESP32_MODE_LOW_TO_HIGH = true;
-    //    else
-    //    	ESP32_MODE_HIGH_TO_LOW = true;
+//        if (pin == ESP32_SPI_MODE_Pin)
+//        {
+//        }
+     //this assumes that when we read the GPIO state the result will represent the value after the transition
+//        if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
+//        	ESP32_MODE_NOW_LOW = true;
+//        else{
+//        	ESP32_MODE_NOW_HIGH = true;
+//        	if(nextTransmitToRFM){
+//        		//SPI_REFRESH = true;
+//        	}
+//        }
+
 }
 
 void RELEASE_SPI_BUS()
@@ -306,19 +311,20 @@ int main(void)
             }
         }
 
-        if (SpiError)
-        {
-            SpiError = false;
-            SpiAvalable = true;
-            // HAL_SPI_MspDeInit(&hspi1);
-            //   MX_SPI1_Init();
-            TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
-            TX_Buffer[6] = (SpiRxCplt & 0x00ff);
-            // HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
-        }
+//        if (SpiError)
+//        {
+//            SpiError = false;
+//            SpiAvalable = true;
+//            //   HAL_SPI_MspDeInit(&hspi1);
+//            //   MX_SPI1_Init();
+//            TX_Buffer[5] = (SpiRxCplt & 0xff00) >> 8;
+//            TX_Buffer[6] = (SpiRxCplt & 0x00ff);
+//        }
 
         if (SPI_REFRESH)//(SPI_REFRESH || nextTransmitToRFM) && SpiAvalable) //&& !ESP32HasBus
         {
+        	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+        	transmitOnNextRefresh = false;
             SpiAvalable = false;
             SPI_REFRESH = false;
             HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
@@ -343,51 +349,51 @@ int main(void)
 
             previousSpiSize = nextSpiSize;
         }
-        if (ESP32_MODE_NOW_LOW)
-        {
-            ESP32_MODE_NOW_LOW = false;
-            // RELEASE_SPI_BUS();
-            ESP32HasBus = true;
-        }
-        if (ESP32_MODE_NOW_HIGH)
-        {
-            ESP32_MODE_NOW_HIGH = false;
-            // Take_SPI_BUS();
-            ESP32HasBus = false;
-        }
-
-        if (DSHOT_MOTOR_REFRESH)
-        {
-            DSHOT_MOTOR_REFRESH = false;
-            // HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
-            HAL_ADC_Start(&hadc1);
-            HAL_ADC_PollForConversion(&hadc1, 100);
-            AD_RES = HAL_ADC_GetValue(&hadc1);
-        }
-        if (CHECK_SPI_MODE_PIN)
-        {
-            CHECK_SPI_MODE_PIN = false;
-            if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
-                ESP32_MODE_NOW_LOW = true;
-            else
-                ESP32_MODE_NOW_HIGH = true;
-        }
-
-        if (SERVO_REFRESH[ServoIndex])
-        {
-            SERVO_REFRESH[ServoIndex] = false;
-            if (CH1_DC > 2048)
-            {
-                incremnt = -8;
-            }
-            if (CH1_DC < -2048)
-            {
-                incremnt = 8;
-            }
-
-            CH1_DC += incremnt;
-            SetServoAngle(CH1_DC, ServoIndex, 0);
-        }
+//        if (ESP32_MODE_NOW_LOW)
+//        {
+//            ESP32_MODE_NOW_LOW = false;
+//            // RELEASE_SPI_BUS();
+//            ESP32HasBus = true;
+//        }
+//        if (ESP32_MODE_NOW_HIGH)
+//        {
+//            ESP32_MODE_NOW_HIGH = false;
+//            // Take_SPI_BUS();
+//            ESP32HasBus = false;
+//        }
+//
+//        if (DSHOT_MOTOR_REFRESH)
+//        {
+//            DSHOT_MOTOR_REFRESH = false;
+//            // HAL_ADC_Start_DMA(&hadc1, &AD_RES, 1);
+//            HAL_ADC_Start(&hadc1);
+//            HAL_ADC_PollForConversion(&hadc1, 100);
+//            AD_RES = HAL_ADC_GetValue(&hadc1);
+//        }
+//        if (CHECK_SPI_MODE_PIN)
+//        {
+//            CHECK_SPI_MODE_PIN = false;
+//            if (HAL_GPIO_ReadPin(ESP32_SPI_MODE_GPIO_Port, ESP32_SPI_MODE_Pin) == GPIO_PIN_RESET)
+//                ESP32_MODE_NOW_LOW = true;
+//            else
+//                ESP32_MODE_NOW_HIGH = true;
+//        }
+//
+//        if (SERVO_REFRESH[ServoIndex])
+//        {
+//            SERVO_REFRESH[ServoIndex] = false;
+//            if (CH1_DC > 2048)
+//            {
+//                incremnt = -8;
+//            }
+//            if (CH1_DC < -2048)
+//            {
+//                incremnt = 8;
+//            }
+//
+//            CH1_DC += incremnt;
+//            SetServoAngle(CH1_DC, ServoIndex, 0);
+//        }
 
         // HAL_Delay(100);
 

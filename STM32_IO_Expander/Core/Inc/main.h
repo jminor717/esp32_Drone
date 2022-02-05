@@ -50,12 +50,12 @@ extern "C" {
 #define SERVO_PID_PERIOD 32
 #define SERVO_PID_OFFSET 8
 #define SERVO_NUM_DIVISIONS 4 //SERVO_PID_PERIOD / SERVO_PID_OFFSET
-#define HUMAN_READABLE_SPI 1000
+#define HUMAN_READABLE_SPI 200
 
 
-extern bool SPI_REFRESH;
-extern bool DSHOT_MOTOR_REFRESH;
-extern bool SERVO_REFRESH[SERVO_NUM_DIVISIONS];
+//extern bool SPI_REFRESH;
+//extern bool DSHOT_MOTOR_REFRESH;
+//extern bool SERVO_REFRESH[SERVO_NUM_DIVISIONS];
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
