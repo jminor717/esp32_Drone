@@ -64,7 +64,7 @@ IRAM_ATTR void slave_post_trans_cb(spi_slave_transaction_t *trans)
     }
 }
 
-spi_slave_transaction_t SetupTransactionWithSTM32();
+void SetupTransactionWithSTM32();
 spi_slave_transaction_t SetupTransactionWithRFM69();
 void ProcessTransactionFromSTM32(uint8_t *outputBuffer);
 void ProcessTransactionFromRFM69(uint8_t *outputBuffer);
@@ -95,6 +95,28 @@ spi_slave_interface_config_t slvcfg = {
     .post_setup_cb = slave_post_setup_cb,
     .post_trans_cb = slave_post_trans_cb};
 
+spi_device_handle_t STM32spi;
+spi_device_interface_config_t STM32cfg = {
+    .clock_speed_hz = 1000 * 1000, // Clock out at 1 MHz
+    .mode = 1,                     // SPI mode 0
+    .spics_io_num = STM32_SPI_SS,  // CS pin
+    .queue_size = 7,               // We want to be able to queue 7 transactions at a time
+    .address_bits = 0,             // 16,
+    .dummy_bits = 0                // 8
+    //.pre_cb = lcd_spi_pre_transfer_callback, // Specify pre-transfer callback to handle D/C line
+};
+
+spi_device_handle_t RFM69spi;
+spi_device_interface_config_t RFM69cfg = {
+    .clock_speed_hz = 125 * 1000, // Clock out at 1 MHz
+    .mode = 1,                    // SPI mode 0
+    .spics_io_num = COM13909_SS,  // CS pin
+    .queue_size = 7,              // We want to be able to queue 7 transactions at a time
+    .address_bits = 0,            // 16,
+    .dummy_bits = 0               // 8
+    //.pre_cb = lcd_spi_pre_transfer_callback, // Specify pre-transfer callback to handle D/C line
+};
+
 spi_slave_transaction_t Slave_Transaction(uint8_t *dat, uint8_t *dout, uint32_t nextSize)
 {
     spi_slave_transaction_t t;
@@ -111,6 +133,21 @@ spi_slave_transaction_t Slave_Transaction(uint8_t *dat, uint8_t *dout, uint32_t 
     // spi_slave_transmit(BUSS_1_HOST, &t, portMAX_DELAY);
     spi_slave_queue_trans(BUSS_1_HOST, &t, portMAX_DELAY);
     return t;
+}
+
+void Master_Transaction(spi_device_handle_t spi, uint8_t *dat, uint8_t *dout, uint32_t nextSize)
+{
+    esp_err_t ret;
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t)); // Zero out the transaction
+    t.length = nextSize * 8;  // Len is in bytes, transaction length is in bits.
+    t.tx_buffer = dat;        // Data
+    t.rx_buffer = dout;
+    //  t.user = (void *)1;                         // D/C needs to be set to 1
+    //  t.addr = 0b1001101001010101;
+    ret = spi_device_polling_transmit(spi, &t); // Transmit!
+    assert(ret == ESP_OK);
+    // return t;
 }
 
 /* Public functions */
@@ -136,8 +173,18 @@ void SPI_INIT(void)
     gpio_set_pull_mode(STM32_SPI_SCK, GPIO_PULLDOWN_ONLY);
 
     // Initialize SPI slave interface
-    esp_err_t ret = spi_slave_initialize(BUSS_1_HOST, &buscfg, &slvcfg, SPI_DMA_CH_AUTO); // SPI_DMA_DISABLED SPI_DMA_CH_AUTO
+    esp_err_t ret;
+    ret = spi_bus_initialize(VSPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
     ESP_ERROR_CHECK(ret);
+
+    ret = spi_bus_add_device(VSPI_HOST, &STM32cfg, &STM32spi);
+    ESP_ERROR_CHECK(ret);
+
+    ret = spi_bus_add_device(VSPI_HOST, &RFM69cfg, &RFM69spi);
+    ESP_ERROR_CHECK(ret);
+
+    // ret = spi_slave_initialize(BUSS_1_HOST, &buscfg, &slvcfg, SPI_DMA_CH_AUTO); // SPI_DMA_DISABLED SPI_DMA_CH_AUTO
+    // ESP_ERROR_CHECK(ret);
 
     dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
     dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * maxSize, MALLOC_CAP_DMA);
@@ -160,10 +207,10 @@ void spiTask(void *arg)
         i++;
         // xSemaphoreGive(SPI_READY);
         // xSemaphoreTake(SPI_READY, portMAX_DELAY);
-        if (pdTRUE == xSemaphoreTake(spiDataReady, portMAX_DELAY))
+        // if (pdTRUE == xSemaphoreTake(spiDataReady, portMAX_DELAY))
         {
             SPI_SLAVE_RX_CLPT = false;
-            spi_slave_get_trans_result(BUSS_1_HOST, &Transaction, 1);
+            // spi_slave_get_trans_result(BUSS_1_HOST, &Transaction, 1);
             memcpy(outputBuffer, dout, maxSize); // Transaction->length);
             bool previousSpiToRFM69 = previousSpiToRF;
             if (NextSpiToRF)
@@ -173,7 +220,8 @@ void spiTask(void *arg)
             }
             else
             {
-                PreviousSlaveTransaction = SetupTransactionWithSTM32();
+                // PreviousSlaveTransaction = SetupTransactionWithSTM32();
+                SetupTransactionWithSTM32();
             }
             if (previousSpiToRFM69)
             {
@@ -187,7 +235,7 @@ void spiTask(void *arg)
             //  fflush(stdout);
         }
         // taskYIELD();
-        // vTaskDelay(1);
+        vTaskDelay(300);
         // portYIELD();
     }
 }
@@ -220,7 +268,7 @@ void ProcessTransactionFromRFM69(uint8_t *outputBuffer)
     // last = esp_timer_get_time();
 }
 
-spi_slave_transaction_t SetupTransactionWithSTM32()
+void SetupTransactionWithSTM32()
 {
     // doing this before setting the contents of dat and dout assumes that the next transaction will not come for a while after this is setup
     // spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
@@ -230,7 +278,7 @@ spi_slave_transaction_t SetupTransactionWithSTM32()
     memset(dout, 0, 120);
 
     tx.nextSpiSize = nextSize;
-    NextSpiToRF = true;
+    // NextSpiToRF = true;
     tx.radioSendData = NextSpiToRF;
     if (NextSpiToRF)
     {
@@ -245,9 +293,10 @@ spi_slave_transaction_t SetupTransactionWithSTM32()
     memcpy(dat, &tx, sizeof(SPI_ESP_PACKET_HEADER));
     dat[0] = calculate_cksum(dat + 1, 4 - 1);
 
-    spi_slave_transaction_t PreviousTransaction = Slave_Transaction(dat, dout, nextSize + 4);
+    // spi_slave_transaction_t PreviousTransaction =
+    Master_Transaction(STM32spi, dat, dout, nextSize + 4);
     previousSpiToRF = false;
-    return PreviousTransaction;
+    // return PreviousTransaction;
 }
 
 void ProcessTransactionFromSTM32(uint8_t *outputBuffer)

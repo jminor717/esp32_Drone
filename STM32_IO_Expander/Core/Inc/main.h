@@ -86,8 +86,6 @@ void CustomTickHandler(uint32_t);
 #define M1P_GPIO_Port GPIOA
 #define M1N_Pin GPIO_PIN_10
 #define M1N_GPIO_Port GPIOA
-#define SPI1_NSS_Pin GPIO_PIN_15
-#define SPI1_NSS_GPIO_Port GPIOA
 #define SPI1_CLK_Pin GPIO_PIN_3
 #define SPI1_CLK_GPIO_Port GPIOB
 #define SPI1_MISO_Pin GPIO_PIN_4

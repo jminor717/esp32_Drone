@@ -129,7 +129,7 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 1);
+    //  HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 1);
     memcpy(TX_Buffer, RX_Buffer, previousSpiSize);
 
     SpiRxCplt = true;
@@ -140,7 +140,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
     // nextSpiSize = defaultSpiSize;
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 1);
+    //  HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 1);
     SpiRxCplt = true;
     SpiErrorCode = hspi->ErrorCode;
     SpiError = true;
@@ -210,9 +210,9 @@ int main(void)
     // HAL_SPI_RegisterCallback();
 
     HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, nextSpiSize);
-    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
-    // HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
-    // HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
+    // HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
+    //  HAL_SPI_Receive_IT(&hspi1, RX_Buffer, BUFFER_SIZE);
+    //  HAL_SPI_TransmitReceive_IT(&hspi1, TX_Buffer, RX_Buffer, BUFFER_SIZE);
     dshot_init(DSHOT600);
     uint8_t crcIn = 0, crcOut = 0;
     SPI_ESP_PACKET_HEADER rxHeader;
@@ -234,28 +234,28 @@ int main(void)
             SpiRxCplt = false;
             SpiAvalable = true;
             itter++;
-            if (nextTransmitToRFM)
-            {
-                // this is the return from the transaction to the RF module so take the buss back
-                nextTransmitToRFM = false;
-                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_32);
-                Take_SPI_BUS();
-            }
-            else
+            //            if (nextTransmitToRFM)
+            //            {
+            //                // this is the return from the transaction to the RF module so take the buss back
+            //                nextTransmitToRFM = false;
+            //                SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_32);
+            //                Take_SPI_BUS();
+            //            }
+            //            else
             {
                 crcIn = RX_Buffer[0];
                 crcOut = calculate_cksum(RX_Buffer + 1, 4 - 1);
                 if (crcOut == crcIn && RX_Buffer[1] != 0)
                 {
                     memcpy(&rxHeader, RX_Buffer, sizeof(SPI_ESP_PACKET_HEADER));
-                    if (rxHeader.radioSendData == 1)
-                    {
-                        SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
-                        nextSpiSizeToRF = rxHeader.altCmd;
-                        nextTransmitToRFM = true;
-                        transmitOnNextRefresh = true;
-                        RELEASE_SPI_BUS();
-                    }
+                    //                    if (rxHeader.radioSendData == 1)
+                    //                    {
+                    //                        SET_SPI_SPEED(hspi1, SPI_BAUDRATEPRESCALER_128);
+                    //                        nextSpiSizeToRF = rxHeader.altCmd;
+                    //                        nextTransmitToRFM = true;
+                    //                        transmitOnNextRefresh = true;
+                    //                        RELEASE_SPI_BUS();
+                    //                    }
 
                     nextSpiSize++;
                     if (nextSpiSize >= 30 - 1)
@@ -272,6 +272,17 @@ int main(void)
                 {
                     badTransactions++;
                 }
+
+                TX_Buffer[9] = crcOut;
+                TX_Buffer[8] = crcIn;
+                TX_Buffer[7] = (++itter & 0xff00) >> 8;
+                TX_Buffer[6] = itter & 0x00ff;
+                TX_Buffer[3] = nextSpiSizeToRF;
+                TX_Buffer[2] = badTransactions;
+                TX_Buffer[1] = nextSpiSize;
+                TX_Buffer[0] = calculate_cksum(TX_Buffer + 1, 4 - 1);
+
+                HAL_SPI_TransmitReceive_DMA(&hspi1, TX_Buffer, RX_Buffer, previousSpiSize);
             }
         }
 
@@ -283,20 +294,20 @@ int main(void)
             if (transmitOnNextRefresh)
             {
                 transmitOnNextRefresh = false;
-                SPI_REFRESH = true;
+                //                SPI_REFRESH = true;
             }
             if (uwTick % HUMAN_READABLE_SPI == 0)
             {
-                SPI_REFRESH = true;
+                //                SPI_REFRESH = true;
             }
         }
 
         if (SPI_REFRESH) //(SPI_REFRESH || nextTransmitToRFM) && SpiAvalable) //&& !ESP32HasBus
         {
-            HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+            //            HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
             SpiAvalable = false;
             SPI_REFRESH = false;
-            HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
+            //            HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, 0);
             if (nextTransmitToRFM)
             {
                 memset(TX_Buffer, 0, nextSpiSizeToRF);
