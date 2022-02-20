@@ -39,7 +39,7 @@
 #define STM32_SPI_SCK 4
 #define STM32_SPI_MISO 16
 #define STM32_SPI_MOSI 17
-#define STM32_SPI_SS 35
+#define STM32_SPI_SS 18
 #define STM32_SPI_ALT 18 // shared with boot mode
 // STM32 Controlls
 #define STM32_RST 13

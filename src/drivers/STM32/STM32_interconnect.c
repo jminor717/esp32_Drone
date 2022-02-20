@@ -26,6 +26,9 @@
 #include "config.h"
 #define GPIO_HANDSHAKE 2
 
+#define ESP32
+#include <../Common/Submodules/RadioHead/RH_RF69.h>
+
 /* Private functions */
 static void spiTask(void *arg);
 volatile bool SPI_SLAVE_RX_CLPT = true;
@@ -69,7 +72,7 @@ spi_slave_transaction_t SetupTransactionWithRFM69();
 void ProcessTransactionFromSTM32(uint8_t *outputBuffer);
 void ProcessTransactionFromRFM69(uint8_t *outputBuffer);
 
-uint32_t i = 256, nextSize = 5, defaultSize = 5, maxSize = 128;
+uint32_t i = 256, nextSize = 8, defaultSize = 8, maxSize = 128;
 uint32_t badTransactions = 0;
 SPI_ESP_PACKET_HEADER tx;
 uint8_t *dout;
@@ -99,7 +102,7 @@ spi_device_handle_t STM32spi;
 spi_device_interface_config_t STM32cfg = {
     .clock_speed_hz = 1000 * 1000, // Clock out at 1 MHz
     .mode = 1,                     // SPI mode 0
-    .spics_io_num = STM32_SPI_SS,  // CS pin
+    .spics_io_num = -1,// STM32_SPI_SS,  // CS pin
     .queue_size = 7,               // We want to be able to queue 7 transactions at a time
     .address_bits = 0,             // 16,
     .dummy_bits = 0                // 8
@@ -137,6 +140,8 @@ spi_slave_transaction_t Slave_Transaction(uint8_t *dat, uint8_t *dout, uint32_t 
 
 void Master_Transaction(spi_device_handle_t spi, uint8_t *dat, uint8_t *dout, uint32_t nextSize)
 {
+    gpio_set_level(STM32_SPI_SS, 0);
+    ets_delay_us(20);
     esp_err_t ret;
     spi_transaction_t t;
     memset(&t, 0, sizeof(t)); // Zero out the transaction
@@ -147,6 +152,8 @@ void Master_Transaction(spi_device_handle_t spi, uint8_t *dat, uint8_t *dout, ui
     //  t.addr = 0b1001101001010101;
     ret = spi_device_polling_transmit(spi, &t); // Transmit!
     assert(ret == ESP_OK);
+    ets_delay_us(80);
+    gpio_set_level(STM32_SPI_SS, 1);
     // return t;
 }
 
@@ -167,7 +174,7 @@ void SPI_INIT(void)
     gpio_set_direction(STM32_SPI_MOSI, GPIO_MODE_INPUT);
     gpio_set_direction(STM32_SPI_SCK, GPIO_MODE_INPUT);
     gpio_set_direction(STM32_SPI_MISO, GPIO_MODE_OUTPUT);
-    gpio_set_direction(STM32_SPI_SS, GPIO_MODE_INPUT);
+    gpio_set_direction(STM32_SPI_SS, GPIO_MODE_OUTPUT);
     gpio_set_pull_mode(STM32_SPI_MISO, GPIO_PULLDOWN_ONLY);
     gpio_set_pull_mode(STM32_SPI_MOSI, GPIO_PULLDOWN_ONLY);
     gpio_set_pull_mode(STM32_SPI_SCK, GPIO_PULLDOWN_ONLY);
@@ -196,9 +203,9 @@ void spiTask(void *arg)
     memset(dat, 0, 5);
     memset(dout, 0, maxSize);
 
-    spi_slave_transaction_t PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
-    vTaskDelay(200);
-    spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction; // these need to be on the stack inside this tasks memory
+    //spi_slave_transaction_t PreviousSlaveTransaction = Slave_Transaction(dat, dout, 35);
+    //vTaskDelay(200);
+   // spi_slave_transaction_t *Transaction = &PreviousSlaveTransaction; // these need to be on the stack inside this tasks memory
     now = last = esp_timer_get_time();
     uint8_t *outputBuffer = malloc(sizeof(uint8_t) * maxSize);
     memset(outputBuffer, 0, maxSize);
@@ -216,7 +223,7 @@ void spiTask(void *arg)
             if (NextSpiToRF)
             {
                 NextSpiToRF = false;
-                PreviousSlaveTransaction = SetupTransactionWithRFM69();
+              //  PreviousSlaveTransaction = SetupTransactionWithRFM69();
             }
             else
             {
@@ -235,7 +242,7 @@ void spiTask(void *arg)
             //  fflush(stdout);
         }
         // taskYIELD();
-        vTaskDelay(300);
+        vTaskDelay(30);
         // portYIELD();
     }
 }
@@ -294,7 +301,7 @@ void SetupTransactionWithSTM32()
     dat[0] = calculate_cksum(dat + 1, 4 - 1);
 
     // spi_slave_transaction_t PreviousTransaction =
-    Master_Transaction(STM32spi, dat, dout, nextSize + 4);
+    Master_Transaction(STM32spi, dat, dout, nextSize);
     previousSpiToRF = false;
     // return PreviousTransaction;
 }
@@ -307,7 +314,7 @@ void ProcessTransactionFromSTM32(uint8_t *outputBuffer)
 
     if (crcOut == crcIn && outputBuffer[1] != 0)
     {
-        nextSize = outputBuffer[1];
+        nextSize = 20;//outputBuffer[1];
     }
     else
     {
@@ -316,7 +323,7 @@ void ProcessTransactionFromSTM32(uint8_t *outputBuffer)
     if (crcOut != crcIn)
     {
         badTransactions++;
-        DEBUG_PRINTI("%d   %d=%d ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
     }
+    DEBUG_PRINTI("%d   %d=%d  || %d ||  %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d        %f n", badTransactions, crcIn, crcOut, nextSize, outputBuffer[0], outputBuffer[1], outputBuffer[2], outputBuffer[3], outputBuffer[4], outputBuffer[5], outputBuffer[6], outputBuffer[7], outputBuffer[8], outputBuffer[9], outputBuffer[10], outputBuffer[11], outputBuffer[12], outputBuffer[13], outputBuffer[14], outputBuffer[15], outputBuffer[16], ((now - last) / 1000.0));
     last = now;
 }
