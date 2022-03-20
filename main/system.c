@@ -55,7 +55,7 @@
 #include "commander.h"
 //*#include "console.h"
 #include "wifilink.h"
-#include "mem.h"
+//#include "mem.h"
 //#include "proximity.h"
 //#include "watchdog.h"
 #include "queuemonitor.h"

@@ -1,3 +1,6 @@
+#ifndef _DATA_TYPES_H_
+#define _DATA_TYPES_H_
+
 #include <stdint.h>
 #include <string.h>
 
@@ -330,3 +333,6 @@ enum registers
     servo4CFG,
 
 };
+
+
+#endif

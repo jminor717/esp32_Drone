@@ -26,8 +26,6 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 
-#include "STM32_interconnect.h"
-
 #include <../Common/Data_type.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -100,9 +98,8 @@ void app_main()
     printf("prepairing to Launch system \n");
 
     fflush(stdout);
-    SPI_INIT();
     /*launch the system task */
-     //systemLaunch();
+     systemLaunch();
     for (;;)
     {
         // micros(); // update overflow

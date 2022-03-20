@@ -24,6 +24,17 @@
  *
  * And as a bonus hard-to-find figure, the internal pull-up and pull-down resistors are 45kOhms each.
  */
+
+
+/* esp32 s3
+    strapping pins 0, 45, 46, 3 
+    Flash pins 4, 5, 6, 7
+free
+    15, 16, 17, 18, 8, (19, 20 USB JTag)
+    46, 9, 10, 11, 12, 13, 14, 21, 47, 48, 45
+    38, 39, 40, 41, 42, 2, 1
+total  25 - 2
+*/
 #include "config/dev_config.h"
 #include "hal/spi_types.h"
 
