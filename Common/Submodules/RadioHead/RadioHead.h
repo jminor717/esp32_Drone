@@ -1410,7 +1410,7 @@ these examples and explanations and extend them to suit your needs.
 
 */
 
-
+#define ESP32
 
 #ifndef RadioHead_h
 #define RadioHead_h

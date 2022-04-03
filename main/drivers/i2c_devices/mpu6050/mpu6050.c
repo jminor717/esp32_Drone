@@ -101,7 +101,8 @@ bool mpu6050SelfTest()
     gRange = mpu6050GetFullScaleGyroDPL();
 
     // First values after startup can be read as zero. Scrap a couple to be sure.
-    for (scrap = 0; scrap < 5; scrap++) {
+    for (scrap = 0; scrap < 5; scrap++)
+    {
         mpu6050GetMotion6(&axi16, &ayi16, &azi16, &gxi16, &gyi16, &gzi16);
         vTaskDelay(M2T(2));
     }
@@ -114,6 +115,9 @@ bool mpu6050SelfTest()
     ayf = ayi16 * aRange;
     azf = azi16 * aRange;
 
+    DEBUG_PRINTI("start : gxf:%i, gyf:%i, gzf:%i, axf:%i, ayf:%i, azf:%i",
+                 (int)gxi16, (int)gyi16, (int)gzi16, (int)axi16, (int)ayi16, (int)azi16);
+
     // Enable self test
     mpu6050SetGyroXSelfTest(true);
     mpu6050SetGyroYSelfTest(true);
@@ -123,7 +127,7 @@ bool mpu6050SelfTest()
     mpu6050SetAccelZSelfTest(true);
 
     // Wait for self test to take effect
-    vTaskDelay(1000 / portTICK_PERIOD_MS);//vTaskDelay(M2T(MPU6050_SELF_TEST_DELAY_MS));
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // vTaskDelay(M2T(MPU6050_SELF_TEST_DELAY_MS));
     // Take second measurement
     mpu6050GetMotion6(&axi16, &ayi16, &azi16, &gxi16, &gyi16, &gzi16);
     gxfTst = gxi16 * gRange;
@@ -141,16 +145,20 @@ bool mpu6050SelfTest()
     mpu6050SetAccelYSelfTest(false);
     mpu6050SetAccelZSelfTest(false);
 
-// Read factory values
-//  i2cdevReadByte(I2Cx, devAddr, 0x00, (uint8_t *)&gxfi8);
-//  i2cdevReadByte(I2Cx, devAddr, 0x01, (uint8_t *)&gyfi8);
-//  i2cdevReadByte(I2Cx, devAddr, 0x02, (uint8_t *)&gzfi8);
-//  i2cdevReadByte(I2Cx, devAddr, 0x0D, (uint8_t *)&axfi8);
-//  i2cdevReadByte(I2Cx, devAddr, 0x0E, (uint8_t *)&ayfi8);
-//  i2cdevReadByte(I2Cx, devAddr, 0x0F, (uint8_t *)&azfi8);
+    DEBUG_PRINTI("tests : gxf:%i, gyf:%i, gzf:%i, axf:%i, ayf:%i, azf:%i",
+                 (int)gxi16, (int)gyi16, (int)gzi16, (int)axi16, (int)ayi16, (int)azi16);
 
-//  fprintf("gxf:%i, gyf:%i, gzf:%i, axf:%i, ayf:%i, azf:%i\n",
-//             (int)gxfi8, (int)gyfi8, (int)gzfi8, (int)axfi8, (int)ayfi8, (int)azfi8);
+    // Read factory values
+    uint8_t gxfi8, gyfi8, gzfi8, axfi8, ayfi8, azfi8;
+    i2cdevReadByte(I2Cx, devAddr, 0x00, (uint8_t *)&gxfi8);
+    i2cdevReadByte(I2Cx, devAddr, 0x01, (uint8_t *)&gyfi8);
+    i2cdevReadByte(I2Cx, devAddr, 0x02, (uint8_t *)&gzfi8);
+    i2cdevReadByte(I2Cx, devAddr, 0x0D, (uint8_t *)&axfi8);
+    i2cdevReadByte(I2Cx, devAddr, 0x0E, (uint8_t *)&ayfi8);
+    i2cdevReadByte(I2Cx, devAddr, 0x0F, (uint8_t *)&azfi8);
+
+    DEBUG_PRINTI("factory : gxf:%i, gyf:%i, gzf:%i, axf:%i, ayf:%i, azf:%i",
+                 (int)gxfi8, (int)gyfi8, (int)gzfi8, (int)axfi8, (int)ayfi8, (int)azfi8);
 
     // Calculate difference
     gxfDiff = gxfTst - gxf;
@@ -160,15 +168,21 @@ bool mpu6050SelfTest()
     ayfDiff = ayfTst - ayf;
     azfDiff = azfTst - azf;
 
+    DEBUG_PRINTI("Diff : gxf:%i, gyf:%i, gzf:%i, axf:%i, ayf:%i, azf:%i, gRn:%f, aRn:%f",
+                 (int)gxfDiff, (int)gyfDiff, (int)gzfDiff, (int)axfDiff, (int)ayfDiff, (int)azfDiff, gRange, aRange);
+
     // Check result
     if (mpu6050EvaluateSelfTest(MPU6050_ST_GYRO_LOW, MPU6050_ST_GYRO_HIGH, gxfDiff, "gyro X") &&
-            mpu6050EvaluateSelfTest(-MPU6050_ST_GYRO_HIGH, -MPU6050_ST_GYRO_LOW, gyfDiff, "gyro Y") &&
-            mpu6050EvaluateSelfTest(MPU6050_ST_GYRO_LOW, MPU6050_ST_GYRO_HIGH, gzfDiff, "gyro Z") &&
-            mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, axfDiff, "acc X") &&
-            mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, ayfDiff, "acc Y") &&
-            mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, azfDiff, "acc Z")) {
+        mpu6050EvaluateSelfTest(-MPU6050_ST_GYRO_HIGH, -MPU6050_ST_GYRO_LOW, gyfDiff, "gyro Y") &&
+        mpu6050EvaluateSelfTest(MPU6050_ST_GYRO_LOW, MPU6050_ST_GYRO_HIGH, gzfDiff, "gyro Z") &&
+        mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, axfDiff, "acc X") &&
+        mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, ayfDiff, "acc Y") &&
+        mpu6050EvaluateSelfTest(MPU6050_ST_ACCEL_LOW, MPU6050_ST_ACCEL_HIGH, azfDiff, "acc Z"))
+    {
         DEBUG_PRINTI("mpu6050 Self test [OK].\n");
-    } else {
+    }
+    else
+    {
         testStatus = false;
     }
 
@@ -3198,6 +3212,7 @@ uint8_t mpu6050GetDeviceID()
 {
     i2cdevReadBits(I2Cx, devAddr, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH,
                    buffer);
+    DEBUG_PRINTI(" %d %d %d", buffer[0], buffer[1], buffer[2]);
     return buffer[0];
 }
 /** Set Device ID.

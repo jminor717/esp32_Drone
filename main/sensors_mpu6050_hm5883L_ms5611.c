@@ -186,6 +186,44 @@ float sinPitch;
 float cosRoll;
 float sinRoll;
 
+// #include "led_strip.h"
+// #include <stdlib.h>
+// #define CONFIG_BLINK_GPIO 48
+// #define BLINK_GPIO CONFIG_BLINK_GPIO
+
+// #define CONFIG_BLINK_LED_RMT_CHANNEL 0
+
+// static uint8_t s_led_state = 0;
+
+
+// static led_strip_t *pStrip_a;
+
+// static void blink_led(void)
+// {
+//     /* If the addressable LED is enabled */
+//     if (s_led_state)
+//     {
+//         /* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
+//         pStrip_a->set_pixel(pStrip_a, 0, 16, 16, 16);
+//         /* Refresh the strip to send data */
+//         pStrip_a->refresh(pStrip_a, 100);
+//     }
+//     else
+//     {
+//         /* Set all LED off to clear all pixels */
+//         pStrip_a->clear(pStrip_a, 50);
+//     }
+// }
+
+// static void configure_led(void)
+// {
+//     //  ESP_LOGI(TAG, "Example configured to blink addressable LED!");
+//     /* LED strip initialization with the GPIO and pixels number*/
+//     pStrip_a = led_strip_init(CONFIG_BLINK_LED_RMT_CHANNEL, BLINK_GPIO, 1);
+//     /* Set all LED off to clear all pixels */
+//     pStrip_a->clear(pStrip_a, 50);
+// }
+
 // This buffer needs to hold data from all sensors
 static uint8_t buffer[SENSORS_MPU6050_BUFF_LEN + SENSORS_MAG_BUFF_LEN + SENSORS_BARO_BUFF_LEN] = {0};
 
@@ -244,19 +282,24 @@ bool sensorsMpu6050Hmc5883lMs5611AreCalibrated()
 
 static void sensorsTask(void *param)
 {
-    //TODO:
-    //systemWaitStart();
+    //configure_led();
+    // TODO:
+    // systemWaitStart();
     DEBUG_PRINTI("xTaskCreate sensorsTask IN");
     vTaskDelay(M2T(200));
     sensorsSetupSlaveRead(); //
     DEBUG_PRINTI("xTaskCreate sensorsTask SetupSlave done");
+    uint32_t cnt = 0;
 
-    while (1) {
+    while (1)
+    {
 
         /* mpu6050 interrupt trigger: data is ready to be read */
-        if (pdTRUE == xSemaphoreTake(sensorsDataReady, portMAX_DELAY)) {
+        if (pdTRUE == xSemaphoreTake(sensorsDataReady, portMAX_DELAY))
+        {
+            cnt++;
             sensorData.interruptTimestamp = imuIntTimestamp;
-            //DEBUG_PRINTI("Data Ready");
+            // DEBUG_PRINTI("Data Ready");
             /* sensors step 1-read data from I2C */
             uint8_t dataLen = (uint8_t)(SENSORS_MPU6050_BUFF_LEN +
                                         (isMagnetometerPresent ? SENSORS_MAG_BUFF_LEN : 0) +
@@ -266,14 +309,22 @@ static void sensorsTask(void *param)
             /* sensors step 2-process the respective data */
             processAccGyroMeasurements(&(buffer[0]));
 
-            //DEBUG_PRINTI(" %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13]);
-            //DEBUG_PRINTI(" %f %f %f", sensorData.acc.x, sensorData.acc.y, sensorData.acc.z);
+            // DEBUG_PRINTI(" %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13]);
+            // if ((cnt % 100) == 0)
+            // {
+            //     //DEBUG_PRINTI("acc: %f %f %f :: %d %d %d", sensorData.acc.x, sensorData.acc.y, sensorData.acc.z, abs(sensorData.acc.x * 100), abs(sensorData.acc.y * 100), abs(sensorData.acc.z * 100));
+            //     pStrip_a->set_pixel(pStrip_a, 0, abs(sensorData.acc.x * 100), abs(sensorData.acc.y * 100), abs(sensorData.acc.z * 100));
+            //     /* Refresh the strip to send data */
+            //     pStrip_a->refresh(pStrip_a, 2);
+            // }
 
-            if (isMagnetometerPresent) {
+            if (isMagnetometerPresent)
+            {
                 processMagnetometerMeasurements(&(buffer[SENSORS_MPU6050_BUFF_LEN]));
             }
 
-            if (isBarometerPresent) {
+            if (isBarometerPresent)
+            {
                 processBarometerMeasurements(&(buffer[isMagnetometerPresent ? SENSORS_MPU6050_BUFF_LEN + SENSORS_MAG_BUFF_LEN : SENSORS_MPU6050_BUFF_LEN]));
             }
 
@@ -281,11 +332,13 @@ static void sensorsTask(void *param)
             xQueueOverwrite(accelerometerDataQueue, &sensorData.acc);
             xQueueOverwrite(gyroDataQueue, &sensorData.gyro);
 
-            if (isMagnetometerPresent) {
+            if (isMagnetometerPresent)
+            {
                 xQueueOverwrite(magnetometerDataQueue, &sensorData.mag);
             }
 
-            if (isBarometerPresent) {
+            if (isBarometerPresent)
+            {
                 xQueueOverwrite(barometerDataQueue, &sensorData.baro);
             }
 
@@ -434,10 +487,18 @@ static void sensorsDeviceInit(void)
     mpu6050SetIntEnabled(false);
     // Connect the MAG and BARO to the main I2C bus
     mpu6050SetI2CBypassEnabled(true);
+
+    uint8_t aRange = mpu6050GetFullScaleAccelRangeId();
+    uint8_t gRange = mpu6050GetFullScaleGyroRangeId();
+    DEBUG_PRINTW("aRange:%d, gRange:%d", aRange, gRange);
     // Set gyro full scale range
     mpu6050SetFullScaleGyroRange(SENSORS_GYRO_FS_CFG);
     // Set accelerometer full scale range
     mpu6050SetFullScaleAccelRange(SENSORS_ACCEL_FS_CFG);
+
+    aRange = mpu6050GetFullScaleAccelRangeId();
+    gRange = mpu6050GetFullScaleGyroRangeId();
+    DEBUG_PRINTW("aRange:%d, gRange:%d", aRange, gRange);
 
     // Set digital low-pass bandwidth for gyro and acc
     // board ESP32_S2_DRONE_V1_2 has more vibrations, bandwidth should be lower

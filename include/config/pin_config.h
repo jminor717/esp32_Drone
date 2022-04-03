@@ -63,9 +63,9 @@ total  25 - 2
 #define COM13909_SS 15
 
 // sensor pins, i2c shared with vl53l1x
-#define CONFIG_MPU_PIN_INT 26
-#define CONFIG_I2C0_PIN_SCL 27
-#define CONFIG_I2C0_PIN_SDA 25
+#define CONFIG_MPU_PIN_INT 36
+#define CONFIG_I2C0_PIN_SCL 37
+#define CONFIG_I2C0_PIN_SDA 35
 
 // Servos
 //#define SERVO1 5  1,

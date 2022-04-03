@@ -25,6 +25,7 @@
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
+#include "config/pin_config.h"
 
 #include <../Common/Data_type.h>
 #include "freertos/FreeRTOS.h"
@@ -32,6 +33,8 @@
 #include "freertos/portmacro.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+
+#include "C:\repos\ESPDrone\Common\Submodules\RadioHead\RH_RF69.c"
 
 #include "wifi_esp32.h"
 
@@ -97,9 +100,14 @@ void app_main()
 
     printf("prepairing to Launch system \n");
 
+    gpio_set_level(_slaveSelectPin, 0);
+
     fflush(stdout);
     /*launch the system task */
-     systemLaunch();
+    RH_RF69(COM13909_SS, 18, 1);
+    RH_RF69_init();
+
+    systemLaunch();
     for (;;)
     {
         // micros(); // update overflow

@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.json": "jsonc",
+        "*.gpl": "vb",
         "freertos.h": "c",
         "platform.h": "c",
         "portmacro.h": "c",
@@ -148,12 +149,17 @@
         "stm32_interconnect.h": "c",
         "sensors_mpu6050_hm5883l_ms5611.h": "c",
         "rh_rf69.h": "c",
-        "rhgenericspi.h": "c"
+        "rhgenericspi.h": "c",
+        "esp_system.h": "c",
+        "SOC_CAPS.H": "cpp",
+        "stdlib.h": "c"
     },
     "cSpell.words": [
         "CLPT",
         "crtp",
         "IRAM",
+        "OPMODE",
+        "Rssi",
         "vbat",
         "vref",
         "Wunused",

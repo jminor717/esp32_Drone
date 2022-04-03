@@ -62,7 +62,7 @@ static const I2cDef sensorBusDef = {
     .i2cClockSpeed      = I2C_DEFAULT_SENSORS_CLOCK_SPEED,
     .gpioSCLPin         = CONFIG_I2C0_PIN_SCL,
     .gpioSDAPin         = CONFIG_I2C0_PIN_SDA,
-    .gpioPullup         = GPIO_PULLUP_DISABLE,
+    .gpioPullup         = GPIO_PULLUP_ENABLE,
 };
 
 I2cDrv sensorsBus = {

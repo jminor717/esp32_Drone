@@ -172,53 +172,56 @@
 #define RH_RF69_RSSICONFIG_RSSIDONE 0x02
 #define RH_RF69_RSSICONFIG_RSSISTART 0x01
 
+// DIO interupt mapping defines follow the folowing nameing convention
+// RF69_{IO_Pin}_{RX_Function}_{TX_Function  empty if same as RX}
+// NA means that 
 // RH_RF69_REG_25_DIOMAPPING1
-#define RH_RF69_DIOMAPPING1_DIO0MAPPING 0xc0
-#define RH_RF69_DIOMAPPING1_DIO0MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING1_DIO0MAPPING_01 0x40
-#define RH_RF69_DIOMAPPING1_DIO0MAPPING_10 0x80
-#define RH_RF69_DIOMAPPING1_DIO0MAPPING_11 0xc0
+#define RF69_DIO0_MASK 0xc0
+#define RF69_DIO0_CrcOk_PacketSent 0x00
+#define RF69_DIO0_PayloadReady_TxReady 0x40
+#define RF69_DIO0_SyncAddress_NA 0x80
+#define RF69_DIO0_Rssi_PllLock 0xc0
 
-#define RH_RF69_DIOMAPPING1_DIO1MAPPING 0x30
-#define RH_RF69_DIOMAPPING1_DIO1MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING1_DIO1MAPPING_01 0x10
-#define RH_RF69_DIOMAPPING1_DIO1MAPPING_10 0x20
-#define RH_RF69_DIOMAPPING1_DIO1MAPPING_11 0x30
+#define RF69_DIO1_MASK 0x30
+#define RF69_DIO1_FifoLevel_ 0x00
+#define RF69_DIO1_FifoFull_ 0x10
+#define RF69_DIO1_FifoNotEmpty_ 0x20
+#define RF69_DIO1_Timeout_PllLock 0x30
 
-#define RH_RF69_DIOMAPPING1_DIO2MAPPING 0x0c
-#define RH_RF69_DIOMAPPING1_DIO2MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING1_DIO2MAPPING_01 0x04
-#define RH_RF69_DIOMAPPING1_DIO2MAPPING_10 0x08
-#define RH_RF69_DIOMAPPING1_DIO2MAPPING_11 0x0c
+#define RF69_DIO2_MASK 0x0c
+#define RF69_DIO2_FifoNotEmpty_ 0x00
+#define RF69_DIO2_Data_ 0x04
+#define RF69_DIO2_NA_ 0x08
+#define RF69_DIO2_AutoMode_ 0x0c
 
-#define RH_RF69_DIOMAPPING1_DIO3MAPPING 0x03
-#define RH_RF69_DIOMAPPING1_DIO3MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING1_DIO3MAPPING_01 0x01
-#define RH_RF69_DIOMAPPING1_DIO3MAPPING_10 0x02
-#define RH_RF69_DIOMAPPING1_DIO3MAPPING_11 0x03
+#define RF69_DIO3_MASK 0x03
+#define RF69_DIO3_FifoFull_ 0x00
+#define RF69_DIO3_Rssi_TxReady 0x01
+#define RF69_DIO3_SyncAddress_NA 0x02
+#define RF69_DIO3_PllLock_ 0x03
 
 // RH_RF69_REG_26_DIOMAPPING2
-#define RH_RF69_DIOMAPPING2_DIO4MAPPING 0xc0
-#define RH_RF69_DIOMAPPING2_DIO4MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING2_DIO4MAPPING_01 0x40
-#define RH_RF69_DIOMAPPING2_DIO4MAPPING_10 0x80
-#define RH_RF69_DIOMAPPING2_DIO4MAPPING_11 0xc0
+#define RF69_DIO4_MASK 0xc0
+#define RF69_DIO4_Timeout_ModeReady 0x00
+#define RF69_DIO4_Rssi_TxReady 0x40
+#define RF69_DIO4_RxReady_NA 0x80
+#define RF69_DIO4_PllLock_ 0xc0
 
-#define RH_RF69_DIOMAPPING2_DIO5MAPPING 0x30
-#define RH_RF69_DIOMAPPING2_DIO5MAPPING_00 0x00
-#define RH_RF69_DIOMAPPING2_DIO5MAPPING_01 0x10
-#define RH_RF69_DIOMAPPING2_DIO5MAPPING_10 0x20
-#define RH_RF69_DIOMAPPING2_DIO5MAPPING_11 0x30
+#define RF69_DIO5_MASK 0x30
+#define RF69_DIO5_ClkOut_ 0x00
+#define RF69_DIO5_Data_ 0x10
+#define RF69_DIO5_NA_ 0x20
+#define RF69_DIO5_ModeReady_ 0x30
 
-#define RH_RF69_DIOMAPPING2_CLKOUT 0x07
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_ 0x00
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_2 0x01
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_4 0x02
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_8 0x03
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_16 0x04
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_32 0x05
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_RC 0x06
-#define RH_RF69_DIOMAPPING2_CLKOUT_FXOSC_OFF 0x07
+#define RF69_CLKOUT 0x07
+#define RF69_CLKOUT_FXOSC_ 0x00
+#define RF69_CLKOUT_FXOSC_2 0x01
+#define RF69_CLKOUT_FXOSC_4 0x02
+#define RF69_CLKOUT_FXOSC_8 0x03
+#define RF69_CLKOUT_FXOSC_16 0x04
+#define RF69_CLKOUT_FXOSC_32 0x05
+#define RF69_CLKOUT_FXOSC_RC 0x06
+#define RF69_CLKOUT_FXOSC_OFF 0x07
 
 // RH_RF69_REG_27_IRQFLAGS1
 #define RH_RF69_IRQFLAGS1_MODEREADY 0x80
@@ -321,6 +324,9 @@
 
 // Define this to include Serial printing in diagnostic routines
 #define RH_RF69_HAVE_SERIAL
+
+// This is the address that indicates a broadcast
+#define RH_BROADCAST_ADDRESS 0xff
 
 /////////////////////////////////////////////////////////////////////
 /// \class RH_RF69 RH_RF69.h <RH_RF69.h>
@@ -793,6 +799,110 @@ typedef enum
     //	Test,
 } ModemConfigChoice;
 
+/// \brief Defines different operating modes for the transport hardware
+///
+/// These are the different values that can be adopted by the _mode variable and
+/// returned by the mode() member function,
+typedef enum
+{
+    RHModeInitialising = 0, ///< Transport is initialising. Initial default value until init() is called..
+    RHModeSleep,            ///< Transport hardware is in low power sleep mode (if supported)
+    RHModeIdle,             ///< Transport is idle.
+    RHModeTx,               ///< Transport is in the process of transmitting a message.
+    RHModeRx,               ///< Transport is in the process of receiving a message.
+    RHModeCad               ///< Transport is in the process of detecting channel activity (if supported)
+} RHMode;
+
+/// The current transport operating mode
+volatile RHMode _mode;
+
+volatile bool _paInHighPowerMode;
+
+/// This node id
+uint8_t _thisAddress;
+
+/// Whether the transport is in promiscuous mode
+bool _promiscuous;
+
+/// TO header in the last received mesasge
+volatile uint8_t _rxHeaderTo;
+
+/// FROM header in the last received mesasge
+volatile uint8_t _rxHeaderFrom;
+
+/// ID header in the last received mesasge
+volatile uint8_t _rxHeaderId;
+
+/// FLAGS header in the last received mesasge
+volatile uint8_t _rxHeaderFlags;
+
+/// TO header to send in all messages
+uint8_t _txHeaderTo;
+
+/// FROM header to send in all messages
+uint8_t _txHeaderFrom;
+
+/// ID header to send in all messages
+uint8_t _txHeaderId;
+
+/// FLAGS header to send in all messages
+uint8_t _txHeaderFlags;
+
+/// The value of the last received RSSI value, in some transport specific units
+volatile int16_t _lastRssi;
+
+/// Count of the number of bad messages (eg bad checksum etc) received
+volatile uint16_t _rxBad;
+
+/// Count of the number of successfully transmitted messaged
+volatile uint16_t _rxGood;
+
+/// Count of the number of bad messages (correct checksum etc) received
+volatile uint16_t _txGood;
+
+/// Channel activity detected
+volatile bool _cad;
+
+/// Channel activity timeout in ms
+unsigned int _cad_timeout;
+
+/// Array of instances connected to interrupts 0 and 1
+static int16_t *_deviceForInterrupt[];
+
+/// Index of next interrupt number to use in _deviceForInterrupt
+static uint8_t _interruptCount;
+
+/// The configured interrupt pin connected to this instance
+uint8_t _interruptPin;
+
+/// The index into _deviceForInterrupt[] for this device (if an interrupt is already allocated)
+/// else 0xff
+uint8_t _myInterruptIndex;
+
+/// The radio OP mode to use when mode is RHModeIdle
+uint8_t _idleMode;
+
+/// The reported device type
+uint16_t _deviceType;
+
+/// The selected output power in dBm
+int8_t _power;
+
+/// The message length in _buf
+volatile uint8_t _bufLen;
+
+/// Array of octets of teh last received message or the next to transmit message
+uint8_t _buf[RH_RF69_FIFO_SIZE + 1];
+
+/// True when there is a valid message in the Rx buffer
+volatile bool _rxBufValid;
+
+/// Time in millis since the last preamble was received (and the last time the RSSI was measured)
+uint32_t _lastPreambleTime;
+
+/// The pin number of the Slave Select pin that is used to select the desired device.
+uint8_t _slaveSelectPin;
+
 /// Constructor. You can have multiple instances, but each instance must have its own
 /// interrupt and slave select pin. After constructing, you must call init() to initialise the interface
 /// and the radio module. A maximum of 3 instances can co-exist on one processor, provided there are sufficient
@@ -823,7 +933,7 @@ void RH_RF69(uint8_t slaveSelectPin, uint8_t interruptPin, uint8_t spi);
 /// - Sets the frequency to 434.0 MHz
 /// - Sets the modem data rate to FSK_Rb2Fd5
 /// \return  true if everything was successful
-bool init();
+bool RH_RF69_init();
 
 /// Reads the on-chip temperature sensor.
 /// The RF69 must be in Idle mode (= RF69 Standby) to measure temperature.
@@ -836,9 +946,8 @@ int8_t temperatureRead();
 /// centre frequency
 /// \param[in] centre Frequency in MHz. 240.0 to 960.0. Caution, RF69 comes in several
 /// different frequency ranges, and setting a frequency outside that range of your radio will probably not work
-/// \param[in] afcPullInRange Not used
 /// \return true if the selected frquency centre is within range
-bool setFrequency(float centre, float afcPullInRange); // = 0.05
+bool setFrequency(float centre); // = 0.05
 
 /// Reads and returns the current RSSI value.
 /// Causes the current signal strength to be measured and returned
@@ -851,7 +960,7 @@ int8_t rssiRead();
 /// This is a low level device access function, and should not normally ned to be used by user code.
 /// Instead can use stModeRx(), setModeTx(), setModeIdle()
 /// \param[in] mode RF69 OPMODE to set, one of RH_RF69_OPMODE_MODE_*.
-void setOpMode(uint8_t mode);
+void setOpMode(uint8_t mode, bool waitForModeReady);
 
 /// If current mode is Rx or Tx changes it to Idle. If the transmitter or receiver is running,
 /// disables them.
@@ -863,7 +972,7 @@ void setModeRx();
 
 /// If current mode is Rx or Idle, changes it to Rx. F
 /// Starts the transmitter in the RF69.
-void setModeTx();
+void setModeTx(bool waitForModeReady);
 
 /// Sets the transmitter power output level.
 /// Be a good neighbour and set the lowest power level you need.
@@ -979,7 +1088,7 @@ void setIdleMode(uint8_t idleMode);
 /// changing mode it idle, transmit or receive (eg by calling send(), recv(), available() etc)
 /// Caution: there is a time penalty as the radio takes a finite time to wake from sleep mode.
 /// \return true if sleep mode was successfully entered.
-virtual bool sleep();
+bool RH_RF69_sleep();
 
 /// Return the integer value of the device type
 /// as read from the device in from RH_RF69_REG_10_VERSION.
@@ -1008,39 +1117,7 @@ static void isr1();
 /// Low level interrupt service routine for RF69 connected to interrupt 1
 static void isr2();
 
-/// Array of instances connected to interrupts 0 and 1
-static RH_RF69 *_deviceForInterrupt[];
 
-/// Index of next interrupt number to use in _deviceForInterrupt
-static uint8_t _interruptCount;
-
-/// The configured interrupt pin connected to this instance
-uint8_t _interruptPin;
-
-/// The index into _deviceForInterrupt[] for this device (if an interrupt is already allocated)
-/// else 0xff
-uint8_t _myInterruptIndex;
-
-/// The radio OP mode to use when mode is RHModeIdle
-uint8_t _idleMode;
-
-/// The reported device type
-uint8_t _deviceType;
-
-/// The selected output power in dBm
-int8_t _power;
-
-/// The message length in _buf
-volatile uint8_t _bufLen;
-
-/// Array of octets of teh last received message or the next to transmit message
-uint8_t _buf[RH_RF69_MAX_MESSAGE_LEN];
-
-/// True when there is a valid message in the Rx buffer
-volatile bool _rxBufValid;
-
-/// Time in millis since the last preamble was received (and the last time the RSSI was measured)
-uint32_t _lastPreambleTime;
 //};
 
 /// @example rf69_client.pde

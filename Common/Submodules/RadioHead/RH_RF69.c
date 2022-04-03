@@ -2,8 +2,16 @@
 //
 // Copyright (C) 2011 Mike McCauley
 // $Id: RH_RF69.cpp,v 1.31 2019/09/02 05:21:52 mikem Exp $
+#include "string.h"
 
 #include "RH_RF69.h"
+#include "config/pin_config.h"
+#include "esp_intr_alloc.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
 
 // These are indexed by the values of ModemConfigChoice
 // Stored in flash (program) memory to save SRAM
@@ -79,9 +87,31 @@ static const ModemConfig MODEM_CONFIG_TABLE[] =
 
 };
 
-RH_RF69(uint8_t slaveSelectPin, uint8_t interruptPin)//, RHGenericSPI &spi
-   // : RHSPIDriver(slaveSelectPin, spi)
+spi_bus_config_t buscfg = {
+    .miso_io_num = STM32_SPI_MISO,
+    .mosi_io_num = STM32_SPI_MOSI,
+    .sclk_io_num = STM32_SPI_SCK,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    .max_transfer_sz = 4096,
+    .flags = 0,
+    .intr_flags = ESP_INTR_FLAG_IRAM};
+
+spi_device_handle_t RFM69spi;
+spi_device_interface_config_t RFM69cfg = {
+    .clock_speed_hz = 125 * 1000, // Clock out at 1 MHz
+    .mode = 1,                    // SPI mode 0
+    .spics_io_num = -1,           // COM13909_SS,  // CS pin
+    .queue_size = 7,              // We want to be able to queue 7 transactions at a time
+    .address_bits = 0,            // 16,
+    .dummy_bits = 0               // 8
+    //.pre_cb = lcd_spi_pre_transfer_callback, // Specify pre-transfer callback to handle D/C line
+};
+
+void RH_RF69(uint8_t slaveSelectPin, uint8_t interruptPin, uint8_t spi) //, RHGenericSPI &spi
+                                                                        // : RHSPIDriver(slaveSelectPin, spi)
 {
+    _slaveSelectPin = slaveSelectPin;
     _interruptPin = interruptPin;
     _idleMode = RH_RF69_OPMODE_MODE_STDBY;
     _myInterruptIndex = 0xff; // Not allocated yet
@@ -92,21 +122,68 @@ void setIdleMode(uint8_t idleMode)
     _idleMode = idleMode;
 }
 
-bool init()
+void Master_Transaction(spi_device_handle_t spi, uint8_t *dat, uint8_t *dout, uint32_t nextSize)
 {
-    if (!RHSPIDriver::init())
-        return false;
+    gpio_set_level(_slaveSelectPin, 0);
+    ets_delay_us(20);
+    esp_err_t ret;
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t)); // Zero out the transaction
+    t.length = nextSize * 8;  // Len is in bytes, transaction length is in bits.
+    t.tx_buffer = dat;        // Data
+    t.rx_buffer = dout;
+    //  t.user = (void *)1;                         // D/C needs to be set to 1
+    //  t.addr = 0b1001101001010101;
+    ret = spi_device_polling_transmit(spi, &t); // Transmit!
+    assert(ret == ESP_OK);
+    // ets_delay_us(80);
+    gpio_set_level(_slaveSelectPin, 1);
+    // return t;
+}
 
+void spiWrite(uint8_t reg, uint8_t val)
+{
+    uint8_t dat[2] = {reg, val};
+    uint8_t dout[2] = {0, 0}; // TODO: test to see if the SPI driver is ok with this being NULL
+    Master_Transaction(RFM69spi, dat, dout, 2);
+}
+
+void spiBurstWrite(uint8_t reg, uint8_t *src, uint8_t len)
+{
+    uint8_t *dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * len + 1, MALLOC_CAP_DMA);
+    dat[0] = reg;
+    memcpy(dat + 1, src, len);
+    // uint8_t dout[len + 1] = {0}; // TODO: test to see if the SPI driver is ok with this being NULL
+    uint8_t *dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * len + 1, MALLOC_CAP_DMA);
+    Master_Transaction(RFM69spi, src, dout, 2);
+}
+
+uint8_t spiRead(uint8_t reg)
+{
+    uint8_t dat[2] = {reg, 0};
+    uint8_t dout[2] = {0, 0};
+    Master_Transaction(RFM69spi, dat, dout, 2);
+    return dout[1];
+}
+
+bool RH_RF69_init()
+{
     // Determine the interrupt number that corresponds to the interruptPin
-    int interruptNumber = digitalPinToInterrupt(_interruptPin);
-    if (interruptNumber == NOT_AN_INTERRUPT)
-        return false;
+    //!  int interruptNumber = digitalPinToInterrupt(_interruptPin);
+
 #ifdef RH_ATTACHINTERRUPT_TAKES_PIN_NUMBER
     interruptNumber = _interruptPin;
 #endif
 
+    esp_err_t ret;
+    ret = spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    ESP_ERROR_CHECK(ret);
+
+    ret = spi_bus_add_device(SPI3_HOST, &RFM69cfg, &RFM69spi);
+    ESP_ERROR_CHECK(ret);
+
     // Tell the low level SPI interface we will use SPI within this interrupt
-    spiUsingInterrupt(interruptNumber);
+    //!   spiUsingInterrupt(interruptNumber);
 
     // Get the device type and check it
     // This also tests whether we are really connected to a device
@@ -119,14 +196,14 @@ bool init()
     // Add by Adrien van den Bossche <vandenbo@univ-tlse2.fr> for Teensy
     // ARM M4 requires the below. else pin interrupt doesn't work properly.
     // On all other platforms, its innocuous, belt and braces
-    pinMode(_interruptPin, INPUT);
+    // pinMode(_interruptPin, INPUT);
 
     // Set up interrupt handler
     // Since there are a limited number of interrupt glue functions isr*() available,
     // we can only support a limited number of devices simultaneously
-    // ON some devices, notably most Arduinos, the interrupt pin passed in is actuallt the
+    // ON some devices, notably most Arduino's, the interrupt pin passed in is actuallt the
     // interrupt number. You have to figure out the interruptnumber-to-interruptpin mapping
-    // yourself based on knwledge of what Arduino board you are running on.
+    // yourself based on knowledge of what Arduino board you are running on.
     if (_myInterruptIndex == 0xff)
     {
         // First run, no interrupt allocated yet
@@ -136,7 +213,7 @@ bool init()
             return false; // Too many devices, not enough interrupt vectors
     }
 
-    attachInterrupt(interruptNumber, isr0, RISING);
+    //! attachInterrupt(interruptNumber, isr0, RISING);
 
     setModeIdle();
 
@@ -172,11 +249,11 @@ bool init()
     // 3 would be sufficient, but this is the same as RF22's
     setPreambleLength(4);
     // An innocuous ISM frequency, same as RF22's
-    setFrequency(434.0);
+    setFrequency(915.0);
     // No encryption
     setEncryptionKey(NULL);
-    // +13dBm, same as power-on default
-    setTxPower(13);
+    // +13dBm, same as power-on default RH_RF69_DEFAULT_HIGHPOWER
+    setTxPower(20, true);
 
     return true;
 }
@@ -203,7 +280,7 @@ void handleInterrupt()
     {
         // A complete message has been received with good CRC
         _lastRssi = -((int8_t)(spiRead(RH_RF69_REG_24_RSSIVALUE) >> 1));
-        _lastPreambleTime = millis();
+        _lastPreambleTime = xTaskGetTickCount();
 
         setModeIdle();
         // Save it in our buffer
@@ -213,49 +290,52 @@ void handleInterrupt()
 }
 
 // Low level function reads the FIFO and checks the address
-// Caution: since we put our headers in what the RH_RF69 considers to be the payload, if encryption is enabled
-// we have to suffer the cost of decryption before we can determine whether the address is acceptable.
-// Performance issue?
 void readFifo()
 {
-    ATOMIC_BLOCK_START;
-    _spi.beginTransaction();
-    digitalWrite(_slaveSelectPin, LOW);
-    _spi.transfer(RH_RF69_REG_00_FIFO);    // Send the start address with the write mask off
-    uint8_t payloadlen = _spi.transfer(0); // First byte is payload len (counting the headers)
-    if (payloadlen <= RH_RF69_MAX_ENCRYPTABLE_PAYLOAD_LEN &&
-        payloadlen >= RH_RF69_HEADER_LEN)
-    {
-        _rxHeaderTo = _spi.transfer(0);
-        // Check addressing
-        if (_promiscuous ||
-            _rxHeaderTo == _thisAddress ||
-            _rxHeaderTo == RH_BROADCAST_ADDRESS)
-        {
-            // Get the rest of the headers
-            _rxHeaderFrom = _spi.transfer(0);
-            _rxHeaderId = _spi.transfer(0);
-            _rxHeaderFlags = _spi.transfer(0);
-            // And now the real payload
-            for (_bufLen = 0; _bufLen < (payloadlen - RH_RF69_HEADER_LEN); _bufLen++)
-                _buf[_bufLen] = _spi.transfer(0);
-            _rxGood++;
-            _rxBufValid = true;
-        }
-    }
-    digitalWrite(_slaveSelectPin, HIGH);
-    _spi.endTransaction();
-    ATOMIC_BLOCK_END;
-    // Any junk remaining in the FIFO will be cleared next time we go to receive mode.
+    uint8_t *dat, *dout;
+    // allocate arrays as RH_RF69_FIFO_SIZE + 1 to account for the RH_RF69_REG_00_FIFO byte
+    dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * RH_RF69_FIFO_SIZE + 1, MALLOC_CAP_DMA);
+    dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * RH_RF69_FIFO_SIZE + 1, MALLOC_CAP_DMA);
+    memset(dat, 0, RH_RF69_FIFO_SIZE + 1);
+    memset(dout, 0, RH_RF69_FIFO_SIZE + 1);
+    dat[0] = RH_RF69_REG_00_FIFO;
+    esp_err_t ret;
+    spi_transaction_t tLen;
+    spi_transaction_t tFifo;
+    gpio_set_level(_slaveSelectPin, 0);
+
+    memset(&tLen, 0, sizeof(tLen));
+    memset(&tFifo, 0, sizeof(tFifo));
+    tLen.tx_buffer = dat;
+    tLen.rx_buffer = dout;
+    tLen.length = 2 * 8;
+    tFifo.tx_buffer = dat + 2; // just reuse the previously allocated memory
+    tFifo.rx_buffer = dout + 2;
+    ret = spi_device_polling_transmit(RFM69spi, &tLen); // read the first byte of the fifo to determine how long the received packet is
+    assert(ret == ESP_OK);
+    tFifo.length = dout[1] * 8;
+    ret = spi_device_polling_transmit(RFM69spi, &tFifo); // read the rest of the fifo
+    assert(ret == ESP_OK);
+    // ets_delay_us(80);
+
+    gpio_set_level(_slaveSelectPin, 1);
+    //_rxGood++;
+    _rxBufValid = true;
+    // _rxHeaderFrom = dout[2];
+    // _rxHeaderId = dout[3];
+    // _rxHeaderFlags = dout[4];
+    memcpy(_buf, dout + 2, dout[1] - 2);
+    //  Any junk remaining in the FIFO will be cleared next time we go to receive mode.
 }
 
 // These are low level functions that call the interrupt handler for the correct
 // instance of RH_RF69.
 // 3 interrupts allows us to have 3 different devices
-void RH_INTERRUPT_ATTR isr0()
+// RH_INTERRUPT_ATTR
+void isr0()
 {
-    if (_deviceForInterrupt[0])
-        _deviceForInterrupt[0]->handleInterrupt();
+    //! if (_deviceForInterrupt[0])
+    //!     _deviceForInterrupt[0]->handleInterrupt();
 }
 
 int8_t temperatureRead()
@@ -268,16 +348,13 @@ int8_t temperatureRead()
     return 166 - spiRead(RH_RF69_REG_4F_TEMP2); // Very approximate, based on observation
 }
 
-bool setFrequency(float centre, float afcPullInRange)
+bool setFrequency(float centre)
 {
     // Frf = FRF / FSTEP
     uint32_t frf = (uint32_t)((centre * 1000000.0) / RH_RF69_FSTEP);
     spiWrite(RH_RF69_REG_07_FRFMSB, (frf >> 16) & 0xff);
     spiWrite(RH_RF69_REG_08_FRFMID, (frf >> 8) & 0xff);
     spiWrite(RH_RF69_REG_09_FRFLSB, frf & 0xff);
-
-    // afcPullInRange is not used
-    (void)afcPullInRange;
     return true;
 }
 
@@ -285,6 +362,7 @@ int8_t rssiRead()
 {
     // Force a new value to be measured
     // Hmmm, this hangs forever!
+    //? i believe Rssi is only calculated after 2 bit periods of an incoming transmition that are part of the Preamble or Sync Word, investigate?
 #if 0
     spiWrite(RH_RF69_REG_23_RSSICONFIG, RH_RF69_RSSICONFIG_RSSISTART);
     while (!(spiRead(RH_RF69_REG_23_RSSICONFIG) & RH_RF69_RSSICONFIG_RSSIDONE))
@@ -293,34 +371,38 @@ int8_t rssiRead()
     return -((int8_t)(spiRead(RH_RF69_REG_24_RSSIVALUE) >> 1));
 }
 
-void setOpMode(uint8_t mode)
+void setOpMode(uint8_t mode, bool waitForModeReady)
 {
     uint8_t opmode = spiRead(RH_RF69_REG_01_OPMODE);
     opmode &= ~RH_RF69_OPMODE_MODE;
     opmode |= (mode & RH_RF69_OPMODE_MODE);
     spiWrite(RH_RF69_REG_01_OPMODE, opmode);
 
-    // Wait for mode to change.
-    while (!(spiRead(RH_RF69_REG_27_IRQFLAGS1) & RH_RF69_IRQFLAGS1_MODEREADY))
-        ;
+    if (waitForModeReady)
+    {
+        // Wait for mode to change.
+        while (!(spiRead(RH_RF69_REG_27_IRQFLAGS1) & RH_RF69_IRQFLAGS1_MODEREADY))
+            ; // TODO: connect DIO5 and use a samafore to wait for the mode ready interupt here, or poll the line state
+    }
 }
 
 void setModeIdle()
 {
     if (_mode != RHModeIdle)
     {
-        if (_power >= 18)
+        if (_paInHighPowerMode && _power >= 18)
         {
+            _paInHighPowerMode = false;
             // If high power boost, return power amp to receive mode
             spiWrite(RH_RF69_REG_5A_TESTPA1, RH_RF69_TESTPA1_NORMAL);
             spiWrite(RH_RF69_REG_5C_TESTPA2, RH_RF69_TESTPA2_NORMAL);
         }
-        setOpMode(_idleMode);
+        setOpMode(_idleMode, true);
         _mode = RHModeIdle;
     }
 }
 
-bool sleep()
+bool RH_RF69_sleep()
 {
     if (_mode != RHModeSleep)
     {
@@ -334,31 +416,33 @@ void setModeRx()
 {
     if (_mode != RHModeRx)
     {
-        if (_power >= 18)
+        if (_paInHighPowerMode && _power >= 18)
         {
+            _paInHighPowerMode = false;
             // If high power boost, return power amp to receive mode
             spiWrite(RH_RF69_REG_5A_TESTPA1, RH_RF69_TESTPA1_NORMAL);
             spiWrite(RH_RF69_REG_5C_TESTPA2, RH_RF69_TESTPA2_NORMAL);
         }
-        spiWrite(RH_RF69_REG_25_DIOMAPPING1, RH_RF69_DIOMAPPING1_DIO0MAPPING_01); // Set interrupt line 0 PayloadReady
-        setOpMode(RH_RF69_OPMODE_MODE_RX);                                        // Clears FIFO
+        spiWrite(RH_RF69_REG_25_DIOMAPPING1, RF69_DIO0_PayloadReady_TxReady); // Set interrupt line 0 PayloadReady
+        setOpMode(RH_RF69_OPMODE_MODE_RX, true);                              // Clears FIFO
         _mode = RHModeRx;
     }
 }
 
-void setModeTx()
+void setModeTx(bool waitForModeReady)
 {
     if (_mode != RHModeTx)
     {
-        if (_power >= 18)
+        if (!_paInHighPowerMode && _power >= 18)
         {
+            _paInHighPowerMode = true;
             // Set high power boost mode
             // Note that OCP defaults to ON so no need to change that.
             spiWrite(RH_RF69_REG_5A_TESTPA1, RH_RF69_TESTPA1_BOOST);
             spiWrite(RH_RF69_REG_5C_TESTPA2, RH_RF69_TESTPA2_BOOST);
         }
-        spiWrite(RH_RF69_REG_25_DIOMAPPING1, RH_RF69_DIOMAPPING1_DIO0MAPPING_00); // Set interrupt line 0 PacketSent
-        setOpMode(RH_RF69_OPMODE_MODE_TX);                                        // Clears FIFO
+        spiWrite(RH_RF69_REG_25_DIOMAPPING1, RF69_DIO0_CrcOk_PacketSent); // Set interrupt line 0 PacketSent
+        setOpMode(RH_RF69_OPMODE_MODE_TX, waitForModeReady);              // Clears FIFO
         _mode = RHModeTx;
     }
 }
@@ -420,7 +504,7 @@ bool setModemConfig(ModemConfigChoice index)
         return false;
 
     ModemConfig cfg;
-    memcpy_P(&cfg, &MODEM_CONFIG_TABLE[index], sizeof(RH_RF69::ModemConfig));
+    memcpy(&cfg, &MODEM_CONFIG_TABLE[index], sizeof(ModemConfig));
     setModemRegisters(&cfg);
 
     return true;
@@ -459,7 +543,7 @@ void setEncryptionKey(uint8_t *key)
         spiWrite(RH_RF69_REG_3D_PACKETCONFIG2, spiRead(RH_RF69_REG_3D_PACKETCONFIG2) & ~RH_RF69_PACKETCONFIG2_AESON);
     }
 }
-
+// TODO
 bool available()
 {
     if (_mode == RHModeTx)
@@ -467,7 +551,7 @@ bool available()
     setModeRx(); // Make sure we are receiving
     return _rxBufValid;
 }
-
+// TODO
 bool recv(uint8_t *buf, uint8_t *len)
 {
     if (!available())
@@ -475,52 +559,102 @@ bool recv(uint8_t *buf, uint8_t *len)
 
     if (buf && len)
     {
-        ATOMIC_BLOCK_START;
+        // ATOMIC_BLOCK_START;
         if (*len > _bufLen)
             *len = _bufLen;
         memcpy(buf, _buf, *len);
-        ATOMIC_BLOCK_END;
+        // ATOMIC_BLOCK_END;
     }
     _rxBufValid = false; // Got the most recent message
                          //    printBuffer("recv:", buf, *len);
     return true;
 }
 
+/** // TODO
+ bool RHGenericDriver::waitPacketSent()
+{
+    while (_mode == RHModeTx)
+    YIELD; // Wait for any previous transmit to finish
+    return true;
+}
+
+// Wait until no channel activity detected or timeout
+bool RHGenericDriver::waitCAD()
+{
+    if (!_cad_timeout)
+    return true;
+
+    // Wait for any channel activity to finish or timeout
+    // Sophisticated DCF function...
+    // DCF : BackoffTime = random() x aSlotTime
+    // 100 - 1000 ms
+    // 10 sec timeout
+    unsigned long t = millis();
+    while (isChannelActive())
+    {
+         if (millis() - t > _cad_timeout)
+         return false;
+#if (RH_PLATFORM == RH_PLATFORM_STM32) // stdlib on STMF103 gets confused if random is redefined
+     delay(_random(1, 10) * 100);
+#else
+         delay(random(1, 10) * 100); // Should these values be configurable? Macros?
+#endif
+    }
+
+    return true;
+}
+
+*/
+
 bool send(const uint8_t *data, uint8_t len)
 {
-    if (len > RH_RF69_MAX_MESSAGE_LEN)
+    if (len > RH_RF69_MAX_ENCRYPTABLE_PAYLOAD_LEN)
         return false;
 
-    waitPacketSent(); // Make sure we dont interrupt an outgoing message
-    setModeIdle();    // Prevent RX while filling the fifo
+    // waitPacketSent(); // Make sure we dont interrupt an outgoing message
+    setModeIdle(); // Prevent RX while filling the fifo
 
-    if (!waitCAD())
-        return false; // Check channel activity
+    // if (!waitCAD())
+    //     return false; // Check channel activity
 
-    ATOMIC_BLOCK_START;
-    _spi.beginTransaction();
-    digitalWrite(_slaveSelectPin, LOW);
-    _spi.transfer(RH_RF69_REG_00_FIFO | RH_RF69_SPI_WRITE_MASK); // Send the start address with the write mask on
-    _spi.transfer(len + RH_RF69_HEADER_LEN);                     // Include length of headers
-    // First the 4 headers
-    _spi.transfer(_txHeaderTo);
-    _spi.transfer(_txHeaderFrom);
-    _spi.transfer(_txHeaderId);
-    _spi.transfer(_txHeaderFlags);
-    // Now the payload
-    while (len--)
-        _spi.transfer(*data++);
-    digitalWrite(_slaveSelectPin, HIGH);
-    _spi.endTransaction();
-    ATOMIC_BLOCK_END;
+    uint8_t *dat, *dout;
+    // allocate arrays as RH_RF69_FIFO_SIZE + 1 to account for the RH_RF69_REG_00_FIFO byte
+    dout = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * RH_RF69_FIFO_SIZE + 1, MALLOC_CAP_DMA);
+    dat = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * RH_RF69_FIFO_SIZE + 1, MALLOC_CAP_DMA);
+    //  memset(dat, 0, RH_RF69_FIFO_SIZE + 1);
+    memset(dout, 0, RH_RF69_FIFO_SIZE + 1);
+    dat[0] = RH_RF69_REG_00_FIFO | RH_RF69_SPI_WRITE_MASK;
+    dat[1] = len;
+    memcpy(dat + 1, data, len);
 
-    setModeTx(); // Start the transmitter
+    // len += RH_RF69_HEADER_LEN;
+    //  dat[1] = _txHeaderTo;
+    //  dat[2] = _txHeaderFrom;
+    //  dat[3] = _txHeaderId;
+    //  dat[4] = _txHeaderFlags;
+
+    esp_err_t ret;
+    spi_transaction_t tFifo;
+    gpio_set_level(_slaveSelectPin, 0);
+
+    memset(&tFifo, 0, sizeof(tFifo));
+    tFifo.tx_buffer = dat; // just reuse the previously allocated memory
+    tFifo.rx_buffer = dout;
+    tFifo.length = len * 8;
+
+    setModeTx(false);                                    // Start the transmitter without waiting so that we start filing the fifo before the device is ready to transmit
+    ret = spi_device_polling_transmit(RFM69spi, &tFifo); // read the rest of the fifo
+    assert(ret == ESP_OK);
+    // ets_delay_us(80);
+
+    gpio_set_level(_slaveSelectPin, 1);
+
     return true;
 }
 
 uint8_t maxMessageLength()
 {
-    return RH_RF69_MAX_MESSAGE_LEN;
+    return RH_RF69_MAX_ENCRYPTABLE_PAYLOAD_LEN;
 }
 
 bool printRegister(uint8_t reg)
