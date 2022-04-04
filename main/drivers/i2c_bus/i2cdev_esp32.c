@@ -36,6 +36,33 @@
 #include "config/nvicconf.h"
 #include "debug_cf.h"
 
+// TODO rework to use static i2c_cmd_handle_t that avoids using i2c_cmd_link_delete possibly also look at polling to improve reliability and crashes from ISRs
+//maybe also reduce use of mutexes
+/**
+ 0x4037e58b: vPortClearInterruptMaskFromISR at C:/Users/jacob/esp/esp-idf/components/freertos/port/xtensa/include/freertos/portmacro.h:571
+ (inlined by) xQueueGenericSendFromISR at C:/Users/jacob/esp/esp-idf/components/freertos/queue.c:1198
+
+0x40377765: i2c_isr_handler_default at C:/Users/jacob/esp/esp-idf/components/driver/i2c.c:506
+
+0x40376c56: _xt_lowint1 at C:/Users/jacob/esp/esp-idf/components/freertos/port/xtensa/xtensa_vectors.S:1111
+
+0x40384993: multi_heap_internal_lock at C:/Users/jacob/esp/esp-idf/components/heap/multi_heap.c:152
+ (inlined by) multi_heap_free_impl at C:/Users/jacob/esp/esp-idf/components/heap/multi_heap.c:218
+
+0x40375e9e: heap_caps_free at C:/Users/jacob/esp/esp-idf/components/heap/heap_caps.c:305
+
+0x40385299: free at C:/Users/jacob/esp/esp-idf/components/newlib/heap.c:39
+
+0x420198f7: i2c_cmd_link_delete at C:/Users/jacob/esp/esp-idf/components/driver/i2c.c:1071
+
+0x42012765: i2cdevReadReg8 at c:\repos\espdrone\build/../main/drivers/i2c_bus/i2cdev_esp32.c:102
+
+0x4200ec67: sensorsTask at c:\repos\espdrone\build/../main/sensors_mpu6050_hm5883L_ms5611.c:307 (discriminator 8)
+
+0x40380d51: vPortTaskWrapper at C:/Users/jacob/esp/esp-idf/components/freertos/port/xtensa/port.c:131
+
+ */
+
 int i2cdevInit(I2C_Dev *dev)
 {
     i2cdrvInit(dev);
