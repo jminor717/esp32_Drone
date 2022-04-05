@@ -10,7 +10,7 @@ node_modules
 *.bin
 **/build
 *.list
-
+!**/.vscode/tasks.json
 
 # https://github.com/github/gitignore/blob/master/C.gitignore
 

@@ -1,6 +1,3 @@
 [submodule "Controller/Submodules/PS4-esp32"]
 	path = Controller/Submodules/PS4-esp32
 	url = git@github.com:jminor717/PS4-esp32.git
-[submodule "STM32_IO_Expander/Submodules/PID-CPP"]
-	path = STM32_IO_Expander/Submodules/PID-CPP
-	url = git@github.com:PatrickBaus/PID-CPP.git
