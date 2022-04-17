@@ -16,4 +16,8 @@
 FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/main/*.*)
 
 idf_component_register(SRCS ${app_sources}
-                        INCLUDE_DIRS "../include/")
+                        INCLUDE_DIRS "../include/"
+                        REQUIRES Common esp_adc_cal spi_flash nvs_flash arduino)
+
+# idf_component_register(SRCS ${srcs}
+#                     INCLUDE_DIRS "../Common/")

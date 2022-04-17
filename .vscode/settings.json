@@ -152,7 +152,16 @@
         "rhgenericspi.h": "c",
         "esp_system.h": "c",
         "SOC_CAPS.H": "cpp",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "esp_spi_flash.h": "c",
+        "nvs_flash.h": "c",
+        "esp_intr_alloc.h": "c",
+        "rhspidriver.h": "c",
+        "radiohead.h": "c",
+        "rhhardwarespi.h": "c",
+        "unordered_set": "cpp",
+        "regex": "cpp",
+        "arduino.h": "c"
     },
     "cSpell.words": [
         "CLPT",
@@ -169,5 +178,6 @@
     "idf.adapterTargetName": "esp32s3",
     "idf.openOcdConfigs": [
         "board/esp32s3-builtin.cfg"
-    ]
+    ],
+    "idf.flashType": "UART"
 }

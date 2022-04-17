@@ -1,7 +1,11 @@
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
-#include <WiFi.h>
+//#include <WiFi.h>
 #include <../Common/Data_type.h>
+
+#include <SPI.h>
+#define RH_PLATFORM 1
+#include <../Common/Submodules/RadioHead/RH_RF69.h>
 //#include <atomic>
 #include "esp32-hal-log.h"
 
@@ -27,11 +31,14 @@ low level send and receive interface
 high level independent command and setpoint transmition lops to allow commands to be sent more frequently than setpoints
     low level will run at the rate of the fastest high level and try to combine high level packets to minimize the time that TX is active (only for long range radio)
 
+cd  \repos\ESPDrone\Controller
+mklink /D "Common" "..\Common"
+
 
 */
-IPAddress DroneAddress = IPAddress();
-WiFiUDP udp = WiFiUDP();
-// AsyncUDP udp;
+// IPAddress DroneAddress = IPAddress();
+// WiFiUDP udp = WiFiUDP();
+//  AsyncUDP udp;
 
 int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
@@ -43,37 +50,62 @@ uint8_t type = stopType;
 void handleControlUpdate();
 void SendDataToDrone(CRTPPacket cmd, uint8_t len);
 
-void handleWifiConnected(system_event_t *event)
-{
-    // CRTPPacket cmd;
-    // memset(&cmd, 0, sizeof(CRTPPacket));
-    // cmd.channel = SET_SETPOINT_CHANNEL;
-    // cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+// void handleWifiConnected(system_event_t *event)
+//{
+//  CRTPPacket cmd;
+//  memset(&cmd, 0, sizeof(CRTPPacket));
+//  cmd.channel = SET_SETPOINT_CHANNEL;
+//  cmd.port = CRTP_PORT_SETPOINT_GENERIC;
 
-    // altHoldPacket_Encode_Min(0, 0, 0, 0, cmd.data, stopType);
+// altHoldPacket_Encode_Min(0, 0, 0, 0, cmd.data, stopType);
 
-    // uint8_t cmdLength = sizeof(cmd);
-    // uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
-    // memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
-    // buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
+// uint8_t cmdLength = sizeof(cmd);
+// uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
+// memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
+// buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
 
-    // AsyncUDPMessage msg;
-    // msg.write(buffer, cmdLength + 1);
-    // udp.broadcastTo(msg, UDP_SERVER_PORT);
+// AsyncUDPMessage msg;
+// msg.write(buffer, cmdLength + 1);
+// udp.broadcastTo(msg, UDP_SERVER_PORT);
 
-    // free(buffer);
-}
+// free(buffer);
+//}
 
-void handleWifiDropped(system_event_t *event)
-{
-    delay(5000);
-    WiFi.begin(WIFIssid, WIFIpassword);
-}
+// void handleWifiDropped(system_event_t *event)
+// {
+//     delay(5000);
+//     WiFi.begin(WIFIssid, WIFIpassword);
+// }
+
+#define MAIN_SPI_SCK 25
+#define MAIN_SPI_MISO 26
+#define MAIN_SPI_MOSI 27
+#define MAIN_SPI_SS 13
+
+RH_RF69 rf69(MAIN_SPI_SS, 39);
 
 void setup()
 {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
+
+    SPI.begin(MAIN_SPI_SCK, MAIN_SPI_MISO, MAIN_SPI_MOSI, MAIN_SPI_SS);
+
+    if (!rf69.init())
+        Serial.println("init failed");
+
+    // if (!rf69.setFrequency(915.0))
+    //     Serial.println("setFrequency failed");
+
+    // rf69.setTxPower(10, true);
+
+    // // For compat with RFM69 Struct_send
+    // rf69.setModemConfig(RH_RF69::GFSK_Rb250Fd250);
+    // rf69.setPreambleLength(3);
+    // uint8_t syncwords[] = {0x2d, 0x64};
+    // rf69.setSyncWords(syncwords, sizeof(syncwords));
+    // rf69.setEncryptionKey((uint8_t *)"thisIsEncryptKey");
+
     // "60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
     // char mac[] = "60:5b:b4:d9:7b:14";
     char mac[] = "4C:11:AE:DF:8B:F4";
@@ -82,13 +114,13 @@ void setup()
     Serial.println(mac);
     PS4.attach(&handleControlUpdate);
 
-    DroneAddress.fromString("192.168.43.42");
-    WiFi.begin(WIFIssid, WIFIpassword);
-    // WiFi.setTxPower(WIFI_POWER_19_5dBm);
-    udp.begin(UDP_SERVER_PORT);
+    // DroneAddress.fromString("192.168.43.42");
+    // WiFi.begin(WIFIssid, WIFIpassword);
+    // // WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    // udp.begin(UDP_SERVER_PORT);
 
-    WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
-    WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
+    // WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
+    // WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
 
     log_v("Verbose");
     log_d("Debug");
@@ -96,7 +128,7 @@ void setup()
     log_w("Warning");
     log_e("Error");
     now = esp_timer_get_time();
-    map();
+    // map();
 }
 
 void handleControlUpdate()
@@ -257,38 +289,46 @@ void loop()
 {
     while (true)
     {
-        int packetSize = udp.parsePacket();
-        if (packetSize)
-        {
-            int len = udp.read(packetBuffer, 255);
-            if (len > 0)
-            {
-                packetBuffer[len] = 0;
-            }
-            float VBat = 0;
-            uint32_t batteryLowTime = 0;
+        // int packetSize = udp.parsePacket();
+        // if (packetSize)
+        // {
+        //     int len = udp.read(packetBuffer, 255);
+        //     if (len > 0)
+        //     {
+        //         packetBuffer[len] = 0;
+        //     }
+        //     float VBat = 0;
+        //     uint32_t batteryLowTime = 0;
 
-            // cprt packet adds one extra byte for header
-            memcpy(&VBat, &packetBuffer[3], sizeof(VBat));
-            memcpy(&batteryLowTime, &packetBuffer[7], sizeof(batteryLowTime));
+        //     // cprt packet adds one extra byte for header
+        //     memcpy(&VBat, &packetBuffer[3], sizeof(VBat));
+        //     memcpy(&batteryLowTime, &packetBuffer[7], sizeof(batteryLowTime));
 
-            // char *buf;
-            // buf = (char *)malloc(300); // 3 * 64  with som extra
-            // for (size_t i = 0; i < len; i++)
-            // {
-            //     sprintf(buf + i * 3, "%02X,", packetBuffer[i]);
-            // }
-            // free(buf);
+        //     // char *buf;
+        //     // buf = (char *)malloc(300); // 3 * 64  with som extra
+        //     // for (size_t i = 0; i < len; i++)
+        //     // {
+        //     //     sprintf(buf + i * 3, "%02X,", packetBuffer[i]);
+        //     // }
+        //     // free(buf);
 
-            Serial.printf("VBat: %f    batteryLowTime: %d", VBat, batteryLowTime);
-            Serial.println();
-            // Serial.write(buf);
-            // Serial.println();
-        }
-        else
-        {
-            delay(50);
-        }
+        //     Serial.printf("VBat: %f    batteryLowTime: %d", VBat, batteryLowTime);
+        //     Serial.println();
+        //     // Serial.write(buf);
+        //     // Serial.println();
+        // }
+        // else
+        // {
+        delay(1000);
+        CRTPPacket cmd;
+        memset(&cmd, 0, sizeof(CRTPPacket));
+        cmd.channel = SET_SETPOINT_CHANNEL;
+        cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+        cmd.data[0] = 21;
+        cmd.data[1] = 35;
+
+        SendDataToDrone(cmd, 2);
+        // }
     }
 }
 
@@ -308,12 +348,88 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
     //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
 
-    udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
-    udp.write(buffer, len + 1);
-    udp.endPacket();
+    // udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+    // udp.write(buffer, len + 1);
+    // udp.endPacket();
     // AsyncUDPMessage msg;
     // msg.write(buffer, len + 1);
     // udp.broadcastTo(msg, UDP_SERVER_PORT);
+
+    //
+    //
+    //
+    //
+    Serial.print("+");
+    // Send a message to rf69_server
+    uint8_t data[] = "Hello World!";
+    rf69.send(data, sizeof(data));
+
+    rf69.waitPacketSent();
+    // Now wait for a reply
+    uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
+    uint8_t len2 = sizeof(buf);
+
+    if (rf69.waitAvailableTimeout(500))
+    {
+        // Should be a reply message for us now
+        if (rf69.recv(buf, &len2))
+        {
+            Serial.print("got reply: ");
+            Serial.print((char *)buf);
+            Serial.print("  RSSI: ");
+            Serial.println(rf69.lastRssi(), DEC);
+        }
+        else
+        {
+            Serial.println("recv failed");
+        }
+    }
+    else
+    {
+        Serial.print(".");
+    }
+
+    //
+    //
+    //
+    //
+    //
+    ///
+    // if (rf69.available())
+    // {
+    //     // Should be a message for us now
+    //     uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
+    //     uint8_t len = sizeof(buf);
+    //     if (rf69.recv(buf, &len))
+    //     {
+    //         //      RH_RF69::printBuffer("request: ", buf, len);
+    //         Serial.print("got request: ");
+    //         Serial.print((char *)buf);
+    //         Serial.print("  RSSI: ");
+    //         Serial.println(rf69.lastRssi(), DEC);
+
+    //         // Send a reply
+    //         uint8_t data[] = "And hello back to you";
+    //         rf69.send(data, sizeof(data));
+    //         rf69.waitPacketSent();
+    //         //Serial.println("Sent a reply");
+    //     }
+    //     else
+    //     {
+    //         Serial.println("recv failed");
+    //     }
+    // }
+
+    // if (rf69.available())
+    //{
+    //  Should be a message for us now
+    // uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
+    //  Send a reply
+    // uint8_t data[] = "And hello back to you";
+    //     rf69.send(buffer, len + 1);
+    //     rf69.waitPacketSent();
+    //     Serial.println("Sent a reply");
+    // }
 
     free(buffer);
 }

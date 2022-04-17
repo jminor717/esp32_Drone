@@ -47,7 +47,7 @@ const MotorPerifDef **motorMap; /* Current map configuration */
 
 const uint32_t MOTORS[] = {MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4};
 
-const uint16_t testsound[NBR_OF_MOTORS] = {A4, A5, F5, D5};
+const uint16_t testsound[NBR_OF_MOTORS] = {NOTE_A4, NOTE_A5, NOTE_F5, NOTE_D5};
 
 static bool isInit = false;
 static bool isTimerInit = false;

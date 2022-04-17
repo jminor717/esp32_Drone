@@ -47,25 +47,17 @@ total  25 - 2
 #ifdef V2_BOARD
 // Unused 2, 12, 22, 23, 36, 39
 //  STM32 IO expander
-#define STM32_SPI_SCK 4
-#define STM32_SPI_MISO 16
-#define STM32_SPI_MOSI 17
-#define STM32_SPI_SS 18
-#define STM32_SPI_ALT 18 // shared with boot mode
-// STM32 Controlls
-#define STM32_RST 13
-#define STM32_BOOT_MODE 18
-// Shared With STM32
-#define PROG_TX 1
-#define PROG_RX 3
+#define SPI_DEV_SCK 13
+#define SPI_DEV_MISO 11
+#define SPI_DEV_MOSI 12
 
 // COM-13909
-#define COM13909_SS 15
+#define COM13909_SS 14
 
 // sensor pins, i2c shared with vl53l1x
-#define CONFIG_MPU_PIN_INT 36
-#define CONFIG_I2C0_PIN_SCL 37
-#define CONFIG_I2C0_PIN_SDA 35
+#define CONFIG_MPU_PIN_INT 38
+#define CONFIG_I2C0_PIN_SCL 40
+#define CONFIG_I2C0_PIN_SDA 39
 
 // Servos
 //#define SERVO1 5  1,

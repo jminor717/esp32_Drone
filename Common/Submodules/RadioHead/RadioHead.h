@@ -10,7 +10,7 @@ It provides a complete object-oriented library for sending and receiving packeti
 via a variety of common data radios and other transports on a range of embedded microprocessors.
 
 The version of the package that this documentation refers to can be downloaded 
-from http://www.airspayce.com/mikem/arduino/RadioHead/RadioHead-1.120.zip
+from http://www.airspayce.com/mikem/arduino/RadioHead/RadioHead-1.121.zip
 You can find the latest version of the documentation at http://www.airspayce.com/mikem/arduino/RadioHead
 
 You can also find online help and discussion at 
@@ -1170,6 +1170,10 @@ k             Fix SPI bus speed errors on 8MHz Arduinos.
 	     and a compatible radio to be connected appropriately:
 	     https://github.com/starnight/LoRa/tree/file-ops <br>
 
+\version 1.121 2022-02-02
+             Restored RH_RF95 code to clear the IRQ flags (twice).
+
+
 \author  Mike McCauley. DO NOT CONTACT THE AUTHOR DIRECTLY. USE THE GOOGLE GROUP GIVEN ABOVE
 */
 
@@ -1410,14 +1414,14 @@ these examples and explanations and extend them to suit your needs.
 
 */
 
-#define ESP32
+#define RH_PLATFORM 14
 
 #ifndef RadioHead_h
 #define RadioHead_h
 
 // Official version numbers are maintained automatically by Makefile:
 #define RH_VERSION_MAJOR 1
-#define RH_VERSION_MINOR 120
+#define RH_VERSION_MINOR 121
 
 // Symbolic names for currently supported platform types
 #define RH_PLATFORM_ARDUINO          1
@@ -1496,21 +1500,22 @@ these examples and explanations and extend them to suit your needs.
  #if (ARDUINO >= 100)
   #include <Arduino.h>
  #else
-  #include <wiring.h>
- #endif
-  #include <SPI.h>
-  #define RH_HAVE_HARDWARE_SPI
-  #define RH_HAVE_SERIAL
- #if defined(ARDUINO_ARCH_STM32F4)
-  // output to Serial causes hangs on STM32 F4 Discovery board
-  // There seems to be no way to output text to the USB connection
-  #undef Serial						   
-  #define Serial Serial2
- #elif defined(ARDUINO_ARCH_RP2040)
-  // Raspi Pico
-  #define RH_ASK_PICO_ALARM_IRQ TIMER_IRQ_1
-  #define RH_ASK_PICO_ALARM_NUM 1
- #endif
+#include <Arduino.h>
+// #include <wiring.h>
+#endif
+#include <SPI.h>
+#define RH_HAVE_HARDWARE_SPI
+#define RH_HAVE_SERIAL
+#if defined(ARDUINO_ARCH_STM32F4)
+// output to Serial causes hangs on STM32 F4 Discovery board
+// There seems to be no way to output text to the USB connection
+#undef Serial
+#define Serial Serial2
+#elif defined(ARDUINO_ARCH_RP2040)
+// Raspi Pico
+#define RH_ASK_PICO_ALARM_IRQ TIMER_IRQ_1
+#define RH_ASK_PICO_ALARM_NUM 1
+#endif
 #elif (RH_PLATFORM == RH_PLATFORM_ATTINY)
   #include <Arduino.h>
 //  #warning Arduino TinyCore does not support hardware SPI. Use software SPI instead.
@@ -1537,8 +1542,8 @@ these examples and explanations and extend them to suit your needs.
  #define RH_MISSING_SPIUSINGINTERRUPT
 
 #elif (RH_PLATFORM == RH_PLATFORM_ESP32)   // ESP32 processor on Arduino IDE
- //#include <Arduino.h>
- //#include <SPI.h>
+ #include <Arduino.h>
+ #include <SPI.h>
  #define RH_HAVE_HARDWARE_SPI
  #define RH_HAVE_SERIAL
  #define RH_MISSING_SPIUSINGINTERRUPT
@@ -1698,15 +1703,15 @@ these examples and explanations and extend them to suit your needs.
  #if defined(__arm__)
   #include <RHutil/atomic.h>
  #else
-  #include <util/atomic.h>
+ // #include <util/atomic.h>
  #endif
  #if defined(ARDUINO_ARCH_MBED_RP2040)
   // Standard arduino ATOMIC block crashes on MBED version of Pico as at 2021-08-12						   
   #define ATOMIC_BLOCK_START {
   #define ATOMIC_BLOCK_END }						   
  #else
-  // Most Arduinos
-  #define ATOMIC_BLOCK_START     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+// Most Arduinos ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+#define ATOMIC_BLOCK_START      {
   #define ATOMIC_BLOCK_END }
  #endif
 #elif (RH_PLATFORM == RH_PLATFORM_CHIPKIT_CORE)
@@ -1759,6 +1764,8 @@ these examples and explanations and extend them to suit your needs.
  #define YIELD mgosYield()
 #elif (RH_PLATFORM == RH_PLATFORM_ESP32)
  // ESP32 also has it
+//  #include "freertos/FreeRTOS.h"
+// #define YIELD vTaskDelay(1);
  #define YIELD yield();
 #else
  #define YIELD
