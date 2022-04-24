@@ -4,7 +4,11 @@
 // Contributed by Joanna Rutkowska
 // $Id: RHHardwareSPI.cpp,v 1.29 2020/08/04 09:02:14 mikem Exp $
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RHHardwareSPI.h>
+#else
 #include <..\Common\Submodules\RadioHead\RHHardwareSPI.h>
+#endif
 
 #ifdef RH_HAVE_HARDWARE_SPI
 

@@ -4,7 +4,7 @@
 #include <../Common/Data_type.h>
 
 #include <SPI.h>
-#define RH_PLATFORM 1
+#define RH_PLATFORM 14
 #include <../Common/Submodules/RadioHead/RH_RF69.h>
 //#include <atomic>
 #include "esp32-hal-log.h"
@@ -84,20 +84,24 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len);
 
 RH_RF69 rf69(MAIN_SPI_SS, 39);
 
+CRTPPacket cmd_Data;
+uint8_t cmd_len;
+bool has_cmd = false;
+
 void setup()
 {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
 
     SPI.begin(MAIN_SPI_SCK, MAIN_SPI_MISO, MAIN_SPI_MOSI, MAIN_SPI_SS);
-
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     if (!rf69.init())
         Serial.println("init failed");
 
     // if (!rf69.setFrequency(915.0))
     //     Serial.println("setFrequency failed");
 
-    // rf69.setTxPower(10, true);
+    rf69.setTxPower(-2, true);
 
     // // For compat with RFM69 Struct_send
     // rf69.setModemConfig(RH_RF69::GFSK_Rb250Fd250);
@@ -138,51 +142,51 @@ void handleControlUpdate()
     if (PS4.isConnected())
     {
         now = esp_timer_get_time();
-        if (PS4.Right())
-            Serial.println("Right Button");
-        if (PS4.Down())
-            Serial.println("Down Button");
-        if (PS4.Up())
-            Serial.println("Up Button");
-        if (PS4.Left())
-            Serial.println("Left Button");
+        // if (PS4.Right())
+        //     Serial.println("Right Button");
+        // if (PS4.Down())
+        //     Serial.println("Down Button");
+        // if (PS4.Up())
+        //     Serial.println("Up Button");
+        // if (PS4.Left())
+        //     Serial.println("Left Button");
 
-        if (PS4.Square())
-            Serial.println("Square Button");
-        if (PS4.Cross())
-            Serial.println("Cross Button");
-        if (PS4.Circle())
-            Serial.println("Circle Button");
-        if (PS4.Triangle())
-            Serial.println("Triangle Button");
+        // if (PS4.Square())
+        //     Serial.println("Square Button");
+        // if (PS4.Cross())
+        //     Serial.println("Cross Button");
+        // if (PS4.Circle())
+        //     Serial.println("Circle Button");
+        // if (PS4.Triangle())
+        //     Serial.println("Triangle Button");
 
-        if (PS4.UpRight())
-            Serial.println("Up Right");
-        if (PS4.DownRight())
-            Serial.println("Down Right");
-        if (PS4.UpLeft())
-            Serial.println("Up Left");
-        if (PS4.DownLeft())
-            Serial.println("Down Left");
+        // if (PS4.UpRight())
+        //     Serial.println("Up Right");
+        // if (PS4.DownRight())
+        //     Serial.println("Down Right");
+        // if (PS4.UpLeft())
+        //     Serial.println("Up Left");
+        // if (PS4.DownLeft())
+        //     Serial.println("Down Left");
 
-        if (PS4.L1())
-            Serial.println("L1 Button");
-        if (PS4.R1())
-            Serial.println("R1 Button");
+        // if (PS4.L1())
+        //     Serial.println("L1 Button");
+        // if (PS4.R1())
+        //     Serial.println("R1 Button");
 
-        if (PS4.Share())
-            Serial.println("Share Button");
-        if (PS4.Options())
-            Serial.println("Options Button");
-        if (PS4.L3())
-            Serial.println("L3 Button");
-        if (PS4.R3())
-            Serial.println("R3 Button");
+        // if (PS4.Share())
+        //     Serial.println("Share Button");
+        // if (PS4.Options())
+        //     Serial.println("Options Button");
+        // if (PS4.L3())
+        //     Serial.println("L3 Button");
+        // if (PS4.R3())
+        //     Serial.println("R3 Button");
 
-        if (PS4.PSButton())
-            Serial.println("PS Button");
-        if (PS4.Touchpad())
-            Serial.println("Touch Pad Button");
+        // if (PS4.PSButton())
+        //     Serial.println("PS Button");
+        // if (PS4.Touchpad())
+        //     Serial.println("Touch Pad Button");
 
         // if (PS4.L2())
         //     Serial.printf("L2 button at %d\n", PS4.L2Value());
@@ -204,73 +208,108 @@ void handleControlUpdate()
         // ps4_sensor_t sense = PS4.SensorData();
         // Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
-        if (PS4.Charging())
-            Serial.println("The controller is charging");
-        if (PS4.Audio())
-            Serial.println("The controller has headphones attached");
-        if (PS4.Mic())
-            Serial.println("The controller has a mic attached");
+        // if (PS4.Charging())
+        //     Serial.println("The controller is charging");
+        // if (PS4.Audio())
+        //     Serial.println("The controller has headphones attached");
+        // if (PS4.Mic())
+        //     Serial.println("The controller has a mic attached");
 
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
             inTransmit = true; // atomic block around buffer and udp operations
-            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
-
-            uint8_t R2 = 0;
-            int16_t rx = 0, ry = 0, lx = 0;
-            if (PS4.R2())
-                R2 = PS4.R2Value(); // 0 - 255
-            val = PS4.LStickX();
-            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-                lx = val;
-            val = PS4.RStickX();
-            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-                rx = val;
-            val = PS4.RStickY();
-            if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-                ry = val;
-            if (PS4.Cross())
-            {
-                Flying = false;
-                type = stopType;
-            }
-            if (PS4.Right())
-                type = hoverType;
-            // if (PS4.Down())
-            // if (PS4.Up())
-            if (PS4.Left())
-                type = altHoldType;
+            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us + 100000;
 
             CRTPPacket cmd;
             memset(&cmd, 0, sizeof(CRTPPacket));
             cmd.channel = SET_SETPOINT_CHANNEL;
             cmd.port = CRTP_PORT_SETPOINT_GENERIC;
 
-            uint8_t len = 0;
-            switch (type)
-            {
-            case hoverType:
-                len = hoverPacket_Encode_Min(rx, -ry, lx, R2, cmd.data);
-                break;
-            case altHoldType:
-                len = altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data);
-                struct altHoldPacket_s values;
-                altHoldPacket_Decode_Min(&values, cmd.data);
-                log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
-                break;
-            default:
-                len = 1;
-                cmd.data[0] = stopType;
-                break;
-            }
+            struct RawControllsPackett_s ContorlData;
+            ContorlData.Rx = PS4.RStickX();
+            ContorlData.Ry = PS4.RStickY();
+            ContorlData.Lx = PS4.LStickX();
+            ContorlData.Ly = PS4.LStickY();
+            ContorlData.R2 = PS4.R2Value();
+            ContorlData.L2 = PS4.L2Value();
+            ContorlData.ButtonCount.RightCount = PS4.Right();
+            ContorlData.ButtonCount.LeftCount = PS4.Left();
+            ContorlData.ButtonCount.UpCount = PS4.Up();
+            ContorlData.ButtonCount.DownCount = PS4.Down();
+            ContorlData.ButtonCount.SquareCount = PS4.Square();
+            ContorlData.ButtonCount.XCount = PS4.Cross();
+            ContorlData.ButtonCount.OCount = PS4.Circle();
+            ContorlData.ButtonCount.TriangleCount = PS4.Triangle();
+            ContorlData.ButtonCount.L1Count = PS4.L1();
+            ContorlData.ButtonCount.L3Count = PS4.L3();
+            ContorlData.ButtonCount.R1Count = PS4.R1();
+            ContorlData.ButtonCount.R3Count = PS4.R3();
+            cmd.data[0] = ControllerType;
+            memcpy(cmd.data + 1, &ContorlData, sizeof(RawControllsPackett_s));
 
-            if (PS4.R2())
-            {
-                if (!Flying)
-                    type = altHoldType; // defaultcmd type and take off type
-                Flying = true;
-            }
+            struct RawControllsPackett_s DataOut;
+            memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+
+            // log_v("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
+            //       DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
+            //       DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
+            //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.R3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
+            //       DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+
+            // SendDataToDrone(cmd, sizeof(RawControllsPackett_s) + 1);
+            cmd_Data = cmd;
+            cmd_len = sizeof(RawControllsPackett_s) + 1;
+            has_cmd = true;
+            // uint8_t R2 = 0;
+            // int16_t rx = 0, ry = 0, lx = 0;
+            // if (PS4.R2())
+            //     R2 = PS4.R2Value(); // 0 - 255
+            // val = PS4.LStickX();
+            // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+            //     lx = val;
+            // val = PS4.RStickX();
+            // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+            //     rx = val;
+            // val = PS4.RStickY();
+            // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
+            //     ry = val;
+            // if (PS4.Cross())
+            // {
+            //     Flying = false;
+            //     type = stopType;
+            // }
+            // if (PS4.Right())
+            //     type = hoverType;
+            // // if (PS4.Down())
+            // // if (PS4.Up())
+            // if (PS4.Left())
+            //     type = altHoldType;
+
+            // uint8_t len = 0;
+            // switch (type)
+            // {
+            // case hoverType:
+            //     len = hoverPacket_Encode_Min(rx, -ry, lx, R2, cmd.data);
+            //     break;
+            // case altHoldType:
+            //     len = altHoldPacket_Encode_Min((rx * 3), (-ry * 3), (lx * 3), R2, cmd.data);
+            //     struct altHoldPacket_s values;
+            //     altHoldPacket_Decode_Min(&values, cmd.data);
+            //     // log_v("r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
+            //     break;
+            // default:
+            //     len = 1;
+            //     cmd.data[0] = stopType;
+            //     break;
+            // }
+
+            // if (PS4.R2())
+            // {
+            //     if (!Flying)
+            //         type = altHoldType; // defaultcmd type and take off type
+            //     Flying = true;
+            // }
 
             // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             //       cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4], cmd.data[5], cmd.data[6], cmd.data[7], cmd.data[8], cmd.data[9]);
@@ -278,7 +317,7 @@ void handleControlUpdate()
             // log_v("%d,%d,   %d,%d,   %d,%d",
             //       rx, (rx * 3), ry, (-ry * 3), lx, (lx * 3));
 
-            SendDataToDrone(cmd, len);
+            // SendDataToDrone(cmd, len);
             inTransmit = false;
         }
     }
@@ -325,9 +364,12 @@ void loop()
         cmd.channel = SET_SETPOINT_CHANNEL;
         cmd.port = CRTP_PORT_SETPOINT_GENERIC;
         cmd.data[0] = 21;
-        cmd.data[1] = 35;
-
-        SendDataToDrone(cmd, 2);
+        cmd.data[1] = 'B';
+        if (has_cmd){
+            SendDataToDrone(cmd_Data, cmd_len);
+        }else{
+            SendDataToDrone(cmd, 2);
+        }
         // }
     }
 }
@@ -339,6 +381,7 @@ void loop()
 void SendDataToDrone(CRTPPacket cmd, uint8_t len)
 {
     len = len + 2; // add one byte to account for cprt header and another for checksum
+    cmd.size = len + 3;
     uint8_t *buffer = (uint8_t *)calloc(1, len + 1);
     memcpy(buffer, (const uint8_t *)&cmd, len);
     buffer[len] = calculate_cksum(buffer, len);
@@ -361,15 +404,14 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     //
     Serial.print("+");
     // Send a message to rf69_server
-    uint8_t data[] = "Hello World!";
-    rf69.send(data, sizeof(data));
+    rf69.send(buffer, len + 1);
 
     rf69.waitPacketSent();
     // Now wait for a reply
     uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
     uint8_t len2 = sizeof(buf);
 
-    if (rf69.waitAvailableTimeout(500))
+    if (rf69.waitAvailableTimeout(50))
     {
         // Should be a reply message for us now
         if (rf69.recv(buf, &len2))
@@ -388,48 +430,6 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     {
         Serial.print(".");
     }
-
-    //
-    //
-    //
-    //
-    //
-    ///
-    // if (rf69.available())
-    // {
-    //     // Should be a message for us now
-    //     uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-    //     uint8_t len = sizeof(buf);
-    //     if (rf69.recv(buf, &len))
-    //     {
-    //         //      RH_RF69::printBuffer("request: ", buf, len);
-    //         Serial.print("got request: ");
-    //         Serial.print((char *)buf);
-    //         Serial.print("  RSSI: ");
-    //         Serial.println(rf69.lastRssi(), DEC);
-
-    //         // Send a reply
-    //         uint8_t data[] = "And hello back to you";
-    //         rf69.send(data, sizeof(data));
-    //         rf69.waitPacketSent();
-    //         //Serial.println("Sent a reply");
-    //     }
-    //     else
-    //     {
-    //         Serial.println("recv failed");
-    //     }
-    // }
-
-    // if (rf69.available())
-    //{
-    //  Should be a message for us now
-    // uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-    //  Send a reply
-    // uint8_t data[] = "And hello back to you";
-    //     rf69.send(buffer, len + 1);
-    //     rf69.waitPacketSent();
-    //     Serial.println("Sent a reply");
-    // }
 
     free(buffer);
 }

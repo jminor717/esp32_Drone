@@ -71,6 +71,7 @@ enum packet_type
     hoverType = 5,
     fullStateType = 6,
     positionType = 7,
+    ControllerType = 8
 };
 typedef enum packet_type packet_type;
 
@@ -120,8 +121,45 @@ struct hoverPacket_s
     float zDistance; // m in the world frame of reference
 };
 
+struct BtnCTX
+{
+    union
+    {
+        uint32_t ButtonCount;
+        struct
+        {
+            uint8_t XCount : 3;
+            uint8_t OCount : 3;
+            uint8_t TriangleCount : 3;
+            uint8_t SquareCount : 3;
+            uint8_t UpCount : 3;
+            uint8_t DownCount : 3;
+            uint8_t LeftCount : 3;
+            uint8_t RightCount : 3;
+            uint8_t R1Count : 2;
+            uint8_t L1Count : 2;
+            uint8_t R3Count : 2;
+            uint8_t L3Count : 2;
+        };
+    };
+};
+typedef struct BtnCTX BtnCTX;
+
+struct RawControllsPackett_s
+{
+    int8_t Rx;
+    int8_t Ry;
+    uint8_t R2;
+    int8_t Lx;
+    int8_t Ly;
+    uint8_t L2;
+    BtnCTX ButtonCount;
+};
+
+
 typedef struct altHoldPacket_s altHoldPacket_s;
 typedef struct hoverPacket_s hoverPacket_s;
+typedef struct RawControllsPackett_s RawControllsPackett_s;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -167,6 +205,10 @@ static uint8_t hoverPacket_Encode_Min(int16_t vx, int16_t vy, int16_t y, uint8_t
     data[7] = z;
     return 8;
 }
+
+
+
+
 #pragma GCC diagnostic pop
 
 /**
@@ -253,7 +295,7 @@ typedef struct _SPI_ESP_PACKET_HEADER
             uint8_t servoAngle : 1;
             uint8_t radioSendData : 1;
             uint8_t reserved : 4;
-            uint8_t specialData : 1;//?
+            uint8_t specialData : 1; //?
         };
     };
 
@@ -327,6 +369,5 @@ enum registers
     servo4CFG,
 
 };
-
 
 #endif

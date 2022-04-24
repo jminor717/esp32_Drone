@@ -7,7 +7,11 @@
 #ifndef RHGenericSPI_h
 #define RHGenericSPI_h
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RadioHead.h>
+#else
 #include <..\Common\Submodules\RadioHead\RadioHead.h>
+#endif
 
 /////////////////////////////////////////////////////////////////////
 /// \class RHGenericSPI RHGenericSPI.h <RHGenericSPI.h>

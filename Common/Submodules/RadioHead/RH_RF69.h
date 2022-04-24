@@ -9,8 +9,14 @@
 #ifndef RH_RF69_h
 #define RH_RF69_h
 
+
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RHGenericSPI.h>
+#include <RadioHead\RHSPIDriver.h>
+#else
 #include <..\Common\Submodules\RadioHead\RHGenericSPI.h>
 #include <..\Common\Submodules\RadioHead\RHSPIDriver.h>
+#endif
 
 // The crystal oscillator frequency of the RF69 module
 #define RH_RF69_FXOSC 32000000.0

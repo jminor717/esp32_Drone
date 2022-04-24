@@ -457,10 +457,12 @@ static void sensorsDeviceInit(void)
     isMagnetometerPresent = false;
     isBarometerPresent = false;
 
+    // TODO: why was this here
+    vTaskDelay(M2T(3));
     // Wait for sensors to startup
-    while (xTaskGetTickCount() < 2000){
-        vTaskDelay(M2T(50));
-    };
+    // while (xTaskGetTickCount() < 2000){
+    //     vTaskDelay(M2T(50));
+    // };
 
     i2cdevInit(I2C0_DEV);
     mpu6050Init(I2C0_DEV);
@@ -719,7 +721,7 @@ static void sensorsInterruptInit(void)
     //install gpio isr service
     //portDISABLE_INTERRUPTS();
     gpio_set_intr_type(GPIO_INTA_MPU6050_IO, GPIO_INTR_POSEDGE);
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+    //gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     //hook isr handler for specific gpio pin
     gpio_isr_handler_add(GPIO_INTA_MPU6050_IO, sensors_inta_isr_handler, (void *)GPIO_INTA_MPU6050_IO);
     //portENABLE_INTERRUPTS();

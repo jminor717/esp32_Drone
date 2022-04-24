@@ -6,6 +6,7 @@ set(EXTRA_COMPONENT_DIRS "Common")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/Common)
+# include_directories(${PROJECT_SOURCE_DIR}/Common/Submodules/RadioHead)
 
 project(ESPDrone)
 

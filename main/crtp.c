@@ -52,26 +52,27 @@ static bool isInit;
 
 static int nopFunc(void);
 static struct crtpLinkOperations nopLink = {
-  .setEnable         = (void*) nopFunc,
-  .sendPacket        = (void*) nopFunc,
-  .receivePacket     = (void*) nopFunc,
+    .setEnable = (void *)nopFunc,
+    .sendPacket = (void *)nopFunc,
+    .receivePacket = (void *)nopFunc,
 };
 
 static struct crtpLinkOperations *link = &nopLink;
 
 #define STATS_INTERVAL 500
-static struct {
-  uint32_t rxCount;
-  uint32_t txCount;
+static struct
+{
+    uint32_t rxCount;
+    uint32_t txCount;
 
-  uint16_t rxRate;
-  uint16_t txRate;
+    uint16_t rxRate;
+    uint16_t txRate;
 
-  uint32_t nextStatisticsTime;
-  uint32_t previousStatisticsTime;
+    uint32_t nextStatisticsTime;
+    uint32_t previousStatisticsTime;
 } stats;
 
-static xQueueHandle  txQueue;
+static xQueueHandle txQueue;
 
 #define CRTP_NBR_OF_PORTS 16
 #define CRTP_TX_QUEUE_SIZE 120
@@ -89,204 +90,205 @@ STATIC_MEM_TASK_ALLOC_STACK_NO_DMA_CCM_SAFE(crtpRxTask, CRTP_RX_TASK_STACKSIZE);
 
 void crtpInit(void)
 {
-  if(isInit)
-    return;
+    if (isInit)
+        return;
 
-  txQueue = xQueueCreate(CRTP_TX_QUEUE_SIZE, sizeof(CRTPPacket));
-  DEBUG_QUEUE_MONITOR_REGISTER(txQueue);
+    txQueue = xQueueCreate(CRTP_TX_QUEUE_SIZE, sizeof(CRTPPacket));
+    DEBUG_QUEUE_MONITOR_REGISTER(txQueue);
 
-  STATIC_MEM_TASK_CREATE(crtpTxTask, crtpTxTask, CRTP_TX_TASK_NAME, NULL, CRTP_TX_TASK_PRI);
-  STATIC_MEM_TASK_CREATE(crtpRxTask, crtpRxTask, CRTP_RX_TASK_NAME, NULL, CRTP_RX_TASK_PRI);
+    STATIC_MEM_TASK_CREATE(crtpTxTask, crtpTxTask, CRTP_TX_TASK_NAME, NULL, CRTP_TX_TASK_PRI);
+    STATIC_MEM_TASK_CREATE(crtpRxTask, crtpRxTask, CRTP_RX_TASK_NAME, NULL, CRTP_RX_TASK_PRI);
 
-  isInit = true;
+    isInit = true;
 }
 
 bool crtpTest(void)
 {
-  return isInit;
+    return isInit;
 }
 
 void crtpInitTaskQueue(CRTPPort portId)
 {
-  ASSERT(queues[portId] == NULL);
+    ASSERT(queues[portId] == NULL);
 
-  queues[portId] = xQueueCreate(CRTP_RX_QUEUE_SIZE, sizeof(CRTPPacket));
-  DEBUG_QUEUE_MONITOR_REGISTER(queues[portId]);
+    queues[portId] = xQueueCreate(CRTP_RX_QUEUE_SIZE, sizeof(CRTPPacket));
+    DEBUG_QUEUE_MONITOR_REGISTER(queues[portId]);
 }
 
 int crtpReceivePacket(CRTPPort portId, CRTPPacket *p)
 {
-  ASSERT(queues[portId]);
-  ASSERT(p);
+    ASSERT(queues[portId]);
+    ASSERT(p);
 
-  return xQueueReceive(queues[portId], p, 0);
+    return xQueueReceive(queues[portId], p, 0);
 }
 
 int crtpReceivePacketBlock(CRTPPort portId, CRTPPacket *p)
 {
-  ASSERT(queues[portId]);
-  ASSERT(p);
+    ASSERT(queues[portId]);
+    ASSERT(p);
 
-  return xQueueReceive(queues[portId], p, portMAX_DELAY);
+    return xQueueReceive(queues[portId], p, portMAX_DELAY);
 }
-
 
 int crtpReceivePacketWait(CRTPPort portId, CRTPPacket *p, int wait)
 {
-  ASSERT(queues[portId]);
-  ASSERT(p);
+    ASSERT(queues[portId]);
+    ASSERT(p);
 
-  return xQueueReceive(queues[portId], p, M2T(wait));
+    return xQueueReceive(queues[portId], p, M2T(wait));
 }
 
 int crtpGetFreeTxQueuePackets(void)
 {
-  return (CRTP_TX_QUEUE_SIZE - uxQueueMessagesWaiting(txQueue));
+    return (CRTP_TX_QUEUE_SIZE - uxQueueMessagesWaiting(txQueue));
 }
 
 void crtpTxTask(void *param)
 {
-  CRTPPacket p;
+    CRTPPacket p;
 
-  while (true)
-  {
-    if (link != &nopLink)
+    while (true)
     {
-      if (xQueueReceive(txQueue, &p, portMAX_DELAY) == pdTRUE)
-      {
-        // Keep testing, if the link changes to USB it will go though
-        while (link->sendPacket(&p) == false)
+        if (link != &nopLink)
         {
-          // Relaxation time
-          vTaskDelay(M2T(10));
+            if (xQueueReceive(txQueue, &p, portMAX_DELAY) == pdTRUE)
+            {
+                // Keep testing, if the link changes to USB it will go though
+                while (link->sendPacket(&p) == false)
+                {
+                    // Relaxation time
+                    vTaskDelay(M2T(10));
+                }
+                stats.txCount++;
+                updateStats();
+            }
         }
-        stats.txCount++;
-        updateStats();
-      }
+        else
+        {
+            vTaskDelay(M2T(10));
+        }
     }
-    else
-    {
-      vTaskDelay(M2T(10));
-    }
-  }
 }
 
 void crtpRxTask(void *param)
 {
-  CRTPPacket p;
+    CRTPPacket p;
 
-  while (true)
-  {
-    if (link != &nopLink)
+    while (true)
     {
-      if (!link->receivePacket(&p))
-      {
-          //DEBUG_PRINTI("Packet %d, %d, %d, %d received", p.port, p.channel, p.header,p.size);
-          if (queues[p.port])
-          {
-              //DEBUG_PRINTI("xQueueSend crtpRxTask %d, %d", p.port, p.channel);
-              if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
-              {
-                  // We should never drop packet
-                  ASSERT(0);
-              }
-        }
-
-        if (callbacks[p.port])
+        if (link != &nopLink)
         {
-          callbacks[p.port](&p);
-        }
+            if (!link->receivePacket(&p))
+            {
+                // DEBUG_PRINTI("Packet %d, %d, %d, %d received", p.port, p.channel, p.header,p.size);
+                if (queues[p.port])
+                {
+                    // DEBUG_PRINTI("xQueueSend crtpRxTask %d, %d", p.port, p.channel);
+                    if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL)
+                    {
+                        // We should never drop packet
+                        ASSERT(0);
+                    }
+                }
 
-        stats.rxCount++;
-        updateStats();
-      }
+                if (callbacks[p.port])
+                {
+                    callbacks[p.port](&p);
+                }
+
+                stats.rxCount++;
+                updateStats();
+            }
+        }
+        else
+        {
+            vTaskDelay(M2T(10));
+        }
     }
-    else
-    {
-      vTaskDelay(M2T(10));
-    }
-  }
 }
 
 void crtpRegisterPortCB(int port, CrtpCallback cb)
 {
-  if (port>CRTP_NBR_OF_PORTS)
-    return;
+    if (port > CRTP_NBR_OF_PORTS)
+        return;
 
-  callbacks[port] = cb;
+    callbacks[port] = cb;
 }
 
 int crtpSendPacket(CRTPPacket *p)
 {
-  ASSERT(p);
-  ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
+    ASSERT(p);
+    ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
 
-  //?DEBUG_PRINTI("xQueueSend crtpSendPacket");
-  return xQueueSend(txQueue, p, 0);
+    //?DEBUG_PRINTI("xQueueSend crtpSendPacket");
+    return xQueueSend(txQueue, p, 0);
 }
 
 int crtpSendPacketBlock(CRTPPacket *p)
 {
-  ASSERT(p);
-  ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
+    ASSERT(p);
+    ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
 
-  //?DEBUG_PRINTI("xQueueSend crtpSendPacketBlock");
-  return xQueueSend(txQueue, p, portMAX_DELAY);
+    //?DEBUG_PRINTI("xQueueSend crtpSendPacketBlock");
+    return xQueueSend(txQueue, p, portMAX_DELAY);
 }
 
 int crtpReset(void)
 {
-  xQueueReset(txQueue);
-  if (link->reset) {
-    link->reset();
-  }
+    xQueueReset(txQueue);
+    if (link->reset)
+    {
+        link->reset();
+    }
 
-  return 0;
+    return 0;
 }
 
 bool crtpIsConnected(void)
 {
-  if (link->isConnected)
-    return link->isConnected();
-  return true;
+    if (link->isConnected)
+        return link->isConnected();
+    return true;
 }
 
-void crtpSetLink(struct crtpLinkOperations * lk)
+void crtpSetLink(struct crtpLinkOperations *lk)
 {
-  if(link)
-    link->setEnable(false);
+    if (link)
+        link->setEnable(false);
 
-  if (lk)
-    link = lk;
-  else
-    link = &nopLink;
+    if (lk)
+        link = lk;
+    else
+        link = &nopLink;
 
-  link->setEnable(true);
+    link->setEnable(true);
 }
 
 static int nopFunc(void)
 {
-  return ENETDOWN;
+    return ENETDOWN;
 }
 
 static void clearStats()
 {
-  stats.rxCount = 0;
-  stats.txCount = 0;
+    stats.rxCount = 0;
+    stats.txCount = 0;
 }
 
 static void updateStats()
 {
-  uint32_t now = xTaskGetTickCount();
-  if (now > stats.nextStatisticsTime) {
-    float interval = now - stats.previousStatisticsTime;
-    stats.rxRate = (uint16_t)(1000.0f * stats.rxCount / interval);
-    stats.txRate = (uint16_t)(1000.0f * stats.txCount / interval);
+    uint32_t now = xTaskGetTickCount();
+    if (now > stats.nextStatisticsTime)
+    {
+        float interval = now - stats.previousStatisticsTime;
+        stats.rxRate = (uint16_t)(1000.0f * stats.rxCount / interval);
+        stats.txRate = (uint16_t)(1000.0f * stats.txCount / interval);
 
-    clearStats();
-    stats.previousStatisticsTime = now;
-    stats.nextStatisticsTime = now + STATS_INTERVAL;
-  }
+        clearStats();
+        stats.previousStatisticsTime = now;
+        stats.nextStatisticsTime = now + STATS_INTERVAL;
+    }
 }
 
 LOG_GROUP_START(crtp)

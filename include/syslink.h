@@ -71,20 +71,20 @@ typedef struct _SyslinkPacket
   char data[SYSLINK_MTU];
 } __attribute__((packed)) SyslinkPacket;
 
-typedef enum
-{
-  waitForFirstStart,
-  waitForSecondStart,
-  waitForType,
-  waitForLength,
-  waitForData,
-  waitForChksum1,
-  waitForChksum2
-} SyslinkRxState;
+// typedef enum
+// {
+//   waitForFirstStart,
+//   waitForSecondStart,
+//   waitForType,
+//   waitForLength,
+//   waitForData,
+//   waitForChksum1,
+//   waitForChksum2
+// } SyslinkRxState;
 
 
-void syslinkInit();
-bool syslinkTest();
-int syslinkSendPacket(SyslinkPacket *slp);
+// void syslinkInit();
+// bool syslinkTest();
+// int syslinkSendPacket(SyslinkPacket *slp);
 
 #endif

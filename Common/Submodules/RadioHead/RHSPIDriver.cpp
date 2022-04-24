@@ -3,7 +3,11 @@
 // Copyright (C) 2014 Mike McCauley
 // $Id: RHSPIDriver.cpp,v 1.13 2020/08/04 09:02:14 mikem Exp $
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RHSPIDriver.h>
+#else
 #include <..\Common\Submodules\RadioHead\RHSPIDriver.h>
+#endif
 
 // Some platforms may need special slave select driving
 

@@ -3,7 +3,13 @@
 // Copyright (C) 2014 Mike McCauley
 // $Id: RHGenericDriver.cpp,v 1.24 2020/01/07 23:35:02 mikem Exp $
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RHGenericDriver.h>
+#else
 #include <..\Common\Submodules\RadioHead\RHGenericDriver.h>
+#endif
+
+
 
 RHGenericDriver::RHGenericDriver()
     :

@@ -6,7 +6,12 @@
 #ifndef RHGenericDriver_h
 #define RHGenericDriver_h
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RadioHead.h>
+#else
 #include <..\Common\Submodules\RadioHead\RadioHead.h>
+#endif
+
 
 // Defines bits of the FLAGS header reserved for use by the RadioHead library and 
 // the flags available for use by applications

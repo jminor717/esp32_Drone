@@ -1437,11 +1437,11 @@ these examples and explanations and extend them to suit your needs.
 #define RH_PLATFORM_ESP8266          11
 #define RH_PLATFORM_STM32F2          12
 #define RH_PLATFORM_CHIPKIT_CORE     13
-#define RH_PLATFORM_ESP32            14						   
+#define RH_PLATFORM_ESP32            14
 #define RH_PLATFORM_NRF52            15
 #define RH_PLATFORM_MONGOOSE_OS      16
 #define RH_PLATFORM_ATTINY           17
-// Spencer Kondes megaTinyCore:						   
+// Spencer Kondes megaTinyCore:
 #define RH_PLATFORM_ATTINY_MEGA      18
 #define RH_PLATFORM_STM32L0          19
 #define RH_PLATFORM_RASPI_PICO       20

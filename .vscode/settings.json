@@ -161,7 +161,8 @@
         "rhhardwarespi.h": "c",
         "unordered_set": "cpp",
         "regex": "cpp",
-        "arduino.h": "c"
+        "arduino.h": "c",
+        "rhgenericdriver.h": "c"
     },
     "cSpell.words": [
         "CLPT",

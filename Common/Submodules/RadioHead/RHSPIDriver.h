@@ -6,8 +6,13 @@
 #ifndef RHSPIDriver_h
 #define RHSPIDriver_h
 
+#ifdef PIO_BUILD_ENV
+#include <RadioHead\RHGenericDriver.h>
+#include <RadioHead\RHHardwareSPI.h>
+#else
 #include <..\Common\Submodules\RadioHead\RHGenericDriver.h>
 #include <..\Common\Submodules\RadioHead\RHHardwareSPI.h>
+#endif
 
 // This is the bit in the SPI address that marks it as a write
 #define RH_SPI_WRITE_MASK 0x80

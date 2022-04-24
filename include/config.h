@@ -77,31 +77,30 @@
 
 // Task priorities. Higher number higher priority
 #define STABILIZER_TASK_PRI     5
-#define LPS_DECK_TASK_PRI       5
-#define SPI_MAIN_TASK_PRI       5
+// #define LPS_DECK_TASK_PRI       5
 #define SENSORS_TASK_PRI        4
-#define ADC_TASK_PRI            3
-#define FLOW_TASK_PRI           3
-#define MULTIRANGER_TASK_PRI    3
-#define LIGHTHOUSE_TASK_PRI     3
-#define OA_DECK_TASK_PRI        3
+// #define ADC_TASK_PRI            3
+// #define FLOW_TASK_PRI           3
+// #define MULTIRANGER_TASK_PRI    3
+// #define LIGHTHOUSE_TASK_PRI     3
+// #define OA_DECK_TASK_PRI        3
 #define SYSTEM_TASK_PRI         2
 #define CRTP_TX_TASK_PRI        2
 #define CRTP_RX_TASK_PRI        2
-#define EXTRX_TASK_PRI          2
-#define ZRANGER_TASK_PRI        2
+// #define EXTRX_TASK_PRI          2
+// #define ZRANGER_TASK_PRI        2
 #define ZRANGER2_TASK_PRI       2
-#define PCA9685_TASK_PRI        2
+// #define PCA9685_TASK_PRI        2
 #define CMD_HIGH_LEVEL_TASK_PRI 2
-#define USDLOG_TASK_PRI         1
-#define BQ_OSD_TASK_PRI         1
-#define GTGPS_DECK_TASK_PRI     1
-#define UART1_TEST_TASK_PRI     1
-#define UART2_TEST_TASK_PRI     1
+// #define USDLOG_TASK_PRI         1
+// #define BQ_OSD_TASK_PRI         1
+// #define GTGPS_DECK_TASK_PRI     1
+// #define UART1_TEST_TASK_PRI     1
+// #define UART2_TEST_TASK_PRI     1
 #define LEDSEQCMD_TASK_PRI      1
 #define PM_TASK_PRI             0
-#define USDWRITE_TASK_PRI       0
-#define PROXIMITY_TASK_PRI      0
+// #define USDWRITE_TASK_PRI       0
+// #define PROXIMITY_TASK_PRI      0
 // if task watchdog triggered,KALMAN_TASK_PRI should set lower or set lower flow frequency
 #ifdef TARGET_MCU_ESP32
   #define KALMAN_TASK_PRI         2
@@ -115,15 +114,15 @@
   #define PARAM_TASK_PRI          2
 #endif
 
-#define SYSLINK_TASK_PRI        3
-#define USBLINK_TASK_PRI        3
-#define ACTIVE_MARKER_TASK_PRI  3
-#define AI_DECK_TASK_PRI        3
-#define UART2_TASK_PRI          3
+// #define SYSLINK_TASK_PRI        3
+// #define USBLINK_TASK_PRI        3
+// #define ACTIVE_MARKER_TASK_PRI  3
+// #define AI_DECK_TASK_PRI        3
+// #define UART2_TASK_PRI          3
 #define WIFILINK_TASK_PRI       3
 #define UDP_TX_TASK_PRI         3
 #define UDP_RX_TASK_PRI         3
-#define UDP_RX2_TASK_PRI        3
+// #define UDP_RX2_TASK_PRI        3
 
 // Not compiled
 #if 0
