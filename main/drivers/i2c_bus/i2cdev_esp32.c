@@ -22,6 +22,7 @@
  */
 #define DEBUG_MODULE "I2CDEV"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -62,6 +63,7 @@
 0x40380d51: vPortTaskWrapper at C:/Users/jacob/esp/esp-idf/components/freertos/port/xtensa/port.c:131
 
  */
+uint8_t StaticCmdbuffer[1000] = {0};
 
 int i2cdevInit(I2C_Dev *dev)
 {
@@ -111,11 +113,12 @@ bool i2cdevReadBits(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
                     uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)50) == pdFALSE) {
         return false;
     }
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    memset(StaticCmdbuffer, 0, sizeof(uint8_t) * 1000);
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(StaticCmdbuffer, 1000);
     if (memAddress != I2CDEV_NO_MEM_ADDR) {
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (devAddress << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK_EN);
@@ -126,7 +129,7 @@ bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
     i2c_master_read(cmd, data, len, I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
     esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)5);
-    i2c_cmd_link_delete(cmd);
+    i2c_cmd_link_delete_static(cmd);
 
     xSemaphoreGive(dev->isBusFreeMutex);
 
@@ -167,7 +170,7 @@ bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevReadReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
                      uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)50) == pdFALSE) {
         return false;
     }
 
@@ -260,7 +263,7 @@ bool i2cdevWriteBits(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevWriteReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
                      uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)50) == pdFALSE) {
         return false;
     }
 
@@ -314,7 +317,7 @@ bool i2cdevWriteReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevWriteReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
                       uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)50) == pdFALSE) {
         return false;
     }
 

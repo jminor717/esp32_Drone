@@ -127,7 +127,7 @@ bool mpu6050SelfTest()
     mpu6050SetAccelZSelfTest(true);
 
     // Wait for self test to take effect
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // vTaskDelay(M2T(MPU6050_SELF_TEST_DELAY_MS));
+    vTaskDelay(M2T(MPU6050_SELF_TEST_DELAY_MS));
     // Take second measurement
     mpu6050GetMotion6(&axi16, &ayi16, &azi16, &gxi16, &gyi16, &gzi16);
     gxfTst = gxi16 * gRange;
