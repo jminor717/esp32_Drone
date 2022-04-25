@@ -37,6 +37,7 @@
 #include "log.h"
 #include "wifi_esp32.h"
 #include "wifilink.h"
+#include "radiolink.h"
 #include "platformservice.h"
 #include "crtp_localization_service.h"
 
@@ -51,11 +52,22 @@ void commInit(void)
 
     /* These functions  are moved to be initialized early so
      * that DEBUG_PRINTD can be used early */
+
+#if (COMMS_MODE == WIFI_COMMS_MODE)
     wifilinkInit();
+#else
+    radiolinkInit();
+#endif
+
     crtpInit();
     // consoleInit();
 
+#if (COMMS_MODE == WIFI_COMMS_MODE)
     crtpSetLink(wifilinkGetLink());
+#else
+    crtpSetLink(radiolinkGetLink());
+#endif
+    
     crtpserviceInit();
     // platformserviceInit();
     // logInit();
@@ -74,8 +86,10 @@ void commInit(void)
 bool commTest(void)
 {
     bool pass = isInit;
+#if (COMMS_MODE == WIFI_COMMS_MODE)
     pass &= wifilinkTest();
     DEBUG_PRINTI("wifilinkTest = %d ", pass);
+#endif
     pass &= crtpTest();
     DEBUG_PRINTI("crtpTest = %d ", pass);
     // pass &= crtpserviceTest();

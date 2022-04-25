@@ -101,18 +101,12 @@
 #define PM_TASK_PRI             0
 // #define USDWRITE_TASK_PRI       0
 // #define PROXIMITY_TASK_PRI      0
-// if task watchdog triggered,KALMAN_TASK_PRI should set lower or set lower flow frequency
-#ifdef TARGET_MCU_ESP32
-  #define KALMAN_TASK_PRI         2
-  #define LOG_TASK_PRI            1
-  #define MEM_TASK_PRI            1
-  #define PARAM_TASK_PRI          1
-#else
-  #define KALMAN_TASK_PRI         1
-  #define LOG_TASK_PRI            2
-  #define MEM_TASK_PRI            2
-  #define PARAM_TASK_PRI          2
-#endif
+    // if task watchdog triggered,KALMAN_TASK_PRI should set lower or set lower flow frequency
+#define KALMAN_TASK_PRI         2
+#define LOG_TASK_PRI            1
+// #define MEM_TASK_PRI            1
+#define PARAM_TASK_PRI          1
+
 
 // #define SYSLINK_TASK_PRI        3
 // #define USBLINK_TASK_PRI        3
@@ -222,6 +216,11 @@
 #define RADIO_CHANNEL 80
 #define RADIO_DATARATE RADIO_RATE_2M
 #define RADIO_ADDRESS 0xE7E7E7E7E7ULL
+
+#define WIFI_COMMS_MODE 0
+#define RF69_COMMS_MODE 1
+
+#define COMMS_MODE WIFI_COMMS_MODE
 
 /**
  * \def PROPELLER_BALANCE_TEST_THRESHOLD

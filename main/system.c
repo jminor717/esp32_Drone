@@ -39,7 +39,6 @@
 #include "ledseq.h"
 #include "adc_esp32.h"
 #include "pm_esplane.h"
-#include "config.h"
 #include "system.h"
 #include "platform.h"
 //#include "storage.h"
@@ -111,7 +110,7 @@ void systemInit(void)
   canStartMutex = xSemaphoreCreateMutexStatic(&canStartMutexBuffer);
   xSemaphoreTake(canStartMutex, portMAX_DELAY);
 
-  wifilinkInit();
+  //wifilinkInit();
   //sysLoadInit();
 
   /* Initialized here so that DEBUG_PRINT (buffered) can be used early */
@@ -169,7 +168,9 @@ void systemTask(void *arg)
 
   ledInit();
   ledSet(CHG_LED, 1);
+#if (COMMS_MODE == WIFI_COMMS_MODE)
   wifiInit();
+#endif
   vTaskDelay(M2T(500));
 
 #ifdef DEBUG_QUEUE_MONITOR
@@ -210,70 +211,72 @@ void systemTask(void *arg)
 #endif
 
 	/* Test each modules */
-  pass &= wifiTest();
-  DEBUG_PRINTI("wifilinkTest = %d ", pass);
-  pass &= systemTest();
-  DEBUG_PRINTI("systemTest = %d ", pass);
-  pass &= configblockTest();
-  DEBUG_PRINTI("configblockTest = %d ", pass);
-  //pass &= storageTest();
-  pass &= commTest();
-  DEBUG_PRINTI("commTest = %d ", pass);
-  pass &= commanderTest();
-  DEBUG_PRINTI("commanderTest = %d ", pass);
-  pass &= stabilizerTest();
-  DEBUG_PRINTI("stabilizerTest = %d ", pass);
-  pass &= estimatorKalmanTaskTest();
-  DEBUG_PRINTI("estimatorKalmanTaskTest = %d ", pass);
-  //pass &= deckTest();
-  //pass &= soundTest();
-  //pass &= memTest();
-  DEBUG_PRINTI("memTest = %d ", pass);
-  //pass &= watchdogNormalStartTest();
-  pass &= cfAssertNormalStartTest();
-//  pass &= peerLocalizationTest();
+#if (COMMS_MODE == WIFI_COMMS_MODE)
+    pass &= wifiTest();
+    DEBUG_PRINTI("wifilinkTest = %d ", pass);
+#endif
+    pass &= systemTest();
+    DEBUG_PRINTI("systemTest = %d ", pass);
+    pass &= configblockTest();
+    DEBUG_PRINTI("configblockTest = %d ", pass);
+    // pass &= storageTest();
+    pass &= commTest();
+    DEBUG_PRINTI("commTest = %d ", pass);
+    pass &= commanderTest();
+    DEBUG_PRINTI("commanderTest = %d ", pass);
+    pass &= stabilizerTest();
+    DEBUG_PRINTI("stabilizerTest = %d ", pass);
+    pass &= estimatorKalmanTaskTest();
+    DEBUG_PRINTI("estimatorKalmanTaskTest = %d ", pass);
+    // pass &= deckTest();
+    // pass &= soundTest();
+    // pass &= memTest();
+    DEBUG_PRINTI("memTest = %d ", pass);
+    // pass &= watchdogNormalStartTest();
+    pass &= cfAssertNormalStartTest();
+    //  pass &= peerLocalizationTest();
 
-  //Start the firmware
-  if(pass)
-  {
-    selftestPassed = 1;
-    systemStart();
-    DEBUG_PRINTI("systemStart ! selftestPassed = %d", selftestPassed);
-    //soundSetEffect(SND_STARTUP);
-    //!ledseqRun(&seq_alive);
-    //!ledseqRun(&seq_testPassed);
-  }
-  else
-  {
-    selftestPassed = 0;
-    if (systemTest())
+    // Start the firmware
+    if (pass)
     {
-      while(1)
-      {
-       //! ledseqRun(&seq_testFailed);
-        vTaskDelay(M2T(2000));
-        // System can be forced to start by setting the param to 1 from the cfclient
-        if (selftestPassed)
-        {
-	        DEBUG_PRINT("Start forced.\n");
-          systemStart();
-          break;
-        }
-      }
+        selftestPassed = 1;
+        systemStart();
+        DEBUG_PRINTI("systemStart ! selftestPassed = %d", selftestPassed);
+        // soundSetEffect(SND_STARTUP);
+        //! ledseqRun(&seq_alive);
+        //! ledseqRun(&seq_testPassed);
     }
     else
     {
-      ledInit();
-      ledSet(SYS_LED, true);
+        selftestPassed = 0;
+        if (systemTest())
+        {
+            while (1)
+            {
+                //! ledseqRun(&seq_testFailed);
+                vTaskDelay(M2T(2000));
+                // System can be forced to start by setting the param to 1 from the cfclient
+                if (selftestPassed)
+                {
+                    DEBUG_PRINT("Start forced.\n");
+                    systemStart();
+                    break;
+                }
+            }
+        }
+        else
+        {
+            ledInit();
+            ledSet(SYS_LED, true);
+        }
     }
-  }
-  DEBUG_PRINT("Free heap: %d bytes\n", xPortGetFreeHeapSize());
+    DEBUG_PRINT("Free heap: %d bytes\n", xPortGetFreeHeapSize());
 
-  workerLoop();
+    workerLoop();
 
-  //Should never reach this point!
-  while(1)
-    vTaskDelay(portMAX_DELAY);
+    // Should never reach this point!
+    while (1)
+        vTaskDelay(portMAX_DELAY);
 }
 
 

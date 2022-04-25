@@ -28,10 +28,10 @@
 #include <stdint.h>
 
 /*FreeRtos includes*/
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-#include "queue.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
 
 #include "config.h"
 #include "radiolink.h"
@@ -43,6 +43,8 @@
 #include "ledseq.h"
 #include "queuemonitor.h"
 #include "static_mem.h"
+
+#include "stm32_legacy.h"
 
 #define RADIOLINK_TX_QUEUE_SIZE (1)
 #define RADIOLINK_CRTP_QUEUE_SIZE (5)
@@ -104,7 +106,7 @@ void radiolinkInit(void)
 
 bool radiolinkTest(void)
 {
-    return syslinkTest();
+    return isInit;//syslinkTest();
 }
 
 

@@ -307,7 +307,7 @@ static void kalmanTask(void *parameters)
     uint32_t lastPNUpdate = xTaskGetTickCount();
     uint32_t nextBaroUpdate = xTaskGetTickCount();
 
-    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 99, 101, 1);
+    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 97, 101, 1);
 
     while (true)
     {
@@ -317,7 +317,8 @@ static void kalmanTask(void *parameters)
         if (coreData.resetEstimation)
         {
             estimatorKalmanInit();
-            paramSetInt(paramGetVarId("kalman", "resetEstimation"), 0);
+            //!paramSetInt(paramGetVarId("kalman", "resetEstimation"), 0);
+            //TODO: what are params used for
         }
 
         // Tracks whether an update to the state has been made, and the state therefore requires finalization
@@ -344,7 +345,7 @@ static void kalmanTask(void *parameters)
 
             if (!rateSupervisorValidate(&rateSupervisorContext, T2M(osTick)))
             {
-                DEBUG_PRINT("WARNING: Kalman prediction rate low (%u)\n", rateSupervisorLatestCount(&rateSupervisorContext));
+                DEBUG_PRINT("WARNING: Kalman prediction rate low (%u)", rateSupervisorLatestCount(&rateSupervisorContext));
             }
         }
 
