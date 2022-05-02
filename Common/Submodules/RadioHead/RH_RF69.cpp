@@ -7,6 +7,8 @@
 #include <RadioHead\RH_RF69.h>
 #else
 #include <..\Common\Submodules\RadioHead\RH_RF69.h>
+#define DEBUG_MODULE "RH_RF69"
+#include "debug_cf.h"
 #endif
 #include "driver/gpio.h"
 
@@ -113,6 +115,8 @@ bool RH_RF69::init()
 #ifdef RH_ATTACHINTERRUPT_TAKES_PIN_NUMBER
     interruptNumber = _interruptPin;
 #endif
+    // ESP_INTR_FLAG_LEVEL3
+    gpio_install_isr_service(0);
 
     // Tell the low level SPI interface we will use SPI within this interrupt
     spiUsingInterrupt(interruptNumber);
@@ -157,7 +161,7 @@ bool RH_RF69::init()
     _deviceForInterrupt[_myInterruptIndex] = this;
     if (_myInterruptIndex == 0)
     {
-        gpio_isr_handler_add((gpio_num_t)_interruptPin, (void (*)(void *)) & isr0, (void *)_interruptPin);
+        gpio_isr_handler_add((gpio_num_t)_interruptPin, isr0, (void *)_interruptPin);
     }
     else if (_myInterruptIndex == 1)
         attachInterrupt(interruptNumber, isr1, RISING);
@@ -213,8 +217,9 @@ bool RH_RF69::init()
 // RH_RF69 is unusual in that it has several interrupt lines, and not a single, combined one.
 // On Moteino, only one of the several interrupt lines (DI0) from the RH_RF69 is connnected to the processor.
 // We use the single interrupt line to get PACKETSENT and PAYLOADREADY interrupts.
-void RH_RF69::handleInterrupt()
+uint8_t RH_RF69::handleInterrupt()
 {
+    uint8_t returnVal = (uint8_t)RHModeIdle;
     // log_d("inter");
     //  printf("inter");
     //  fflush(stdout);
@@ -226,6 +231,7 @@ void RH_RF69::handleInterrupt()
         setModeIdle(); // Clears FIFO
         _txGood++;
         //	Serial.println("PACKETSENT");
+        returnVal = (uint8_t)RHModeTx;
     }
 
     // Must look for PAYLOADREADY, not CRCOK, since only PAYLOADREADY occurs _after_ AES decryption
@@ -240,7 +246,9 @@ void RH_RF69::handleInterrupt()
         // Save it in our buffer
         readFifo();
         //	Serial.println("PAYLOADREADY");
+        returnVal = (uint8_t)RHModeRx;
     }
+    return returnVal;
 }
 
 // Low level function reads the FIFO and checks the address
@@ -268,8 +276,10 @@ void RH_RF69::readFifo()
             // _rxHeaderId    = _spi.transfer(0);
             // _rxHeaderFlags = _spi.transfer(0);
             // And now the real payload
-            for (_bufLen = 0; _bufLen < (payloadlen - RH_RF69_HEADER_LEN); _bufLen++)
-                _buf[_bufLen] = _spi.transfer(0);
+            _spi.transferBytes(NULL, _buf + 1, payloadlen);
+            // for (_bufLen = 0; _bufLen < (payloadlen - RH_RF69_HEADER_LEN); _bufLen++)
+            //     _buf[_bufLen] = _spi.transfer(0);
+            _buf[0] = payloadlen;
             _rxGood++;
             _rxBufValid = true;
         }
@@ -283,7 +293,7 @@ void RH_RF69::readFifo()
 // These are low level functions that call the interrupt handler for the correct
 // instance of RH_RF69.
 // 3 interrupts allows us to have 3 different devices
-void RH_INTERRUPT_ATTR RH_RF69::isr0()
+void RH_INTERRUPT_ATTR __attribute__((weak)) RH_RF69::isr0(void *arg)
 {
     if (_deviceForInterrupt[0])
         _deviceForInterrupt[0]->handleInterrupt();
@@ -509,25 +519,25 @@ bool RH_RF69::available()
     return _rxBufValid;
 }
 
-bool RH_RF69::recv(uint8_t *buf, uint8_t *len)
+uint8_t RH_RF69::recv(uint8_t *buf, uint8_t len)
 {
     if (!available())
-        return false;
+        return 0;
 
     if (buf && len)
     {
         ATOMIC_BLOCK_START;
-        if (*len > _bufLen)
-            *len = _bufLen;
-        memcpy(buf, _buf, *len);
+        if (len > _bufLen)
+            len = _bufLen;
+        memcpy(buf, _buf + 1, _buf[0]);
         ATOMIC_BLOCK_END;
     }
     _rxBufValid = false; // Got the most recent message
                          //    printBuffer("recv:", buf, *len);
-    return true;
+    return _buf[0];
 }
 
-bool RH_RF69::send(const uint8_t *data, uint8_t len)
+bool RH_RF69::send(uint8_t *data, uint8_t len)
 {
     if (len > RH_RF69_MAX_MESSAGE_LEN)
         return false;
@@ -542,15 +552,16 @@ bool RH_RF69::send(const uint8_t *data, uint8_t len)
     _spi.beginTransaction();
     digitalWrite(_slaveSelectPin, LOW);
     _spi.transfer(RH_RF69_REG_00_FIFO | RH_RF69_SPI_WRITE_MASK); // Send the start address with the write mask on
-    _spi.transfer(len + RH_RF69_HEADER_LEN);                     // Include length of headers
+    _spi.transfer(len);                     // Include length of headers
     // First the 4 headers
     // _spi.transfer(_txHeaderTo);
     // _spi.transfer(_txHeaderFrom);
     // _spi.transfer(_txHeaderId);
     // _spi.transfer(_txHeaderFlags);
     // Now the payload
-    while (len--)
-        _spi.transfer(*data++);
+    // while (len--)
+    //     _spi.transfer(*data++);
+    _spi.transferBytes(data, NULL, len);
     digitalWrite(_slaveSelectPin, HIGH);
     _spi.endTransaction();
     ATOMIC_BLOCK_END;

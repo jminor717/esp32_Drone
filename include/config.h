@@ -113,6 +113,7 @@
 // #define ACTIVE_MARKER_TASK_PRI  3
 // #define AI_DECK_TASK_PRI        3
 // #define UART2_TASK_PRI          3
+#define RADIOLINK_TASK_PRI      3
 #define WIFILINK_TASK_PRI       3
 #define UDP_TX_TASK_PRI         3
 #define UDP_RX_TASK_PRI         3
@@ -142,10 +143,11 @@
 #define ESKYLINK_TASK_NAME      "ESKYLINK"
 #define SYSLINK_TASK_NAME       "SYSLINK"
 #define USBLINK_TASK_NAME       "USBLINK"
-#define WIFILINK_TASK_NAME       "WIFILINK"
-#define UDP_TX_TASK_NAME "UDP_TX"
-#define UDP_RX_TASK_NAME  "UDP_RX"
-#define UDP_RX2_TASK_NAME  "UDP_RX2"
+#define WIFILINK_TASK_NAME      "WIFILINK"
+#define RADIO_TASK_NAME         "RADIOLINK"
+#define UDP_TX_TASK_NAME        "UDP_TX"
+#define UDP_RX_TASK_NAME        "UDP_RX"
+#define UDP_RX2_TASK_NAME       "UDP_RX2"
 #define PROXIMITY_TASK_NAME     "PROXIMITY"
 #define EXTRX_TASK_NAME         "EXTRX"
 #define UART_RX_TASK_NAME       "UART"

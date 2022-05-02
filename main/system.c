@@ -48,12 +48,17 @@
 //#include "uart_syslink.h"
 //#include "uart1.h"
 //#include "uart2.h"
+#if (COMMS_MODE == WIFI_COMMS_MODE)
 #include "wifi_esp32.h"
+#include "wifilink.h"
+#else
+#include "radiolink.h"
+#endif
+
 #include "comm.h"
 #include "stabilizer.h"
 #include "commander.h"
 //*#include "console.h"
-#include "wifilink.h"
 //#include "mem.h"
 //#include "proximity.h"
 //#include "watchdog.h"

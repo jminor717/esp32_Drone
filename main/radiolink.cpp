@@ -32,6 +32,7 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "freertos/queue.h"
+#include "driver/gpio.h"
 
 #include "config.h"
 #include "radiolink.h"
@@ -42,7 +43,16 @@
 #include "led.h"
 #include "ledseq.h"
 #include "queuemonitor.h"
+
+#define DEBUG_MODULE "RADIOLINK"
+#include "debug_cf.h"
 #include "static_mem.h"
+
+#include <Arduino.h>
+#include <SPI.h>
+
+#define RH_PLATFORM 14
+#include <..\Common\Submodules\RadioHead\RH_RF69.h>
 
 #include "stm32_legacy.h"
 
@@ -58,30 +68,69 @@ STATIC_MEM_QUEUE_ALLOC(txQueue, RADIOLINK_TX_QUEUE_SIZE, sizeof(CRTPPacket));
 static xQueueHandle crtpPacketDelivery;
 STATIC_MEM_QUEUE_ALLOC(crtpPacketDelivery, RADIOLINK_CRTP_QUEUE_SIZE, sizeof(CRTPPacket));
 
+STATIC_MEM_TASK_ALLOC(radiolinkTask, SYSTEM_TASK_STACKSIZE);
+
+STATIC_MEM_TASK_ALLOC(radioISRTask, SYSTEM_TASK_STACKSIZE);
+
+/* Allow ISR to comunicate with main task */
+static xSemaphoreHandle RF69InteruptMutex;
+static StaticSemaphore_t RF69InteruptMutexBuffer;
+
+static xSemaphoreHandle RF69TXMutex;
+static StaticSemaphore_t RF69TXMutexBuffer;
+
+static xSemaphoreHandle RF69RXMutex;
+static StaticSemaphore_t RF69RXMutexBuffer;
+
 static bool isInit;
 
 static int radiolinkSendCRTPPacket(CRTPPacket *p);
 static int radiolinkSetEnable(bool enable);
 static int radiolinkReceiveCRTPPacket(CRTPPacket *p);
+static void radiolinkTask(void *param);
+static void radioISRTask(void *param);
 
 // Local RSSI variable used to enable logging of RSSI values from Radio
 static uint8_t rssi;
 static bool isConnected;
 static uint32_t lastPacketTick;
 
+static volatile uint32_t INTCNT = 0;
+
 static volatile P2PCallback p2p_callback;
+
+RH_RF69 rf69(COM13909_SS, 18);
 
 static bool radiolinkIsConnected(void)
 {
     return (xTaskGetTickCount() - lastPacketTick) < M2T(RADIO_ACTIVITY_TIMEOUT_MS);
 }
 
-static struct crtpLinkOperations radiolinkOp =
+static int radiolinkreset(void)
+{
+    return (int)(xTaskGetTickCount() - lastPacketTick);
+}
+
+void RH_INTERRUPT_ATTR RH_RF69::isr0(void *arg)
+{
+    // uint32_t gpio_num = (uint32_t)arg;
+
+    portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(RF69InteruptMutex, &xHigherPriorityTaskWoken);
+    INTCNT++;
+    if (xHigherPriorityTaskWoken)
     {
-        .setEnable = radiolinkSetEnable,
-        .sendPacket = radiolinkSendCRTPPacket,
-        .receivePacket = radiolinkReceiveCRTPPacket,
-        .isConnected = radiolinkIsConnected};
+        portYIELD_FROM_ISR();
+    }
+}
+
+static struct crtpLinkOperations radiolinkOp = {
+    .setEnable = radiolinkSetEnable,
+    .sendPacket = radiolinkSendCRTPPacket,
+    .receivePacket = radiolinkReceiveCRTPPacket,
+    .isConnected = radiolinkIsConnected,
+    .reset = radiolinkreset,
+};
 
 void radiolinkInit(void)
 {
@@ -90,10 +139,29 @@ void radiolinkInit(void)
 
     txQueue = STATIC_MEM_QUEUE_CREATE(txQueue);
     DEBUG_QUEUE_MONITOR_REGISTER(txQueue);
+
     crtpPacketDelivery = STATIC_MEM_QUEUE_CREATE(crtpPacketDelivery);
     DEBUG_QUEUE_MONITOR_REGISTER(crtpPacketDelivery);
 
-    ASSERT(crtpPacketDelivery);
+    RF69InteruptMutex = xSemaphoreCreateBinary();
+    RF69RXMutex = xSemaphoreCreateBinary();
+    RF69TXMutex = xSemaphoreCreateBinary();
+
+    // RF69RXMutex = xSemaphoreCreateMutexStatic(&RF69RXMutexBuffer);
+    // RF69TXMutex = xSemaphoreCreateMutexStatic(&RF69TXMutexBuffer);
+
+    SPI.begin(SPI_DEV_SCK, SPI_DEV_MISO, SPI_DEV_MOSI, -1);
+
+    // RH_RF69(COM13909_SS, 46, 1);
+    if (!rf69.init())
+    {
+        DEBUG_PRINTW("RF69 setup failed\n");
+        fflush(stdout);
+    }
+    rf69.setTxPower(-2, true);
+
+    STATIC_MEM_TASK_CREATE(radiolinkTask, radiolinkTask, RADIO_TASK_NAME, NULL, RADIOLINK_TASK_PRI);
+    STATIC_MEM_TASK_CREATE(radioISRTask, radioISRTask, "RADIOLINK_ISR", NULL, 4);
 
     //!  syslinkInit();
 
@@ -104,11 +172,101 @@ void radiolinkInit(void)
     isInit = true;
 }
 
-bool radiolinkTest(void)
+typedef enum
 {
-    return isInit;//syslinkTest();
+    RHModeInitialising = 0, ///< Transport is initialising. Initial default value until init() is called..
+    RHModeSleep,            ///< Transport hardware is in low power sleep mode (if supported)
+    RHModeIdle,             ///< Transport is idle.
+    RHModeTx,               ///< Transport is in the process of transmitting a message.
+    RHModeRx,               ///< Transport is in the process of receiving a message.
+    RHModeCad               ///< Transport is in the process of detecting channel activity (if supported)
+} RHMode;
+
+static void radioISRTask(void *param)
+{
+    while (1)
+    {
+        xSemaphoreTake(RF69InteruptMutex, 1000);
+        uint8_t mode = rf69.handleInterrupt();
+
+        if (mode == (uint8_t)RHModeRx)
+        {
+            xSemaphoreGive(RF69RXMutex);
+        }
+        else if (mode == (uint8_t)RHModeTx)
+        {
+            xSemaphoreGive(RF69TXMutex);
+        }
+    }
 }
 
+static void radiolinkTask(void *param)
+{
+    DEBUG_PRINTI("RF69 setup Passed");
+
+    while (1)
+    {
+        // wifiGetDataBlocking(&wifiIn);
+        // lastPacketTick = xTaskGetTickCount();
+
+        // p.size = wifiIn.size - 1;
+        // memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
+
+        // xQueueSend(crtpPacketDelivery, &p, 0);
+
+        xSemaphoreTake(RF69RXMutex, 1500);
+        if (rf69.available())
+        {
+            // Should be a message for us now
+            uint8_t buf[RH_RF69_MAX_MESSAGE_LEN] = {0};
+            uint8_t len = sizeof(buf);
+            if (rf69.recv(buf, len))
+            {
+                CRTPPacket cmd;
+                // memcpy(&cmd, wifiIn.data, sizeof(CRTPPacket));
+                uint8_t CRTP_len = buf[0];
+                memcpy(&cmd, buf, CRTP_len);
+                uint8_t checkSum = calculate_cksum(buf, CRTP_len);
+
+                if (cmd.data[0] == ControllerType)
+                {
+                    struct RawControllsPackett_s DataOut;
+                    memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+
+                    DEBUG_PRINTI("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
+                                 DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
+                                 DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
+                                 DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
+                                 DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+                }
+                else
+                {
+                    DEBUG_PRINTI("got request: %d, %d, %d, %d   %s   RSSI: %d", buf[0], buf[1], buf[2], buf[3], (char *)buf, rf69.lastRssi());
+                }
+
+                // Send a reply
+                uint8_t data[] = "And hello back to you";
+                rf69.send(data, sizeof(data));
+                xSemaphoreTake(RF69TXMutex, portMAX_DELAY);
+                // rf69.waitPacketSent();
+                //  Serial.println("Sent a reply");
+            }
+            else
+            {
+                DEBUG_PRINTI(".");
+                // fflush(stdout);
+            }
+            rf69.setModeRx();
+        }
+        // DEBUG_PRINTI(".");
+        vTaskDelay(1);
+    }
+}
+
+bool radiolinkTest(void)
+{
+    return isInit; // syslinkTest();
+}
 
 static int radiolinkReceiveCRTPPacket(CRTPPacket *p)
 {
@@ -119,7 +277,6 @@ static int radiolinkReceiveCRTPPacket(CRTPPacket *p)
 
     return -1;
 }
-
 
 static int radiolinkSendCRTPPacket(CRTPPacket *p)
 {
@@ -138,7 +295,6 @@ static int radiolinkSendCRTPPacket(CRTPPacket *p)
 
     return false;
 }
-
 
 struct crtpLinkOperations *radiolinkGetLink()
 {
@@ -239,7 +395,7 @@ void radiolinkSetPowerDbm(int8_t powerDbm)
 //     isConnected = radiolinkIsConnected();
 // }
 
-LOG_GROUP_START(radio)
-LOG_ADD(LOG_UINT8, rssi, &rssi)
-LOG_ADD(LOG_UINT8, isConnected, &isConnected)
-LOG_GROUP_STOP(radio)
+// LOG_GROUP_START(radio)
+// LOG_ADD(LOG_UINT8, rssi, &rssi)
+// LOG_ADD(LOG_UINT8, isConnected, &isConnected)
+// LOG_GROUP_STOP(radio)

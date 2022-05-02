@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "syslink.h"
+#include "crtp.h"
 
 #define P2P_MAX_DATA_SIZE 60
 

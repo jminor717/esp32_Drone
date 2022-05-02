@@ -93,6 +93,8 @@ public:
     /// \return The octet read from SPI while the data octet was sent
     virtual uint8_t transfer(uint8_t data) = 0;
 
+    virtual void transferBytes(uint8_t *data, uint8_t *out, uint32_t size) {};
+
 #if (RH_PLATFORM == RH_PLATFORM_MONGOOSE_OS)
     /// Transfer up to 2 bytes on the SPI interface
     /// \param[in] byte0 The first byte to be sent on the SPI interface

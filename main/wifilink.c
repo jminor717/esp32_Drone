@@ -60,25 +60,10 @@ static uint32_t lastPacketTick;
 static int wifilinkSendPacket(CRTPPacket *p);
 static int wifilinkSetEnable(bool enable);
 static int wifilinkReceiveCRTPPacket(CRTPPacket *p);
+static void wifilinkTask(void *param);
 
 STATIC_MEM_TASK_ALLOC(wifilinkTask, USBLINK_TASK_STACKSIZE);
 
-#ifdef CONFIG_ENABLE_LEGACY_APP
-static float rch, pch, ych;
-static uint16_t tch;
-
-static bool detectOldVersionApp(UDPPacket *in)
-{
-    if ((in->data)[0] != 0x00 && in->size == 11)
-    { //12-1
-        if ((in->data)[0] == 0x80 && (in->data)[9] == 0x00 && (in->data)[10] == 0x00 && (in->data)[11] == 0x00)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-#endif
 static bool wifilinkIsConnected(void)
 {
     return (xTaskGetTickCount() - lastPacketTick) < M2T(WIFI_ACTIVITY_TIMEOUT_MS);
@@ -91,6 +76,21 @@ static struct crtpLinkOperations wifilinkOp = {
     .isConnected = wifilinkIsConnected,
 };
 
+void wifilinkInit()
+{
+    if (isInit)
+    {
+        return;
+    }
+
+    crtpPacketDelivery = STATIC_MEM_QUEUE_CREATE(crtpPacketDelivery);
+    DEBUG_QUEUE_MONITOR_REGISTER(crtpPacketDelivery);
+
+    STATIC_MEM_TASK_CREATE(wifilinkTask, wifilinkTask, WIFILINK_TASK_NAME, NULL, WIFILINK_TASK_PRI);
+
+    isInit = true;
+}
+
 static void wifilinkTask(void *param)
 {
     while (1)
@@ -98,30 +98,12 @@ static void wifilinkTask(void *param)
         /* command step - receive  03 Fetch a wifi packet off the queue */
         wifiGetDataBlocking(&wifiIn);
         lastPacketTick = xTaskGetTickCount();
-#ifdef CONFIG_ENABLE_LEGACY_APP
 
-        if (detectOldVersionApp(&wifiIn))
-        {
-            rch = (1.0) * (float)(((((uint16_t)wifiIn.data[1] << 8) + (uint16_t)wifiIn.data[2]) - 296) * 15.0 / 150.0);  //-15~+15
-            pch = (-1.0) * (float)(((((uint16_t)wifiIn.data[3] << 8) + (uint16_t)wifiIn.data[4]) - 296) * 15.0 / 150.0); //-15~+15
-            tch = (((uint16_t)wifiIn.data[5] << 8) + (uint16_t)wifiIn.data[6]) * 59000.0 / 600.0;
-            ych = (float)(((((uint16_t)wifiIn.data[7] << 8) + (uint16_t)wifiIn.data[8]) - 296) * 15.0 / 150.0); //-15~+15
-            p.size = wifiIn.size + 1;                                                                           //add cksum size
-            p.header = CRTP_HEADER(CRTP_PORT_SETPOINT, 0x00);                                                   //head redefine
+        /* command step - receive  04 copy CRTP part from packet, the size not contain head */
+        p.size = wifiIn.size - 1;
+        // memcpy(&p.raw, wifiIn.data, wifiIn.size);
+        memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
 
-            memcpy(&p.data[0], &rch, 4);
-            memcpy(&p.data[4], &pch, 4);
-            memcpy(&p.data[8], &ych, 4);
-            memcpy(&p.data[12], &tch, 2);
-        }
-        else
-#endif
-        {
-            /* command step - receive  04 copy CRTP part from packet, the size not contain head */
-            p.size = wifiIn.size - 1;
-            //memcpy(&p.raw, wifiIn.data, wifiIn.size);
-            memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
-        }
         // uint8_t cksum = p.data[1];
         // p.data[1] = 0;
         // uint8_t cksum2 = calculate_cksum(p.data, CRTP_MAX_DATA_SIZE);
@@ -142,7 +124,7 @@ static int wifilinkReceiveCRTPPacket(CRTPPacket *p)
 {
     if (xQueueReceive(crtpPacketDelivery, p, M2T(100)) == pdTRUE)
     {
-        //!ledseqRun(&seq_linkUp);
+        //! ledseqRun(&seq_linkUp);
         return 0;
     }
 
@@ -172,25 +154,6 @@ static int wifilinkSendPacket(CRTPPacket *p)
 static int wifilinkSetEnable(bool enable)
 {
     return 0;
-}
-
-/*
- * Public functions
- */
-
-void wifilinkInit()
-{
-    if (isInit)
-    {
-        return;
-    }
-
-    crtpPacketDelivery = STATIC_MEM_QUEUE_CREATE(crtpPacketDelivery);
-    DEBUG_QUEUE_MONITOR_REGISTER(crtpPacketDelivery);
-
-    STATIC_MEM_TASK_CREATE(wifilinkTask, wifilinkTask, WIFILINK_TASK_NAME, NULL, WIFILINK_TASK_PRI);
-
-    isInit = true;
 }
 
 bool wifilinkTest()

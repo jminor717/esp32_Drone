@@ -35,9 +35,12 @@
 #include "param.h"
 #include "debug_cf.h"
 #include "log.h"
+#if (COMMS_MODE == WIFI_COMMS_MODE)
 #include "wifi_esp32.h"
 #include "wifilink.h"
+#else
 #include "radiolink.h"
+#endif
 #include "platformservice.h"
 #include "crtp_localization_service.h"
 

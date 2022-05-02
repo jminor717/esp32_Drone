@@ -4,7 +4,7 @@
 #include <../Common/Data_type.h>
 
 #include <SPI.h>
-#define RH_PLATFORM 14
+//#define RH_PLATFORM 14
 #include <../Common/Submodules/RadioHead/RH_RF69.h>
 //#include <atomic>
 #include "esp32-hal-log.h"
@@ -94,7 +94,6 @@ void setup()
     Serial.setDebugOutput(true);
 
     SPI.begin(MAIN_SPI_SCK, MAIN_SPI_MISO, MAIN_SPI_MOSI, MAIN_SPI_SS);
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     if (!rf69.init())
         Serial.println("init failed");
 
@@ -135,6 +134,12 @@ void setup()
     // map();
 }
 
+// uint8_t RawControllsPackettCOMPACT_Encode(PS4Controller CTRL, RawControllsPackettCOMPACT_s *packet, uint8_t size)
+// {
+//     packet->data = (uint8_t *)calloc(1, 5 + 1);
+//     return 1;
+// }
+
 void handleControlUpdate()
 {
     int8_t val = 0;
@@ -142,23 +147,6 @@ void handleControlUpdate()
     if (PS4.isConnected())
     {
         now = esp_timer_get_time();
-        // if (PS4.Right())
-        //     Serial.println("Right Button");
-        // if (PS4.Down())
-        //     Serial.println("Down Button");
-        // if (PS4.Up())
-        //     Serial.println("Up Button");
-        // if (PS4.Left())
-        //     Serial.println("Left Button");
-
-        // if (PS4.Square())
-        //     Serial.println("Square Button");
-        // if (PS4.Cross())
-        //     Serial.println("Cross Button");
-        // if (PS4.Circle())
-        //     Serial.println("Circle Button");
-        // if (PS4.Triangle())
-        //     Serial.println("Triangle Button");
 
         // if (PS4.UpRight())
         //     Serial.println("Up Right");
@@ -169,19 +157,10 @@ void handleControlUpdate()
         // if (PS4.DownLeft())
         //     Serial.println("Down Left");
 
-        // if (PS4.L1())
-        //     Serial.println("L1 Button");
-        // if (PS4.R1())
-        //     Serial.println("R1 Button");
-
         // if (PS4.Share())
         //     Serial.println("Share Button");
         // if (PS4.Options())
         //     Serial.println("Options Button");
-        // if (PS4.L3())
-        //     Serial.println("L3 Button");
-        // if (PS4.R3())
-        //     Serial.println("R3 Button");
 
         // if (PS4.PSButton())
         //     Serial.println("PS Button");
@@ -193,18 +172,7 @@ void handleControlUpdate()
         // if (PS4.R2())
         //     Serial.printf("R2 button at %d\n", PS4.R2Value());
 
-        // val = PS4.LStickX();
-        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-        //     Serial.printf("Left Stick x at %d\n", val);
-        // val = PS4.LStickY();
-        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-        //     Serial.printf("Left Stick y at %d\n", val);
-        // val = PS4.RStickX();
-        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-        //     Serial.printf("Right Stick x at %d\n", val);
-        // val = PS4.RStickY();
-        // if (val > MIN_JOYCON_ANGLE || val < -MIN_JOYCON_ANGLE)
-        //     Serial.printf("Right Stick y at %d\n", val);
+
         // ps4_sensor_t sense = PS4.SensorData();
         // Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
 
@@ -218,6 +186,7 @@ void handleControlUpdate()
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
+
             inTransmit = true; // atomic block around buffer and udp operations
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us + 100000;
 
@@ -254,7 +223,7 @@ void handleControlUpdate()
             // log_v("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
             //       DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
             //       DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
-            //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.R3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
+            //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
             //       DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
 
             // SendDataToDrone(cmd, sizeof(RawControllsPackett_s) + 1);
@@ -365,9 +334,12 @@ void loop()
         cmd.port = CRTP_PORT_SETPOINT_GENERIC;
         cmd.data[0] = 21;
         cmd.data[1] = 'B';
-        if (has_cmd){
+        if (has_cmd)
+        {
             SendDataToDrone(cmd_Data, cmd_len);
-        }else{
+        }
+        else
+        {
             SendDataToDrone(cmd, 2);
         }
         // }
@@ -414,7 +386,7 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     if (rf69.waitAvailableTimeout(50))
     {
         // Should be a reply message for us now
-        if (rf69.recv(buf, &len2))
+        if (rf69.recv(buf, len2))
         {
             Serial.print("got reply: ");
             Serial.print((char *)buf);

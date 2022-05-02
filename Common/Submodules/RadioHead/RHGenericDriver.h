@@ -89,7 +89,7 @@ public:
     /// \param[in] buf Location to copy the received message
     /// \param[in,out] len Pointer to available space in buf. Set to the actual number of octets copied.
     /// \return true if a valid message was copied to buf
-    virtual bool recv(uint8_t* buf, uint8_t* len) = 0;
+    virtual uint8_t recv(uint8_t *buf, uint8_t len) = 0;
 
     /// Waits until any previous transmit packet is finished being transmitted with waitPacketSent().
     /// Then optionally waits for Channel Activity Detection (CAD) 
@@ -102,7 +102,7 @@ public:
     /// specify the maximum time in ms to wait. If 0 (the default) do not wait for CAD before transmitting.
     /// \return true if the message length was valid and it was correctly queued for transmit. Return false
     /// if CAD was requested and the CAD timeout timed out before clear channel was detected.
-    virtual bool send(const uint8_t* data, uint8_t len) = 0;
+    virtual bool send(uint8_t* data, uint8_t len) = 0;
 
     /// Returns the maximum message length 
     /// available in this Driver.

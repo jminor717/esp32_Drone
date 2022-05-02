@@ -121,11 +121,10 @@ struct hoverPacket_s
     float zDistance; // m in the world frame of reference
 };
 
-struct BtnCTX
+struct _BtnCTX
 {
     union
     {
-        uint32_t ButtonCount;
         struct
         {
             uint8_t XCount : 3;
@@ -142,8 +141,8 @@ struct BtnCTX
             uint8_t L3Count : 2;
         };
     };
-};
-typedef struct BtnCTX BtnCTX;
+};// __attribute__((packed));
+typedef struct _BtnCTX BtnCTX;
 
 struct RawControllsPackett_s
 {
@@ -156,10 +155,47 @@ struct RawControllsPackett_s
     BtnCTX ButtonCount;
 };
 
+struct RawControllsPackettCOMPACT_s
+{
+    union
+    {
+        struct
+        {
+            uint8_t X : 1;
+            uint8_t O : 1;
+            uint8_t Triangle : 1;
+            uint8_t Square : 1;
+            uint8_t Up : 1;
+            uint8_t Down : 1;
+            uint8_t Left : 1;
+            uint8_t Right : 1;
+            uint8_t R1 : 1;
+            uint8_t L1 : 1;
+            uint8_t R3 : 1;
+            uint8_t L3 : 1;
+            uint8_t Reserved : 4;
+        };
+    };
+    union
+    {
+        struct
+        {
+            uint8_t Rx : 1;
+            uint8_t Ry : 1;
+            uint8_t R2 : 1;
+            uint8_t Lx : 1;
+            uint8_t Ly : 1;
+            uint8_t L2 : 1;
+            uint8_t Reserved2 : 2;
+        };
+    };
+    uint8_t data[];
+};
 
 typedef struct altHoldPacket_s altHoldPacket_s;
 typedef struct hoverPacket_s hoverPacket_s;
 typedef struct RawControllsPackett_s RawControllsPackett_s;
+typedef struct RawControllsPackettCOMPACT_s RawControllsPackettCOMPACT_s;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -205,9 +241,6 @@ static uint8_t hoverPacket_Encode_Min(int16_t vx, int16_t vy, int16_t y, uint8_t
     data[7] = z;
     return 8;
 }
-
-
-
 
 #pragma GCC diagnostic pop
 

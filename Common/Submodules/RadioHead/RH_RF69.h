@@ -914,7 +914,7 @@ public:
     /// \param[in] buf Location to copy the received message
     /// \param[in,out] len Pointer to the number of octets available in buf. The number be reset to the actual number of octets copied.
     /// \return true if a valid message was copied to buf
-    bool        recv(uint8_t* buf, uint8_t* len);
+    uint8_t recv(uint8_t *buf, uint8_t len);
 
     /// Waits until any previous transmit packet is finished being transmitted with waitPacketSent().
     /// Then loads a message into the transmitter and starts the transmitter. Note that a message length
@@ -922,7 +922,7 @@ public:
     /// \param[in] data Array of data to be sent
     /// \param[in] len Number of bytes of data to send (> 0)
     /// \return true if the message length was valid and it was correctly queued for transmit
-    bool        send(const uint8_t* data, uint8_t len);
+    bool        send(uint8_t* data, uint8_t len);
 
     /// Sets the length of the preamble
     /// in bytes. 
@@ -994,19 +994,19 @@ public:
     /// \return The integer device type
     uint16_t deviceType() {return _deviceType;};
 
-protected:
-    /// This is a low level function to handle the interrupts for one instance of RF69.
-    /// Called automatically by isr*()
-    /// Should not need to be called by user code.
-    void           handleInterrupt();
-
     /// Low level function to read the FIFO and put the received data into the receive buffer
     /// Should not need to be called by user code.
     void           readFifo();
 
-protected:
+    /// This is a low level function to handle the interrupts for one instance of RF69.
+    /// Called automatically by isr*()
+    /// Should not need to be called by user code.
+    uint8_t handleInterrupt();
+
     /// Low level interrupt service routine for RF69 connected to interrupt 0
-    static void         isr0();
+    static void isr0(void *arg);
+
+protected:
 
     /// Low level interrupt service routine for RF69 connected to interrupt 1
     static void         isr1();
@@ -1040,7 +1040,7 @@ protected:
     volatile uint8_t    _bufLen;
 
     /// Array of octets of teh last received message or the next to transmit message
-    uint8_t             _buf[RH_RF69_MAX_MESSAGE_LEN];
+    uint8_t             _buf[RH_RF69_MAX_MESSAGE_LEN + 1];
 
     /// True when there is a valid message in the Rx buffer
     volatile bool    _rxBufValid;

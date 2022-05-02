@@ -162,7 +162,10 @@
         "unordered_set": "cpp",
         "regex": "cpp",
         "arduino.h": "c",
-        "rhgenericdriver.h": "c"
+        "rhgenericdriver.h": "c",
+        "wifilink.h": "c",
+        "radiolink.h": "c",
+        "system.h": "c"
     },
     "cSpell.words": [
         "CLPT",

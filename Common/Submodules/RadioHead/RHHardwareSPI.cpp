@@ -57,6 +57,11 @@ uint8_t RHHardwareSPI::transfer(uint8_t data)
     return SPI.transfer(data);
 }
 
+void RHHardwareSPI::transferBytes(uint8_t *data, uint8_t *out, uint32_t size)
+{
+    SPI.transferBytes(data, out, size);
+}
+
 #if (RH_PLATFORM == RH_PLATFORM_MONGOOSE_OS)
 uint8_t RHHardwareSPI::transfer2B(uint8_t byte0, uint8_t byte1)
 {
