@@ -14,7 +14,7 @@
 #define UDP_SERVER_PORT 2390
 #define UDP_RECEIVE_PORT 2390
 
-#define WIFI_TRANSMIT_RATE_Us 40000 // 40ms = 25hz
+#define WIFI_TRANSMIT_RATE_Us 7000 // 40ms = 25hz
 
 #define MIN_THRUST 1000
 #define MAX_THRUST 60000
@@ -148,15 +148,6 @@ void handleControlUpdate()
     {
         now = esp_timer_get_time();
 
-        // if (PS4.UpRight())
-        //     Serial.println("Up Right");
-        // if (PS4.DownRight())
-        //     Serial.println("Down Right");
-        // if (PS4.UpLeft())
-        //     Serial.println("Up Left");
-        // if (PS4.DownLeft())
-        //     Serial.println("Down Left");
-
         // if (PS4.Share())
         //     Serial.println("Share Button");
         // if (PS4.Options())
@@ -171,7 +162,6 @@ void handleControlUpdate()
         //     Serial.printf("L2 button at %d\n", PS4.L2Value());
         // if (PS4.R2())
         //     Serial.printf("R2 button at %d\n", PS4.R2Value());
-
 
         // ps4_sensor_t sense = PS4.SensorData();
         // Serial.printf("% 06.3f: % 06.3f: % 06.3f    %05d  %05d  %05d\n", sense.accelerometer.x / 8192.0, sense.accelerometer.y / 8192.0, sense.accelerometer.z / 8192.0, sense.gyroscope.x, sense.gyroscope.y, sense.gyroscope.z);
@@ -188,7 +178,20 @@ void handleControlUpdate()
         {
 
             inTransmit = true; // atomic block around buffer and udp operations
-            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us + 100000;
+            NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
+            /*
+
+            [38]	active low	finger 1 id
+            [39 - 41]	finger 1 coordinates
+            [42]	active low	finger 2 id
+            [43 - 45]	finger 2 coordinates
+            */
+
+            // log_v("    %d -- %d,%d,%d,%d,%d,%d,%d    %d -- %d,%d,%d,%d,%d,%d,%d    %d -- %d,%d,%d,%d,%d,%d,%d    %d -- %d,%d,%d,%d,%d,%d,%d",
+            //       PS4.data.latestPacket[37], PS4.data.latestPacket[38], PS4.data.latestPacket[39], PS4.data.latestPacket[40], PS4.data.latestPacket[41], PS4.data.latestPacket[42], PS4.data.latestPacket[43], PS4.data.latestPacket[44], PS4.data.latestPacket[45],
+            //       PS4.data.latestPacket[46], PS4.data.latestPacket[47], PS4.data.latestPacket[48], PS4.data.latestPacket[49], PS4.data.latestPacket[50], PS4.data.latestPacket[51], PS4.data.latestPacket[52], PS4.data.latestPacket[53], PS4.data.latestPacket[54],
+            //       PS4.data.latestPacket[55], PS4.data.latestPacket[56], PS4.data.latestPacket[57], PS4.data.latestPacket[58], PS4.data.latestPacket[59], PS4.data.latestPacket[60], PS4.data.latestPacket[61], PS4.data.latestPacket[62], PS4.data.latestPacket[63],
+            //       PS4.data.latestPacket[64], PS4.data.latestPacket[65], PS4.data.latestPacket[66], PS4.data.latestPacket[67], PS4.data.latestPacket[68], PS4.data.latestPacket[69], PS4.data.latestPacket[70], PS4.data.latestPacket[71], PS4.data.latestPacket[72]);
 
             CRTPPacket cmd;
             memset(&cmd, 0, sizeof(CRTPPacket));
@@ -202,10 +205,10 @@ void handleControlUpdate()
             ContorlData.Ly = PS4.LStickY();
             ContorlData.R2 = PS4.R2Value();
             ContorlData.L2 = PS4.L2Value();
-            ContorlData.ButtonCount.RightCount = PS4.Right();
-            ContorlData.ButtonCount.LeftCount = PS4.Left();
-            ContorlData.ButtonCount.UpCount = PS4.Up();
-            ContorlData.ButtonCount.DownCount = PS4.Down();
+            ContorlData.ButtonCount.RightCount = PS4.Right() || PS4.UpRight() || PS4.DownRight();
+            ContorlData.ButtonCount.LeftCount = PS4.Left() || PS4.UpLeft() || PS4.DownLeft();
+            ContorlData.ButtonCount.UpCount = PS4.Up() || PS4.UpLeft() || PS4.UpRight();
+            ContorlData.ButtonCount.DownCount = PS4.Down() || PS4.DownLeft() || PS4.DownRight();
             ContorlData.ButtonCount.SquareCount = PS4.Square();
             ContorlData.ButtonCount.XCount = PS4.Cross();
             ContorlData.ButtonCount.OCount = PS4.Circle();
@@ -327,25 +330,30 @@ void loop()
         // }
         // else
         // {
-        delay(1000);
-        CRTPPacket cmd;
-        memset(&cmd, 0, sizeof(CRTPPacket));
-        cmd.channel = SET_SETPOINT_CHANNEL;
-        cmd.port = CRTP_PORT_SETPOINT_GENERIC;
-        cmd.data[0] = 21;
-        cmd.data[1] = 'B';
+        delay(1);
+        // CRTPPacket cmd;
+        // memset(&cmd, 0, sizeof(CRTPPacket));
+        // cmd.channel = SET_SETPOINT_CHANNEL;
+        // cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+        // cmd.data[0] = 21;
+        // cmd.data[1] = 'B';
         if (has_cmd)
         {
+            has_cmd = false;
             SendDataToDrone(cmd_Data, cmd_len);
         }
         else
         {
-            SendDataToDrone(cmd, 2);
+            // SendDataToDrone(cmd, 2);
         }
         // }
     }
 }
 
+const uint16_t maxCnt = 100;
+uint16_t respCount = 0;
+int16_t RssiCnt[maxCnt] = {0};
+int64_t last = 1;
 /**
  * cmd: cprt data to send to drone
  * len: length of the cprt data not including
@@ -370,12 +378,8 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     // msg.write(buffer, len + 1);
     // udp.broadcastTo(msg, UDP_SERVER_PORT);
 
-    //
-    //
-    //
-    //
-    Serial.print("+");
-    // Send a message to rf69_server
+    // log_v("%d, %d", buffer[len], len);
+    //  Send a message to rf69_server
     rf69.send(buffer, len + 1);
 
     rf69.waitPacketSent();
@@ -386,12 +390,35 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     if (rf69.waitAvailableTimeout(50))
     {
         // Should be a reply message for us now
-        if (rf69.recv(buf, len2))
+        uint8_t lenOut = rf69.recv(buf, len2);
+        if (lenOut)
         {
-            Serial.print("got reply: ");
-            Serial.print((char *)buf);
-            Serial.print("  RSSI: ");
-            Serial.println(rf69.lastRssi(), DEC);
+
+            RssiCnt[respCount] = rf69.lastRssi();
+            respCount++;
+            if (respCount >= maxCnt)
+            {
+                respCount = 0;
+                int32_t sum = 0;
+                for (size_t i = 0; i < maxCnt; i++)
+                {
+                    sum += RssiCnt[i];
+                }
+                now = esp_timer_get_time();
+                Serial.print("transmit frequency: ");
+                Serial.print(maxCnt / ((now - last) / 1000000.0), DEC);
+                Serial.print("   with an avg RSSI of ");
+                Serial.print(rf69.lastRssi(), DEC);
+                Serial.print("   ");
+                Serial.println(sum / (float)maxCnt, DEC);
+                // log_v("received %d messages in %d with an avg RSSI of %d", , RssiCnt[1], sum / (float)maxCnt);
+                last = esp_timer_get_time();
+            }
+            if (lenOut > 5)
+            {
+                buf[lenOut + 1] = 0;
+                Serial.println((char *)buf);
+            }
         }
         else
         {

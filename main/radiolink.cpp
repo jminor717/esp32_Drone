@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 /*FreeRtos includes*/
 #include "freertos/FreeRTOS.h"
@@ -74,13 +75,13 @@ STATIC_MEM_TASK_ALLOC(radioISRTask, SYSTEM_TASK_STACKSIZE);
 
 /* Allow ISR to comunicate with main task */
 static xSemaphoreHandle RF69InteruptMutex;
-static StaticSemaphore_t RF69InteruptMutexBuffer;
+// static StaticSemaphore_t RF69InteruptMutexBuffer;
 
 static xSemaphoreHandle RF69TXMutex;
-static StaticSemaphore_t RF69TXMutexBuffer;
+// static StaticSemaphore_t RF69TXMutexBuffer;
 
 static xSemaphoreHandle RF69RXMutex;
-static StaticSemaphore_t RF69RXMutexBuffer;
+// static StaticSemaphore_t RF69RXMutexBuffer;
 
 static bool isInit;
 
@@ -92,10 +93,7 @@ static void radioISRTask(void *param);
 
 // Local RSSI variable used to enable logging of RSSI values from Radio
 static uint8_t rssi;
-static bool isConnected;
 static uint32_t lastPacketTick;
-
-static volatile uint32_t INTCNT = 0;
 
 static volatile P2PCallback p2p_callback;
 
@@ -111,13 +109,16 @@ static int radiolinkreset(void)
     return (int)(xTaskGetTickCount() - lastPacketTick);
 }
 
+/**
+ * @brief
+ * override RH_RF69 implamentation of this ISR so that we can handle all of the spi operations outside of the ISR
+ * @param arg pointer to ISR arguments
+ */
 void RH_INTERRUPT_ATTR RH_RF69::isr0(void *arg)
 {
     // uint32_t gpio_num = (uint32_t)arg;
-
     portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
     xSemaphoreGiveFromISR(RF69InteruptMutex, &xHigherPriorityTaskWoken);
-    INTCNT++;
     if (xHigherPriorityTaskWoken)
     {
         portYIELD_FROM_ISR();
@@ -152,7 +153,6 @@ void radiolinkInit(void)
 
     SPI.begin(SPI_DEV_SCK, SPI_DEV_MISO, SPI_DEV_MOSI, -1);
 
-    // RH_RF69(COM13909_SS, 46, 1);
     if (!rf69.init())
     {
         DEBUG_PRINTW("RF69 setup failed\n");
@@ -162,8 +162,6 @@ void radiolinkInit(void)
 
     STATIC_MEM_TASK_CREATE(radiolinkTask, radiolinkTask, RADIO_TASK_NAME, NULL, RADIOLINK_TASK_PRI);
     STATIC_MEM_TASK_CREATE(radioISRTask, radioISRTask, "RADIOLINK_ISR", NULL, 4);
-
-    //!  syslinkInit();
 
     //!   radiolinkSetChannel(configblockGetRadioChannel());
     //   radiolinkSetDatarate(configblockGetRadioSpeed());
@@ -182,10 +180,17 @@ typedef enum
     RHModeCad               ///< Transport is in the process of detecting channel activity (if supported)
 } RHMode;
 
+
+/**
+ * @brief high priority task to handle inturupts and read the spi buffer after a packet is received
+ * 
+ * @param param task params pointer
+ */
 static void radioISRTask(void *param)
 {
     while (1)
     {
+        //its not a huge problem to run this every second but without this there are some unresolved issues that lead to this indefinitely blocking at startup
         xSemaphoreTake(RF69InteruptMutex, 1000);
         uint8_t mode = rf69.handleInterrupt();
 
@@ -200,66 +205,70 @@ static void radioISRTask(void *param)
     }
 }
 
+/**
+ * @brief medium priority task to parse received packets and send a responce
+ *
+ * @remark seperated from radioISRTask to keep time spent in a high priority task to a minimum
+ *
+ * @param param task params pointer
+ */
 static void radiolinkTask(void *param)
 {
     DEBUG_PRINTI("RF69 setup Passed");
+    CRTPPacket cmd;
 
     while (1)
     {
-        // wifiGetDataBlocking(&wifiIn);
-        // lastPacketTick = xTaskGetTickCount();
-
-        // p.size = wifiIn.size - 1;
-        // memcpy(&p, wifiIn.data, sizeof(CRTPPacket));
-
-        // xQueueSend(crtpPacketDelivery, &p, 0);
-
+        // set from radioISRTask when a new packet has been read from the radio module, needs a finite timeout to avoid indefinitely blocking at startup
         xSemaphoreTake(RF69RXMutex, 1500);
         if (rf69.available())
         {
-            // Should be a message for us now
+            lastPacketTick = xTaskGetTickCount();
             uint8_t buf[RH_RF69_MAX_MESSAGE_LEN] = {0};
-            uint8_t len = sizeof(buf);
-            if (rf69.recv(buf, len))
+            uint8_t len = rf69.recv(buf, 0);
+            if (len)
             {
-                CRTPPacket cmd;
-                // memcpy(&cmd, wifiIn.data, sizeof(CRTPPacket));
-                uint8_t CRTP_len = buf[0];
-                memcpy(&cmd, buf, CRTP_len);
-                uint8_t checkSum = calculate_cksum(buf, CRTP_len);
+                rssi = rf69.lastRssi();
+                memcpy(&cmd, buf, len);
+                uint8_t cksum = buf[len - 1];
+                // remove cksum, do not belong to CRTP
+                uint8_t cksumCalk = calculate_cksum(buf, len - 1);
 
-                if (cmd.data[0] == ControllerType)
+                // check packet
+                if (cksum == cksumCalk && len < 64)
                 {
-                    struct RawControllsPackett_s DataOut;
-                    memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+                    xQueueSend(crtpPacketDelivery, &cmd, 0);
 
-                    DEBUG_PRINTI("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
-                                 DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
-                                 DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
-                                 DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
-                                 DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+                    // if (cmd.data[0] == ControllerType)
+                    // {
+                    //     struct RawControllsPackett_s DataOut;
+                    //     memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+
+                    // TODO: tailor responce based of of current state and cmd inputs, eg acknowledge specific button presses
+                    // }
+                    // else
+                    // {
+                    //     DEBUG_PRINTI("got request: %d, %d, %d, %d   %s   RSSI: %d", buf[0], buf[1], buf[2], buf[3], (char *)buf, rf69.lastRssi());
+                    // }
+                    uint8_t data[] = "ReSp";
+                    rf69.send(data, sizeof(data));
                 }
                 else
                 {
-                    DEBUG_PRINTI("got request: %d, %d, %d, %d   %s   RSSI: %d", buf[0], buf[1], buf[2], buf[3], (char *)buf, rf69.lastRssi());
+                    DEBUG_PRINTD("udp packet cksum unmatched c1:%d, c2:%d", cksum, cksumCalk);
+                    uint8_t data[12];
+                    snprintf((char *)data, sizeof(data), "Rs:%d,%d", cksum, cksumCalk);
+                    rf69.send(data, sizeof(data));
                 }
-
-                // Send a reply
-                uint8_t data[] = "And hello back to you";
-                rf69.send(data, sizeof(data));
+                // wait for the reply to be sent
                 xSemaphoreTake(RF69TXMutex, portMAX_DELAY);
-                // rf69.waitPacketSent();
-                //  Serial.println("Sent a reply");
             }
             else
             {
                 DEBUG_PRINTI(".");
-                // fflush(stdout);
             }
             rf69.setModeRx();
         }
-        // DEBUG_PRINTI(".");
-        vTaskDelay(1);
     }
 }
 
@@ -278,11 +287,18 @@ static int radiolinkReceiveCRTPPacket(CRTPPacket *p)
     return -1;
 }
 
+/**
+ * @brief currently has no affect,
+ * TODO implament packet sending in radiolinkTask
+ *
+ * @param p
+ * @return int 1 success, 0 failure
+ */
 static int radiolinkSendCRTPPacket(CRTPPacket *p)
 {
     static SyslinkPacket slp;
 
-    ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
+    // ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
 
     slp.type = SYSLINK_RADIO_RAW;
     slp.length = p->size + 1;

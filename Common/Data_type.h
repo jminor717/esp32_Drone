@@ -71,7 +71,8 @@ enum packet_type
     hoverType = 5,
     fullStateType = 6,
     positionType = 7,
-    ControllerType = 8
+    ControllerType = 8,
+    DO_NOT_USE_STRUCT_LENGTH = 9,
 };
 typedef enum packet_type packet_type;
 

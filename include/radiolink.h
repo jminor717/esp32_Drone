@@ -49,14 +49,26 @@ typedef struct _P2PPacket
 
 typedef void (*P2PCallback)(P2PPacket *);
 
-void radiolinkInit(void);
-bool radiolinkTest(void);
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
+EXTERNC void radiolinkInit(void);
+EXTERNC bool radiolinkTest(void);
+EXTERNC struct crtpLinkOperations *radiolinkGetLink();
+
+#undef EXTERNC
+
+
+
 void radiolinkSetChannel(uint8_t channel);
 void radiolinkSetDatarate(uint8_t datarate);
 void radiolinkSetAddress(uint64_t address);
 void radiolinkSetPowerDbm(int8_t powerDbm);
 //!void radiolinkSyslinkDispatch(SyslinkPacket *slp);
-struct crtpLinkOperations * radiolinkGetLink();
+
 
 
 #endif //__RADIO_H__

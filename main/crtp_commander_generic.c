@@ -329,6 +329,38 @@ static void positionDecoder(setpoint_t *setpoint, uint8_t type, const unsigned c
     setpoint->attitude.yaw = values->yaw;
 }
 
+/* altHoldDecoder
+ * Set the Crazyflie vertical velocity and roll/pitch angle
+ */
+static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
+{
+    struct RawControllsPackett_s DataOut;
+    memcpy(&DataOut, data + 1, sizeof(RawControllsPackett_s));
+
+    // DEBUG_PRINTI("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
+    //              DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
+    //              DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
+    //              DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
+    //              DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+
+    // struct altHoldPacket_s values;
+    // altHoldPacket_Decode_Min(&values, data);
+    // DEBUG_PRINTI("ControllerDecoder decode got values r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
+    // ASSERT(datalen == sizeof(struct altHoldPacket_s));
+
+    setpoint->mode.z = modeVelocity;
+    setpoint->velocity.z = DataOut.R2 / 26.5;
+
+    setpoint->mode.yaw = modeVelocity;
+    setpoint->attitudeRate.yaw = DataOut.Lx / 26.5;
+
+    setpoint->mode.roll = modeAbs;
+    setpoint->mode.pitch = modeAbs;
+
+    setpoint->attitude.roll = DataOut.Rx / 26.5;
+    setpoint->attitude.pitch = DataOut.Ry / 26.5;
+}
+
 /* ---===== 3 - packetDecoders array =====--- */
 const static packetDecoder_t packetDecoders[] = {
     [stopType] = stopDecoder,
@@ -339,29 +371,30 @@ const static packetDecoder_t packetDecoders[] = {
     [hoverType] = hoverDecoder,
     [fullStateType] = fullStateDecoder,
     [positionType] = positionDecoder,
+    [ControllerType] = ControllerDecoder,
 };
 
 /* Decoder switch */
 void crtpCommanderGenericDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
 {
-    // DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
+     //DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
 
-    static int nTypes = positionType + 1;
+     static int nTypes = DO_NOT_USE_STRUCT_LENGTH;
 
-    // ASSERT(pk->size > 0);
+     // ASSERT(pk->size > 0);
 
-    // if (nTypes < 0)
-    // {
-    //     nTypes = sizeof(packetDecoders) / sizeof(packetDecoders[0]);
-    // }
+     // if (nTypes < 0)
+     // {
+     //     nTypes = sizeof(packetDecoders) / sizeof(packetDecoders[0]);
+     // }
 
-    uint8_t type = pk->data[0];
+     uint8_t type = pk->data[0];
 
-    memset(setpoint, 0, sizeof(setpoint_t));
+     memset(setpoint, 0, sizeof(setpoint_t));
 
-    if (type < nTypes /*&& (packetDecoders[type] != NULL)*/)
-    {
-        packetDecoders[type](setpoint, type, ((unsigned char *)pk->data), pk->size - 1);
+     if (type < nTypes /*&& (packetDecoders[type] != NULL)*/)
+     {
+         packetDecoders[type](setpoint, type, ((unsigned char *)pk->data), pk->size - 1);
     }
 }
 

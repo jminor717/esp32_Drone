@@ -276,10 +276,10 @@ void RH_RF69::readFifo()
             // _rxHeaderId    = _spi.transfer(0);
             // _rxHeaderFlags = _spi.transfer(0);
             // And now the real payload
-            _spi.transferBytes(NULL, _buf + 1, payloadlen);
+            _spi.transferBytes(NULL, _buf, payloadlen);
             // for (_bufLen = 0; _bufLen < (payloadlen - RH_RF69_HEADER_LEN); _bufLen++)
             //     _buf[_bufLen] = _spi.transfer(0);
-            _buf[0] = payloadlen;
+            _bufLen = payloadlen;
             _rxGood++;
             _rxBufValid = true;
         }
@@ -523,18 +523,17 @@ uint8_t RH_RF69::recv(uint8_t *buf, uint8_t len)
 {
     if (!available())
         return 0;
-
-    if (buf && len)
+    len = 0;
+    if (buf) //&& len
     {
+        len = _bufLen;
         ATOMIC_BLOCK_START;
-        if (len > _bufLen)
-            len = _bufLen;
-        memcpy(buf, _buf + 1, _buf[0]);
+        memcpy(buf, _buf, _bufLen);
         ATOMIC_BLOCK_END;
     }
     _rxBufValid = false; // Got the most recent message
                          //    printBuffer("recv:", buf, *len);
-    return _buf[0];
+    return len;
 }
 
 bool RH_RF69::send(uint8_t *data, uint8_t len)
@@ -552,7 +551,7 @@ bool RH_RF69::send(uint8_t *data, uint8_t len)
     _spi.beginTransaction();
     digitalWrite(_slaveSelectPin, LOW);
     _spi.transfer(RH_RF69_REG_00_FIFO | RH_RF69_SPI_WRITE_MASK); // Send the start address with the write mask on
-    _spi.transfer(len);                     // Include length of headers
+    _spi.transfer(len);                                          // Include length of headers
     // First the 4 headers
     // _spi.transfer(_txHeaderTo);
     // _spi.transfer(_txHeaderFrom);
