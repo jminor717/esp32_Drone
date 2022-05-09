@@ -54,17 +54,11 @@
 #define MOTOR_M3  2
 #define MOTOR_M4  3
 
-#ifdef V1_BOARD
-    #define MOTOR1_GPIO CONFIG_MOTOR01_PIN // M1 for ESP32FC
-    #define MOTOR2_GPIO CONFIG_MOTOR02_PIN // M2 for ESP32FC
-    #define MOTOR3_GPIO CONFIG_MOTOR03_PIN // M3 for ESP32FC
-    #define MOTOR4_GPIO CONFIG_MOTOR04_PIN // M4 for ESP32FC
-#else
-    #define MOTOR1_GPIO 0 // M1 for ESP32FC
-    #define MOTOR2_GPIO 0 // M2 for ESP32FC
-    #define MOTOR3_GPIO 0 // M3 for ESP32FC
-    #define MOTOR4_GPIO 0 // M4 for ESP32FC
-#endif
+#define MOTOR1_GPIO CONFIG_MOTOR01_PIN
+#define MOTOR2_GPIO CONFIG_MOTOR02_PIN
+#define MOTOR3_GPIO CONFIG_MOTOR03_PIN
+#define MOTOR4_GPIO CONFIG_MOTOR04_PIN
+
 
 #define MOT_PWM_CH1  4      // Motor M1 pwmchannel
 #define MOT_PWM_CH2  5      // Motor M2 pwmchannel

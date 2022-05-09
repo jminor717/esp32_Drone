@@ -209,7 +209,7 @@ void stabilizerInit(StateEstimatorType estimator)
     }
     stateEstimatorInit(estimator);
     DEBUG_PRINTI("finish stateEstimatorInit");
-    controllerInit(ControllerTypePID); //ControllerTypeAny
+    controllerInit(ControllerTypeMellinger); // ControllerTypeAny
     DEBUG_PRINTI("finish controllerInit");
     powerDistributionInit();
     sitAwInit();
@@ -280,7 +280,7 @@ static void stabilizerTask(void *param)
     // Initialize tick to something else then 0
     tick = 1;
 
-    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 997, 1003, 1);
+    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 890, 1003, 1);
 
     DEBUG_PRINTI("Ready to fly.\n");
 
@@ -344,26 +344,19 @@ static void stabilizerTask(void *param)
                 //DEBUG_PRINTI("powering Motors");
                 powerDistribution(&control);
             }
-
-            //TODO: Log data to uSD card if configured
-            /*if (usddeckLoggingEnabled()
-                && usddeckLoggingMode() == usddeckLoggingMode_SynchronousStabilizer
-                && RATE_DO_EXECUTE(usddeckFrequency(), tick)) {
-                usddeckTriggerLogging();
-            }*/
         }
-      //  calcSensorToOutputLatency(&sensorData);
+        //calcSensorToOutputLatency(&sensorData);
         tick++;
-        // STATS_CNT_RATE_EVENT(&stabilizerRate);
+         //STATS_CNT_RATE_EVENT(&stabilizerRate);
 
-        // if (!rateSupervisorValidate(&rateSupervisorContext, xTaskGetTickCount()))
-        // {
-        //     if (!rateWarningDisplayed)
-        //     {
-        //         DEBUG_PRINT("WARNING: stabilizer loop rate is off (%u)\n", rateSupervisorLatestCount(&rateSupervisorContext));
-        //         rateWarningDisplayed = true;
-        //     }
-        // }
+        if (!rateSupervisorValidate(&rateSupervisorContext, xTaskGetTickCount()))
+        {
+           // if (!rateWarningDisplayed)
+            {
+                DEBUG_PRINTD("WARNING: stabilizer loop rate is off (%u)", rateSupervisorLatestCount(&rateSupervisorContext));
+                rateWarningDisplayed = true;
+            }
+        }
     }
 }
 

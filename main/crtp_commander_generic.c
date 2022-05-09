@@ -155,9 +155,16 @@ struct cppmEmuPacket_s
     uint16_t channelAux[MAX_AUX_RC_CHANNELS];
 } __attribute__((packed));
 
+/**
+ * @brief  Compute a float from -1 to 1 based on the RC channel value, midpoint, and total range magnitude
+ *
+ * @param channelValue
+ * @param channelMidpoint
+ * @param channelRange
+ * @return float
+ */
 static inline float getChannelUnitMultiplier(uint16_t channelValue, uint16_t channelMidpoint, uint16_t channelRange)
 {
-    // Compute a float from -1 to 1 based on the RC channel value, midpoint, and total range magnitude
     return ((float)channelValue - (float)channelMidpoint) / (float)channelRange;
 }
 
@@ -348,17 +355,20 @@ static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned
     // DEBUG_PRINTI("ControllerDecoder decode got values r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
     // ASSERT(datalen == sizeof(struct altHoldPacket_s));
 
-    setpoint->mode.z = modeVelocity;
-    setpoint->velocity.z = DataOut.R2 / 26.5;
+    setpoint->thrust = getChannelUnitMultiplier(DataOut.R2, 0, 255) * (float)UINT16_MAX;
 
+    setpoint->mode.x = modeDisable;
+    setpoint->mode.y = modeDisable;
+    setpoint->mode.z = modeDisable;
+    //setpoint->velocity.z = DataOut.R2 / 26.5;
+
+    setpoint->mode.roll = modeVelocity;
+    setpoint->mode.pitch = modeVelocity;
     setpoint->mode.yaw = modeVelocity;
-    setpoint->attitudeRate.yaw = DataOut.Lx / 26.5;
 
-    setpoint->mode.roll = modeAbs;
-    setpoint->mode.pitch = modeAbs;
-
-    setpoint->attitude.roll = DataOut.Rx / 26.5;
-    setpoint->attitude.pitch = DataOut.Ry / 26.5;
+    setpoint->attitudeRate.roll = getChannelUnitMultiplier(DataOut.Rx, 0, 255);
+    setpoint->attitudeRate.pitch = getChannelUnitMultiplier(DataOut.Ry, 0, 255);
+    setpoint->attitudeRate.yaw = getChannelUnitMultiplier(DataOut.Lx, 0, 255);
 }
 
 /* ---===== 3 - packetDecoders array =====--- */
@@ -377,24 +387,24 @@ const static packetDecoder_t packetDecoders[] = {
 /* Decoder switch */
 void crtpCommanderGenericDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk)
 {
-     //DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
+    // DEBUG_PRINTI("crtp Generic decode got type %d", pk->data[0]);
 
-     static int nTypes = DO_NOT_USE_STRUCT_LENGTH;
+    static int nTypes = DO_NOT_USE_STRUCT_LENGTH;
 
-     // ASSERT(pk->size > 0);
+    // ASSERT(pk->size > 0);
 
-     // if (nTypes < 0)
-     // {
-     //     nTypes = sizeof(packetDecoders) / sizeof(packetDecoders[0]);
-     // }
+    // if (nTypes < 0)
+    // {
+    //     nTypes = sizeof(packetDecoders) / sizeof(packetDecoders[0]);
+    // }
 
-     uint8_t type = pk->data[0];
+    uint8_t type = pk->data[0];
 
-     memset(setpoint, 0, sizeof(setpoint_t));
+    memset(setpoint, 0, sizeof(setpoint_t));
 
-     if (type < nTypes /*&& (packetDecoders[type] != NULL)*/)
-     {
-         packetDecoders[type](setpoint, type, ((unsigned char *)pk->data), pk->size - 1);
+    if (type < nTypes /*&& (packetDecoders[type] != NULL)*/)
+    {
+        packetDecoders[type](setpoint, type, ((unsigned char *)pk->data), pk->size - 1);
     }
 }
 

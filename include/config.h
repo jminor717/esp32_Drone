@@ -224,6 +224,11 @@
 
 #define COMMS_MODE RF69_COMMS_MODE
 
+#define M1Type BRUSHLESS
+#define M2Type BRUSHLESS
+#define M3Type BRUSHLESS
+#define M4Type BRUSHLESS
+
 /**
  * \def PROPELLER_BALANCE_TEST_THRESHOLD
  * This is the threshold for a propeller/motor to pass. It calculates the variance of the accelerometer X+Y

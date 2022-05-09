@@ -64,6 +64,12 @@ total  25 - 2
 //#define SERVO2 25
 //#define SERVO3 2
 
+// motor outputs
+#define CONFIG_MOTOR01_PIN 24
+#define CONFIG_MOTOR02_PIN 25
+#define CONFIG_MOTOR03_PIN 26
+#define CONFIG_MOTOR04_PIN 27
+
 // Extra DC Motors
 #define ALT_M1 19
 #define ALT_M2 21

@@ -140,14 +140,16 @@ void setup()
 //     return 1;
 // }
 
+uint16_t val = 0;
+
 void handleControlUpdate()
 {
-    int8_t val = 0;
+
     // Below has all accessible outputs from the controller
     if (PS4.isConnected())
     {
         now = esp_timer_get_time();
-
+        val++;
         // if (PS4.Share())
         //     Serial.println("Share Button");
         // if (PS4.Options())
@@ -176,8 +178,10 @@ void handleControlUpdate()
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
         if (now > NextAvalableTransmit && !inTransmit)
         {
-
-            inTransmit = true; // atomic block around buffer and udp operations
+            // Serial.print(val, DEC);
+            // Serial.print(',');
+            val = 0;
+                inTransmit = true; // atomic block around buffer and udp operations
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
             /*
 

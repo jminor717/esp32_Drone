@@ -23,7 +23,7 @@
 
 #include <stdbool.h>
 
-//FreeRTOS includes
+// FreeRTOS includes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -58,28 +58,28 @@ ledc_channel_config_t motors_channel[NBR_OF_MOTORS] = {
         .duty = 0,
         .gpio_num = MOTOR1_GPIO,
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0
+        .timer_sel = LEDC_TIMER_0,
     },
     {
         .channel = MOT_PWM_CH2,
         .duty = 0,
         .gpio_num = MOTOR2_GPIO,
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0
+        .timer_sel = LEDC_TIMER_0,
     },
     {
         .channel = MOT_PWM_CH3,
         .duty = 0,
         .gpio_num = MOTOR3_GPIO,
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0
+        .timer_sel = LEDC_TIMER_0,
     },
     {
         .channel = MOT_PWM_CH4,
         .duty = 0,
         .gpio_num = MOTOR4_GPIO,
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0
+        .timer_sel = LEDC_TIMER_0,
     },
 };
 /* Private functions */
@@ -126,7 +126,7 @@ bool pwm_timmer_init()
 
 /* Public functions */
 
-//Initialization. Will set all motors ratio to 0%
+// Initialization. Will set all motors ratio to 0%
 void motorsInit(const MotorPerifDef **motorMapSelect)
 {
     int i;
@@ -166,19 +166,20 @@ bool motorsTest(void)
 
     for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++)
     {
-        //if (motorMap[i]->drvType == BRUSHED) {
+        if (motorMap[i]->drvType == BRUSHED)
+        {
 #ifdef ACTIVATE_STARTUP_SOUND
-        motorsBeep(MOTORS[i], true, testsound[i], (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / A4) / 20);
-        vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-        motorsBeep(MOTORS[i], false, 0, 0);
-        vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
+            motorsBeep(MOTORS[i], true, testsound[i], (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / A4) / 20);
+            vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
+            motorsBeep(MOTORS[i], false, 0, 0);
+            vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
 #else
-        motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
-        vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-        motorsSetRatio(MOTORS[i], 0);
-        vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
+            motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
+            vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
+            motorsSetRatio(MOTORS[i], 0);
+            vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
 #endif
-        // }
+        }
     }
 
     return isInit;
@@ -202,7 +203,7 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
 
         if (motorMap[id]->drvType == BRUSHED)
         {
-            float thrust = ((float)ithrust / 65536.0f) * 40; //根据实际重量修改
+            float thrust = ((float)ithrust / 65536.0f) * 40; // Modify according to actual weight
             float volts = -0.0006239f * thrust * thrust + 0.088f * thrust;
             float supply_voltage = pmGetBatteryVoltage();
             float percentage = volts / supply_voltage;

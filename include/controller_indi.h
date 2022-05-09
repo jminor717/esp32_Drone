@@ -27,7 +27,7 @@
 #define __CONTROLLER_INDI_H__
 
 #include "../common/stabilizer_types.h"
-//#include "filter.h"
+#include "filter.h"
 #include "math3d.h"
 #include "log.h"
 #include "param.h"

@@ -65,10 +65,10 @@ void powerDistributionInit(void)
 {
     // platformConfigGetMotorMapping()
     MotorPerifDef mtr[4];
-    mtr[0].drvType = BRUSHED;
-    mtr[1].drvType = BRUSHED;
-    mtr[2].drvType = BRUSHED;
-    mtr[3].drvType = BRUSHED;
+    mtr[0].drvType = M1Type;
+    mtr[1].drvType = M2Type;
+    mtr[2].drvType = M3Type;
+    mtr[3].drvType = M4Type;
     motorsInit(mtr);
 }
 
