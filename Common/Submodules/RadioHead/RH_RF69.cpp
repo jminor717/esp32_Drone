@@ -160,9 +160,7 @@ bool RH_RF69::init()
     }
     _deviceForInterrupt[_myInterruptIndex] = this;
     if (_myInterruptIndex == 0)
-    {
         gpio_isr_handler_add((gpio_num_t)_interruptPin, isr0, (void *)_interruptPin);
-    }
     else if (_myInterruptIndex == 1)
         attachInterrupt(interruptNumber, isr1, RISING);
     else if (_myInterruptIndex == 2)

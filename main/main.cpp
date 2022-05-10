@@ -21,6 +21,8 @@
 //#include <stdlib.h>
 extern "C"
 {
+//#define SENSOR_INCLUDED_MPU6050_HMC5883L_MS5611
+
 #include <stdio.h>
 #include <string.h>
 #include "sdkconfig.h"
@@ -42,13 +44,12 @@ extern "C"
 #include "platform.h"
 #include "system.h"
 #define DEBUG_MODULE "APP_MAIN"
+#include "debug_cf.h"
 }
 
 #include "radiolink.h"
 
-//#include "debug_cf.h"
-#define GPIO_HANDSHAKE 2
-#define SENSOR_INCLUDED_MPU9250_LPS25H
+
 
 extern "C"
 {
@@ -64,20 +65,16 @@ void app_main()
 
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
-    printf("This is %s chip with %d CPU cores, WiFi%s%s, ",
-           CONFIG_IDF_TARGET,
-           chip_info.cores,
-           (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-           (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+    DEBUG_PRINTI("This is %s chip with %d CPU cores, WiFi%s%s, silicon revision %d,  %dMB %s flash ",
+                 CONFIG_IDF_TARGET,
+                 chip_info.cores,
+                 (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
+                 (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "",
+                 chip_info.revision,
+                 spi_flash_get_chip_size() / (1024 * 1024),
+                 (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-    printf("silicon revision %d, ", chip_info.revision);
-
-    printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
-           (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
-
-    printf("Free heap: %d\n", esp_get_free_heap_size());
-
-    fflush(stdout);
+    DEBUG_PRINTI("Free heap: %d", esp_get_free_heap_size());
 
     // esp_restart();
 
@@ -102,21 +99,17 @@ void app_main()
     /*Initialize the platform.*/
     if (platformInit() == false)
     {
-        printf("platformInit failed");
+        DEBUG_PRINTW("platformInit failed");
         while (1)
-            ; // if  firmware is running on the wrong hardware, Halt
+            ; // if  firmware is running on the wrong hardware, 
     }
 
-    printf("prepairing to Launch system \n");
-
-    // gpio_set_level(_slaveSelectPin, 0);
-
-    fflush(stdout);
+    DEBUG_PRINTI("prepairing to Launch system \n");
     /*launch the system task */
 
     systemLaunch();
     vTaskDelay(50);
-    radiolinkInit();
+    //radiolinkInit();
 
 
     int32_t lastTick = xTaskGetTickCount();

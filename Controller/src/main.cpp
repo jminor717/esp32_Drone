@@ -1,11 +1,24 @@
+#define WIFI_COMMS_MODE 0
+#define RF69_COMMS_MODE 1
+
+#define COMMS_MODE RF69_COMMS_MODE
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+
 #include <Arduino.h>
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
-//#include <WiFi.h>
 #include <../Common/Data_type.h>
-
+#if (COMMS_MODE == WIFI_COMMS_MODE)
+#include <WiFi.h>
+#else
 #include <SPI.h>
 //#define RH_PLATFORM 14
 #include <../Common/Submodules/RadioHead/RH_RF69.h>
+#endif
+
 //#include <atomic>
 #include "esp32-hal-log.h"
 
@@ -33,56 +46,59 @@ high level independent command and setpoint transmition lops to allow commands t
 
 cd  \repos\ESPDrone\Controller
 mklink /D "Common" "..\Common"
-
-
 */
-// IPAddress DroneAddress = IPAddress();
-// WiFiUDP udp = WiFiUDP();
-//  AsyncUDP udp;
+
+static xSemaphoreHandle PacketReadySendSem;
 
 int64_t now = esp_timer_get_time();
 int64_t NextAvalableTransmit = esp_timer_get_time() + WIFI_TRANSMIT_RATE_Us;
-// std::atomic<bool> inTransmit(false);
-bool inTransmit = false;
+
 bool Flying = false;
 uint8_t type = stopType;
 
 void handleControlUpdate();
 void SendDataToDrone(CRTPPacket cmd, uint8_t len);
 
-// void handleWifiConnected(system_event_t *event)
-//{
-//  CRTPPacket cmd;
-//  memset(&cmd, 0, sizeof(CRTPPacket));
-//  cmd.channel = SET_SETPOINT_CHANNEL;
-//  cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+#if (COMMS_MODE == WIFI_COMMS_MODE)
+IPAddress DroneAddress = IPAddress();
+WiFiUDP udp = WiFiUDP();
+// AsyncUDP udp;
 
-// altHoldPacket_Encode_Min(0, 0, 0, 0, cmd.data, stopType);
+void handleWifiConnected(system_event_t *event)
+{
+    // CRTPPacket cmd;
+    // memset(&cmd, 0, sizeof(CRTPPacket));
+    // cmd.channel = SET_SETPOINT_CHANNEL;
+    // cmd.port = CRTP_PORT_SETPOINT_GENERIC;
 
-// uint8_t cmdLength = sizeof(cmd);
-// uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
-// memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
-// buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
+    // altHoldPacket_Encode_Min(0, 0, 0, 0, cmd.data, stopType);
 
-// AsyncUDPMessage msg;
-// msg.write(buffer, cmdLength + 1);
-// udp.broadcastTo(msg, UDP_SERVER_PORT);
+    // uint8_t cmdLength = sizeof(cmd);
+    // uint8_t *buffer = (uint8_t *)calloc(1, cmdLength + 1);
+    // memcpy(buffer, (const uint8_t *)&cmd, cmdLength);
+    // buffer[cmdLength] = calculate_cksum(buffer, cmdLength);
 
-// free(buffer);
-//}
+    // AsyncUDPMessage msg;
+    // msg.write(buffer, cmdLength + 1);
+    // udp.broadcastTo(msg, UDP_SERVER_PORT);
 
-// void handleWifiDropped(system_event_t *event)
-// {
-//     delay(5000);
-//     WiFi.begin(WIFIssid, WIFIpassword);
-// }
+    // free(buffer);
+}
 
+void handleWifiDropped(system_event_t *event)
+{
+    delay(5000);
+    WiFi.begin(WIFIssid, WIFIpassword);
+}
+
+#else
 #define MAIN_SPI_SCK 25
 #define MAIN_SPI_MISO 26
 #define MAIN_SPI_MOSI 27
 #define MAIN_SPI_SS 13
 
 RH_RF69 rf69(MAIN_SPI_SS, 39);
+#endif
 
 CRTPPacket cmd_Data;
 uint8_t cmd_len;
@@ -93,6 +109,25 @@ void setup()
     Serial.begin(115200);
     Serial.setDebugOutput(true);
 
+    // "60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
+    // char mac[] = "60:5b:b4:d9:7b:14";
+    char mac[] = "4C:11:AE:DF:8B:F4";
+    PS4.begin(mac);
+    Serial.println("Ready.");
+    Serial.println(mac);
+    PS4.attach(&handleControlUpdate);
+
+    PacketReadySendSem = xSemaphoreCreateBinary();
+
+#if (COMMS_MODE == WIFI_COMMS_MODE)
+    DroneAddress.fromString("192.168.43.42");
+    WiFi.begin(WIFIssid, WIFIpassword);
+    // WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    udp.begin(UDP_SERVER_PORT);
+
+    WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
+    WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
+#else
     SPI.begin(MAIN_SPI_SCK, MAIN_SPI_MISO, MAIN_SPI_MOSI, MAIN_SPI_SS);
     if (!rf69.init())
         Serial.println("init failed");
@@ -108,22 +143,7 @@ void setup()
     // uint8_t syncwords[] = {0x2d, 0x64};
     // rf69.setSyncWords(syncwords, sizeof(syncwords));
     // rf69.setEncryptionKey((uint8_t *)"thisIsEncryptKey");
-
-    // "60:5b:b4:d9:7b:14"; 58:a0:23:dd:a1:84  4C:11:AE:DF:8B:F4  03:03:03:03:03:03
-    // char mac[] = "60:5b:b4:d9:7b:14";
-    char mac[] = "4C:11:AE:DF:8B:F4";
-    PS4.begin(mac);
-    Serial.println("Ready.");
-    Serial.println(mac);
-    PS4.attach(&handleControlUpdate);
-
-    // DroneAddress.fromString("192.168.43.42");
-    // WiFi.begin(WIFIssid, WIFIpassword);
-    // // WiFi.setTxPower(WIFI_POWER_19_5dBm);
-    // udp.begin(UDP_SERVER_PORT);
-
-    // WiFi.onEvent((WiFiEventSysCb)handleWifiConnected, SYSTEM_EVENT_STA_GOT_IP);
-    // WiFi.onEvent((WiFiEventSysCb)handleWifiDropped, SYSTEM_EVENT_STA_DISCONNECTED);
+#endif
 
     log_v("Verbose");
     log_d("Debug");
@@ -131,20 +151,12 @@ void setup()
     log_w("Warning");
     log_e("Error");
     now = esp_timer_get_time();
-    // map();
 }
-
-// uint8_t RawControllsPackettCOMPACT_Encode(PS4Controller CTRL, RawControllsPackettCOMPACT_s *packet, uint8_t size)
-// {
-//     packet->data = (uint8_t *)calloc(1, 5 + 1);
-//     return 1;
-// }
 
 uint16_t val = 0;
 
 void handleControlUpdate()
 {
-
     // Below has all accessible outputs from the controller
     if (PS4.isConnected())
     {
@@ -176,12 +188,9 @@ void handleControlUpdate()
         //     Serial.println("The controller has a mic attached");
 
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
-        if (now > NextAvalableTransmit && !inTransmit)
+        if (now > NextAvalableTransmit)
         {
-            // Serial.print(val, DEC);
-            // Serial.print(',');
             val = 0;
-                inTransmit = true; // atomic block around buffer and udp operations
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
             /*
 
@@ -294,7 +303,13 @@ void handleControlUpdate()
             //       rx, (rx * 3), ry, (-ry * 3), lx, (lx * 3));
 
             // SendDataToDrone(cmd, len);
-            inTransmit = false;
+
+            portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+            xSemaphoreGiveFromISR(PacketReadySendSem, &xHigherPriorityTaskWoken);
+            if (xHigherPriorityTaskWoken)
+            {
+                portYIELD_FROM_ISR();
+            }
         }
     }
 }
@@ -334,23 +349,14 @@ void loop()
         // }
         // else
         // {
-        delay(1);
-        // CRTPPacket cmd;
-        // memset(&cmd, 0, sizeof(CRTPPacket));
-        // cmd.channel = SET_SETPOINT_CHANNEL;
-        // cmd.port = CRTP_PORT_SETPOINT_GENERIC;
-        // cmd.data[0] = 21;
-        // cmd.data[1] = 'B';
+        //     delay(1);
+        // }
+        xSemaphoreTake(PacketReadySendSem, 1000);
         if (has_cmd)
         {
             has_cmd = false;
             SendDataToDrone(cmd_Data, cmd_len);
         }
-        else
-        {
-            // SendDataToDrone(cmd, 2);
-        }
-        // }
     }
 }
 
@@ -374,14 +380,14 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     //       buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
     //       buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16], buffer[17], buffer[18], buffer[19],
     //       buffer[20], buffer[21], buffer[22], buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30]);
-
-    // udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
-    // udp.write(buffer, len + 1);
-    // udp.endPacket();
+#if (COMMS_MODE == WIFI_COMMS_MODE)
+    udp.beginPacket(DroneAddress, UDP_SERVER_PORT);
+    udp.write(buffer, len + 1);
+    udp.endPacket();
     // AsyncUDPMessage msg;
     // msg.write(buffer, len + 1);
     // udp.broadcastTo(msg, UDP_SERVER_PORT);
-
+#else
     // log_v("%d, %d", buffer[len], len);
     //  Send a message to rf69_server
     rf69.send(buffer, len + 1);
@@ -433,6 +439,7 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     {
         Serial.print(".");
     }
+#endif
 
     free(buffer);
 }
