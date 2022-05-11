@@ -152,37 +152,42 @@ extern const MotorPerifDef *motorMapDefaultBrushed[NBR_OF_MOTORS];
 extern const uint16_t testsound[NBR_OF_MOTORS];
 /*** Public interface ***/
 
-bool pwm_timmer_init();
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
 /**
  * Initialisation. Will set all motors ratio to 0%
  */
-void motorsInit(const MotorPerifDef **motorMapSelect);
+EXTERNC void motorsInit(const MotorPerifDef **motorMapSelect);
 
 /**
  * DeInitialisation. Reset to default
  */
-void motorsDeInit(const MotorPerifDef **motorMapSelect);
+EXTERNC void motorsDeInit(const MotorPerifDef **motorMapSelect);
 
 /**
  * Test of the motor modules. The test will spin each motor very short in
  * the sequence M1 to M4.
  */
-bool motorsTest(void);
+EXTERNC bool motorsTest(void);
 
 /**
  * Set the PWM ratio of the motor 'id'
  */
-void motorsSetRatio(uint32_t id, uint16_t ratio);
+EXTERNC void motorsSetRatio(uint32_t id, uint16_t ratio);
 
 /**
  * Get the PWM ratio of the motor 'id'. Return -1 if wrong ID.
  */
-int motorsGetRatio(uint32_t id);
+EXTERNC int motorsGetRatio(uint32_t id);
 
 /**
  * FreeRTOS Task to test the Motors driver
  */
-void motorsTestTask(void *params);
+EXTERNC void motorsTestTask(void *params);
 
 /* Set PWM frequency for motor controller
  * This function will set all motors into a "beep"-mode,
@@ -193,7 +198,9 @@ void motorsTestTask(void *params);
  *     motorsBeep(true, 1000, (uint16_t)(72000000L / frequency)/ 20);
  *     motorsBeep(false, 0, 0); *
  * */
-void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio);
+EXTERNC void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio);
+
+#undef EXTERNC
 
 #endif /* __MOTORS_H__ */
 

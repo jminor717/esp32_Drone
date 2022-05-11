@@ -33,6 +33,9 @@
 #include "log.h"
 #define DEBUG_MODULE "MOTORS"
 #include "debug_cf.h"
+#include "cfassert.h"
+#include "../Submodules/DShotRMT/src/DShotRMT.h"
+#include "drivers/motors/PwmMotors.h"
 
 static uint16_t motorsConvBitsTo16(uint16_t bits);
 static uint16_t motorsConv16ToBits(uint16_t bits);
@@ -50,38 +53,37 @@ const uint32_t MOTORS[] = {MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4};
 const uint16_t testsound[NBR_OF_MOTORS] = {NOTE_A4, NOTE_A5, NOTE_F5, NOTE_D5};
 
 static bool isInit = false;
-static bool isTimerInit = false;
 
-ledc_channel_config_t motors_channel[NBR_OF_MOTORS] = {
-    {
-        .channel = MOT_PWM_CH1,
-        .duty = 0,
-        .gpio_num = MOTOR1_GPIO,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-    },
-    {
-        .channel = MOT_PWM_CH2,
-        .duty = 0,
-        .gpio_num = MOTOR2_GPIO,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-    },
-    {
-        .channel = MOT_PWM_CH3,
-        .duty = 0,
-        .gpio_num = MOTOR3_GPIO,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-    },
-    {
-        .channel = MOT_PWM_CH4,
-        .duty = 0,
-        .gpio_num = MOTOR4_GPIO,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-    },
-};
+// ledc_channel_config_t motors_channel[NBR_OF_MOTORS] = {
+//     {
+//         .channel = MOT_PWM_CH1,
+//         .duty = 0,
+//         .gpio_num = MOTOR1_GPIO,
+//         .speed_mode = LEDC_LOW_SPEED_MODE,
+//         .timer_sel = LEDC_TIMER_0,
+//     },
+//     {
+//         .channel = MOT_PWM_CH2,
+//         .duty = 0,
+//         .gpio_num = MOTOR2_GPIO,
+//         .speed_mode = LEDC_LOW_SPEED_MODE,
+//         .timer_sel = LEDC_TIMER_0,
+//     },
+//     {
+//         .channel = MOT_PWM_CH3,
+//         .duty = 0,
+//         .gpio_num = MOTOR3_GPIO,
+//         .speed_mode = LEDC_LOW_SPEED_MODE,
+//         .timer_sel = LEDC_TIMER_0,
+//     },
+//     {
+//         .channel = MOT_PWM_CH4,
+//         .duty = 0,
+//         .gpio_num = MOTOR4_GPIO,
+//         .speed_mode = LEDC_LOW_SPEED_MODE,
+//         .timer_sel = LEDC_TIMER_0,
+//     },
+// };
 /* Private functions */
 
 static uint16_t motorsConvBitsTo16(uint16_t bits)
@@ -94,41 +96,20 @@ static uint16_t motorsConv16ToBits(uint16_t bits)
     return ((bits) >> (16 - MOTORS_PWM_BITS) & ((1 << MOTORS_PWM_BITS) - 1));
 }
 
-bool pwm_timmer_init()
-{
-    if (isTimerInit)
-    {
-        // First to init will configure it
-        return TRUE;
-    }
-
-    /*
-     * Prepare and set configuration of timers
-     * that will be used by MOTORS Controller
-     */
-    ledc_timer_config_t ledc_timer = {
-        .duty_resolution = MOTORS_PWM_BITS, // resolution of PWM duty
-        .freq_hz = 15000,                   // frequency of PWM signal
-        .speed_mode = LEDC_LOW_SPEED_MODE,  // timer mode
-        .timer_num = LEDC_TIMER_0,          // timer index
-        // .clk_cfg = LEDC_AUTO_CLK,        // Auto select the source clock
-    };
-
-    // Set configuration of timer0 for high speed channels
-    if (ledc_timer_config(&ledc_timer) == ESP_OK)
-    {
-        isTimerInit = TRUE;
-        return TRUE;
-    }
-
-    return false;
-}
-
 /* Public functions */
+PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(GPIO_NUM_4, 0);
+DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_1);
+DShotRMT dshot_02((gpio_num_t)MOTOR2_GPIO, RMT_CHANNEL_2);
+DShotRMT dshot_03((gpio_num_t)MOTOR3_GPIO, RMT_CHANNEL_3);
+DShotRMT dshot_04((gpio_num_t)MOTOR4_GPIO, RMT_CHANNEL_4);
+
+DShotRMT DShotMotors[4]{dshot_01, dshot_02, dshot_03, dshot_04};
 
 // Initialization. Will set all motors ratio to 0%
 void motorsInit(const MotorPerifDef **motorMapSelect)
 {
+    // pwm_ctrl1
+
     int i;
 
     if (isInit)
@@ -139,14 +120,11 @@ void motorsInit(const MotorPerifDef **motorMapSelect)
 
     motorMap = motorMapSelect;
 
-    if (pwm_timmer_init() != TRUE)
-    {
-        return;
-    }
+
 
     for (i = 0; i < NBR_OF_MOTORS; i++)
     {
-        ledc_channel_config(&motors_channel[i]);
+        DShotMotors[i].begin(DSHOT300, false);
     }
 
     isInit = true;
@@ -156,7 +134,7 @@ void motorsDeInit(const MotorPerifDef **motorMapSelect)
 {
     for (int i = 0; i < NBR_OF_MOTORS; i++)
     {
-        ledc_stop(motors_channel[i].speed_mode, motors_channel[i].channel, 0);
+        //!   ledc_stop(motors_channel[i].speed_mode, motors_channel[i].channel, 0);
     }
 }
 
@@ -195,7 +173,7 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
     {
         uint16_t ratio;
 
-        ASSERT(id < NBR_OF_MOTORS);
+        //! ASSERT(id < NBR_OF_MOTORS);
 
         ratio = ithrust;
 
@@ -213,8 +191,7 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
         }
 
 #endif
-        ledc_set_duty(motors_channel[id].speed_mode, motors_channel[id].channel, (uint32_t)motorsConv16ToBits(ratio));
-        ledc_update_duty(motors_channel[id].speed_mode, motors_channel[id].channel);
+
         motor_ratios[id] = ratio;
 #ifdef DEBUG_EP2
         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
@@ -224,9 +201,9 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
 
 int motorsGetRatio(uint32_t id)
 {
-    int ratio;
-    ASSERT(id < NBR_OF_MOTORS);
-    ratio = motorsConvBitsTo16((uint16_t)ledc_get_duty(motors_channel[id].speed_mode, motors_channel[id].channel));
+    int ratio = 0;
+    //! ASSERT(id < NBR_OF_MOTORS);
+    //  ratio = motorsConvBitsTo16((uint16_t)ledc_get_duty(motors_channel[id].speed_mode, motors_channel[id].channel));
     return ratio;
     return 0;
 }
