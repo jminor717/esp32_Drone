@@ -128,6 +128,19 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
                                             &control->pitch,
                                             &control->yaw);
 
+        if (setpoint->mode.roll == modeDisable)
+        {
+            control->roll = setpoint->attitudeRate.roll;
+        }
+        if (setpoint->mode.pitch == modeDisable)
+        {
+            control->pitch = setpoint->attitudeRate.pitch;
+        }
+        if (setpoint->mode.yaw == modeDisable)
+        {
+            control->yaw = setpoint->attitudeRate.yaw;
+        }
+
         control->yaw = -control->yaw;
 
         cmd_thrust = control->thrust;

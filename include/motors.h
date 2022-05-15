@@ -33,12 +33,8 @@
 #include "config/pin_config.h"
 
 /******** Defines ********/
-#define LEDC_TIMER_8_BIT 8
-
 // CF2 PWM ripple is filtered better at 328kHz. At 168kHz the NCP702 regulator is affected.
 
-#define MOTORS_PWM_BITS           LEDC_TIMER_8_BIT
-#define MOTORS_PWM_PERIOD         ((1<<MOTORS_PWM_BITS) - 1)
 #define MOTORS_TIM_BEEP_CLK_FREQ  4000000
 
 // Compensate thrust depending on battery voltage so it will produce about the same

@@ -93,15 +93,14 @@ void powerStop()
 
 void powerDistribution(const control_t *control)
 {
-#ifdef QUAD_FORMATION_X
+#if defined(QUAD_FORMATION_X)
     int16_t r = control->roll / 2.0f;
     int16_t p = control->pitch / 2.0f;
     motorPower.m1 = limitThrust(control->thrust - r + p + control->yaw);
     motorPower.m2 = limitThrust(control->thrust - r - p - control->yaw);
     motorPower.m3 = limitThrust(control->thrust + r - p + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + r + p - control->yaw);
-#else
-#ifdef QUAD_FORMATION_TRI
+#elif defined(QUAD_FORMATION_TRI)
     // measured 160g thrust with one prop and 380g with 2 seprately powered contra rotating props, at 2.4 volts
     float thrustScaled = control->thrust * 1.19; // 0.84;
     int16_t r = control->roll * 2;
@@ -110,12 +109,18 @@ void powerDistribution(const control_t *control)
     motorPower.m2 = limitThrust(thrustScaled * 0.90 - p - control->yaw); // lower propeller spins slightly slower than the upper prop
     motorPower.m3 = limitThrust(thrustScaled * 1.10 - p + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + r + p - control->yaw);
-#else
+#elif defined(QUAD_FORMATION_NORMAL)
     motorPower.m1 = limitThrust(control->thrust + control->pitch + control->yaw);
     motorPower.m2 = limitThrust(control->thrust - control->roll - control->yaw);
     motorPower.m3 = limitThrust(control->thrust - control->pitch + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + control->roll - control->yaw);
-#endif // QUAD_FORMATION_NORMAL
+#elif defined(TWO_PROP_PLANE)
+    motorPower.m1 = limitThrust(control->thrust + control->yaw);
+    motorPower.m2 = limitThrust(control->thrust - control->yaw);
+    motorPower.m3 = limitThrust(control->thrust);
+    motorPower.m4 = limitThrust(control->thrust);
+#else
+#error Motor layout not defined!
 #endif
 
     if (motorSetEnable)

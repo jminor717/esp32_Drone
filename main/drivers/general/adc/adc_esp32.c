@@ -43,7 +43,19 @@ static const adc_unit_t unit = ADC_UNIT_1;
 #define DEFAULT_VREF 1100 //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES 30  //Multisampling
 
-const int8_t ADC_GPIO_TO_CHANNEL[] = {ADC2_CHANNEL_1, -1, ADC2_CHANNEL_2, -1, ADC2_CHANNEL_0, -1, -1, -1, -1, -1, -1, -1,
+// ESP32
+// const int8_t ADC_GPIO_TO_CHANNEL[] = {ADC2_CHANNEL_1, -1, ADC2_CHANNEL_2, -1, ADC2_CHANNEL_0, -1, -1, -1, -1, -1, -1, -1,
+//                                       ADC2_CHANNEL_5, ADC2_CHANNEL_4, ADC2_CHANNEL_6, ADC2_CHANNEL_3, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+//                                       ADC2_CHANNEL_8, ADC2_CHANNEL_9, ADC2_CHANNEL_7, -1, -1, -1, -1,
+//                                       ADC1_CHANNEL_4, ADC1_CHANNEL_5, ADC1_CHANNEL_6, ADC1_CHANNEL_7, ADC1_CHANNEL_0, ADC1_CHANNEL_1, ADC1_CHANNEL_2, ADC1_CHANNEL_3};
+
+// const adc_unit_t GPIO_TO_ADC_UNIT[] = {ADC_UNIT_2, 8, ADC_UNIT_2, 8, ADC_UNIT_2, 8, 8, 8, 8, 8, 8, 8,
+//                                        ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+//                                        ADC_UNIT_2, ADC_UNIT_2, ADC_UNIT_2, 8, 8, 8, 8,
+//                                        ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1, ADC_UNIT_1};
+
+// ESP32 S3
+const int8_t ADC_GPIO_TO_CHANNEL[] = {-1, ADC1_CHANNEL_0, ADC1_CHANNEL_1, ADC1_CHANNEL_2, ADC1_CHANNEL_3, ADC1_CHANNEL_4, ADC1_CHANNEL_5, ADC1_CHANNEL_6, ADC1_CHANNEL_7, ADC1_CHANNEL_8, ADC1_CHANNEL_9, -1,
                                       ADC2_CHANNEL_5, ADC2_CHANNEL_4, ADC2_CHANNEL_6, ADC2_CHANNEL_3, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                                       ADC2_CHANNEL_8, ADC2_CHANNEL_9, ADC2_CHANNEL_7, -1, -1, -1, -1,
                                       ADC1_CHANNEL_4, ADC1_CHANNEL_5, ADC1_CHANNEL_6, ADC1_CHANNEL_7, ADC1_CHANNEL_0, ADC1_CHANNEL_1, ADC1_CHANNEL_2, ADC1_CHANNEL_3};

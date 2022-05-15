@@ -97,7 +97,7 @@ static uint32_t lastPacketTick;
 
 static volatile P2PCallback p2p_callback;
 
-RH_RF69 rf69(COM13909_SS, 18);
+RH_RF69 rf69(COM13909_SS, COM13909_INT0);
 
 static bool radiolinkIsConnected(void)
 {

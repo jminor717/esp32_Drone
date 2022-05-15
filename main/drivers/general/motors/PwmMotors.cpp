@@ -1,4 +1,5 @@
 #include "drivers/motors/PwmMotors.h"
+#include "driver/ledc.h"
 #define MOTORS_PWM_BITS 8
 
 bool PWMSpeedControll::isTimerInit = false;
@@ -34,27 +35,6 @@ PWMSpeedControll::~PWMSpeedControll()
 bool PWMSpeedControll::begin()
 {
     ledc_channel_config(&motors_channel);
-    return pwm_timmer_init();
-}
-
-static uint16_t motorsConvBitsTo16(uint16_t bits)
-{
-    return ((bits) << (16 - MOTORS_PWM_BITS));
-}
-
-static uint16_t motorsConv16ToBits(uint16_t bits)
-{
-    return ((bits) >> (16 - MOTORS_PWM_BITS) & ((1 << MOTORS_PWM_BITS) - 1));
-}
-
-void PWMSpeedControll::SetRatio(uint16_t throttle_value)
-{
-    ledc_set_duty(motors_channel.speed_mode, motors_channel.channel, (uint32_t)motorsConv16ToBits(throttle_value));
-    ledc_update_duty(motors_channel.speed_mode, motors_channel.channel);
-}
-
-static bool pwm_timmer_init()
-{
     if (PWMSpeedControll::isTimerInit)
     {
         // First to init will configure it
@@ -82,3 +62,20 @@ static bool pwm_timmer_init()
 
     return false;
 }
+
+static uint16_t motorsConvBitsTo16(uint16_t bits)
+{
+    return ((bits) << (16 - MOTORS_PWM_BITS));
+}
+
+static uint16_t motorsConv16ToBits(uint16_t bits)
+{
+    return ((bits) >> (16 - MOTORS_PWM_BITS) & ((1 << MOTORS_PWM_BITS) - 1));
+}
+
+void PWMSpeedControll::SetRatio(uint16_t throttle_value)
+{
+    ledc_set_duty(motors_channel.speed_mode, motors_channel.channel, throttle_value);
+    ledc_update_duty(motors_channel.speed_mode, motors_channel.channel);
+}
+

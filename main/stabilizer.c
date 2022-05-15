@@ -205,11 +205,11 @@ void stabilizerInit(StateEstimatorType estimator)
     sensorsInit();
     if (estimator == anyEstimator)
     {
-        estimator = kalmanEstimator; //deckGetRequiredEstimator();
+        estimator = kalmanEstimator; // complementaryEstimator kalmanEstimator; // deckGetRequiredEstimator();
     }
     stateEstimatorInit(estimator);
     DEBUG_PRINTI("finish stateEstimatorInit");
-    controllerInit(ControllerTypeMellinger); // ControllerTypeAny
+    controllerInit(ControllerTypePID); // ControllerTypeAny ControllerTypeMellinger ControllerTypePID
     DEBUG_PRINTI("finish controllerInit");
     powerDistributionInit();
     sitAwInit();
@@ -341,8 +341,11 @@ static void stabilizerTask(void *param)
             }
             else
             {
-                //DEBUG_PRINTI("powering Motors");
+                // DEBUG_PRINTI("powering Motors");
                 powerDistribution(&control);
+                if(tick % 100 == 0){
+                    DEBUG_PRINTI("set thrust to %f, R:%d, P:%d, Y:%d", control.thrust, control.roll, control.pitch, control.yaw);
+                }
             }
         }
         //calcSensorToOutputLatency(&sensorData);

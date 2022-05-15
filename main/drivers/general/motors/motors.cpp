@@ -84,32 +84,25 @@ static bool isInit = false;
 //         .timer_sel = LEDC_TIMER_0,
 //     },
 // };
-/* Private functions */
 
-static uint16_t motorsConvBitsTo16(uint16_t bits)
-{
-    return ((bits) << (16 - MOTORS_PWM_BITS));
-}
+//LEDC chanels seem to be a bit wonky on the s3 some pins 
+// PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(MOTOR1_GPIO, 2);
+// PWMSpeedControll pwm_ctrl2 = PWMSpeedControll::PWMControll(MOTOR2_GPIO, 3);
+// PWMSpeedControll pwm_ctrl3 = PWMSpeedControll::PWMControll(MOTOR3_GPIO, 4);
+// PWMSpeedControll pwm_ctrl4 = PWMSpeedControll::PWMControll(MOTOR4_GPIO, 5);
 
-static uint16_t motorsConv16ToBits(uint16_t bits)
-{
-    return ((bits) >> (16 - MOTORS_PWM_BITS) & ((1 << MOTORS_PWM_BITS) - 1));
-}
+// PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
 
-/* Public functions */
-PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(GPIO_NUM_4, 0);
-DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_1);
-DShotRMT dshot_02((gpio_num_t)MOTOR2_GPIO, RMT_CHANNEL_2);
-DShotRMT dshot_03((gpio_num_t)MOTOR3_GPIO, RMT_CHANNEL_3);
-DShotRMT dshot_04((gpio_num_t)MOTOR4_GPIO, RMT_CHANNEL_4);
+DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_0);
+DShotRMT dshot_02((gpio_num_t)MOTOR2_GPIO, RMT_CHANNEL_1);
+DShotRMT dshot_03((gpio_num_t)MOTOR3_GPIO, RMT_CHANNEL_2);
+DShotRMT dshot_04((gpio_num_t)MOTOR4_GPIO, RMT_CHANNEL_3);
 
-DShotRMT DShotMotors[4]{dshot_01, dshot_02, dshot_03, dshot_04};
+DShotRMT DShotMotors[NBR_OF_MOTORS] = {dshot_01, dshot_02, dshot_03, dshot_04};
 
 // Initialization. Will set all motors ratio to 0%
 void motorsInit(const MotorPerifDef **motorMapSelect)
 {
-    // pwm_ctrl1
-
     int i;
 
     if (isInit)
@@ -120,13 +113,27 @@ void motorsInit(const MotorPerifDef **motorMapSelect)
 
     motorMap = motorMapSelect;
 
-
-
     for (i = 0; i < NBR_OF_MOTORS; i++)
     {
-        DShotMotors[i].begin(DSHOT300, false);
+        //   DShotMotors[i].begin(DSHOT300, false);
     }
+    dshot_01.begin(DSHOT300, false);
+    dshot_02.begin(DSHOT300, false);
+    dshot_03.begin(DSHOT300, false);
+    dshot_04.begin(DSHOT300, false);
+    DShotMotors[0] = dshot_01;
+    DShotMotors[1] = dshot_02;
+    DShotMotors[2] = dshot_03;
+    DShotMotors[3] = dshot_04;
 
+    // pwm_ctrl1.begin();
+    // pwm_ctrl2.begin();
+    // pwm_ctrl3.begin();
+    // pwm_ctrl4.begin();
+    // PwmMotors[0] = pwm_ctrl1;
+    // PwmMotors[1] = pwm_ctrl2;
+    // PwmMotors[2] = pwm_ctrl3;
+    // PwmMotors[3] = pwm_ctrl4;
     isInit = true;
 }
 
@@ -144,20 +151,20 @@ bool motorsTest(void)
 
     for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++)
     {
-        if (motorMap[i]->drvType == BRUSHED)
-        {
+        // if (motorMap[i]->drvType == BRUSHED)
+        // {
 #ifdef ACTIVATE_STARTUP_SOUND
-            motorsBeep(MOTORS[i], true, testsound[i], (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / A4) / 20);
-            vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-            motorsBeep(MOTORS[i], false, 0, 0);
-            vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
+        motorsBeep(MOTORS[i], true, testsound[i], (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / A4) / 20);
+        vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
+        motorsBeep(MOTORS[i], false, 0, 0);
+        vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
 #else
-            motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
-            vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-            motorsSetRatio(MOTORS[i], 0);
-            vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
+        motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
+        vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
+        motorsSetRatio(MOTORS[i], 0);
+        vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
 #endif
-        }
+        // }
     }
 
     return isInit;
@@ -193,6 +200,8 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
 #endif
 
         motor_ratios[id] = ratio;
+//        PwmMotors[id].SetRatio(map(ratio, 0, UINT16_MAX, 0, UINT8_MAX));
+        DShotMotors[id].send_dshot_value(map(ratio, 0, UINT16_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX), NO_TELEMETRIC);
 #ifdef DEBUG_EP2
         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
 #endif

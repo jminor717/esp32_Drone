@@ -25,10 +25,9 @@
  * And as a bonus hard-to-find figure, the internal pull-up and pull-down resistors are 45kOhms each.
  */
 
-
 /* esp32 s3
-    strapping pins 0, 45, 46, 3 
-    Flash pins 4, 5, 6, 7
+    strapping pins 0, 45, 46, 3
+    Flash pins 4, 5, 6, 7 // Wroom-2, free on Wroom-1
 free
     15, 16, 17, 18, 8, (19, 20 USB JTag)
     46, 9, 10, 11, 12, 13, 14, 21, 47, 48, 45
@@ -53,6 +52,7 @@ total  25 - 2
 
 // COM-13909
 #define COM13909_SS 14
+#define COM13909_INT0 18
 
 // sensor pins, i2c shared with vl53l1x
 #define CONFIG_MPU_PIN_INT 38
@@ -64,11 +64,17 @@ total  25 - 2
 //#define SERVO2 25
 //#define SERVO3 2
 
+
+// #define CONFIG_MOTOR01_PIN 47
+// #define CONFIG_MOTOR02_PIN 48
+// #define CONFIG_MOTOR03_PIN 10
+// #define CONFIG_MOTOR04_PIN 36
+
 // motor outputs
-#define CONFIG_MOTOR01_PIN 24
-#define CONFIG_MOTOR02_PIN 25
-#define CONFIG_MOTOR03_PIN 26
-#define CONFIG_MOTOR04_PIN 27
+#define CONFIG_MOTOR01_PIN 15
+#define CONFIG_MOTOR02_PIN 16
+#define CONFIG_MOTOR03_PIN 17
+#define CONFIG_MOTOR04_PIN 10
 
 // Extra DC Motors
 #define ALT_M1 19
@@ -78,11 +84,11 @@ total  25 - 2
 #define GPS_RX 35
 #define GPS_TX 14
 
-#ifndef SENSOR_AND_DECK_ON_ONE_BUS
-//  vl53l1x
-#define CONFIG_I2C1_PIN_SCL 23
-#define CONFIG_I2C1_PIN_SDA 22
-#endif
+    #ifndef SENSOR_AND_DECK_ON_ONE_BUS
+        //  vl53l1x
+        #define CONFIG_I2C1_PIN_SCL 23
+        #define CONFIG_I2C1_PIN_SDA 22
+    #endif
 #endif
 
 #define CONFIG_PITCH_CALIB 0
@@ -90,6 +96,13 @@ total  25 - 2
 
 #define BUSS_1_HOST HSPI_HOST
 #define DMA_CHAN 2
+
+
+//
+
+//
+
+//
 
 // V1
 #ifdef V1_BOARD

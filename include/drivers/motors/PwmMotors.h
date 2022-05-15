@@ -19,5 +19,4 @@ public:
 private:
     PWMSpeedControll();
     ledc_channel_config_t Ledc_Config;
-    static bool pwm_timmer_init();
 };

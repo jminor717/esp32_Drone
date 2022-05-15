@@ -355,20 +355,32 @@ static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned
     // DEBUG_PRINTI("ControllerDecoder decode got values r%f,p%f,y%f,v%f", values.roll, values.pitch, values.yawrate, values.zVelocity);
     // ASSERT(datalen == sizeof(struct altHoldPacket_s));
 
-    setpoint->thrust = getChannelUnitMultiplier(DataOut.R2, 0, 255) * (float)UINT16_MAX;
+    // setpoint->mode.z = modeVelocity;
+    // setpoint->velocity.z = getChannelUnitMultiplier(DataOut.R2 + DataOut.L2, 255, 510) * (float)UINT16_MAX;
+
+    // setpoint->mode.yaw = modeVelocity;
+    // setpoint->attitudeRate.yaw = getChannelUnitMultiplier(DataOut.Lx, 0, 255);
+
+    // setpoint->mode.roll = modeAbs;
+    // setpoint->mode.pitch = modeAbs;
+
+    // setpoint->attitude.roll = getChannelUnitMultiplier(DataOut.Rx, 0, 255);
+    // setpoint->attitude.pitch = getChannelUnitMultiplier(DataOut.Ry, 0, 255);
+
+    setpoint->thrust = (DataOut.R2 + DataOut.L2) * 128.5;
 
     setpoint->mode.x = modeDisable;
     setpoint->mode.y = modeDisable;
     setpoint->mode.z = modeDisable;
     //setpoint->velocity.z = DataOut.R2 / 26.5;
 
-    setpoint->mode.roll = modeVelocity;
+    setpoint->mode.roll = modeDisable;
     setpoint->mode.pitch = modeVelocity;
-    setpoint->mode.yaw = modeVelocity;
+    setpoint->mode.yaw = modeDisable;
 
-    setpoint->attitudeRate.roll = getChannelUnitMultiplier(DataOut.Rx, 0, 255);
-    setpoint->attitudeRate.pitch = getChannelUnitMultiplier(DataOut.Ry, 0, 255);
-    setpoint->attitudeRate.yaw = getChannelUnitMultiplier(DataOut.Lx, 0, 255);
+    setpoint->attitudeRate.roll = DataOut.Rx * 257;
+    setpoint->attitudeRate.pitch = DataOut.Ry * 257; // UINT16_MAX / 255
+    setpoint->attitudeRate.yaw = DataOut.Lx * 257;
 }
 
 /* ---===== 3 - packetDecoders array =====--- */
