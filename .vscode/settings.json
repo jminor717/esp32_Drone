@@ -173,6 +173,7 @@
         "dshot",
         "IRAM",
         "Ledc",
+        "mcpwm",
         "OPMODE",
         "Rssi",
         "RSSI",

@@ -4,27 +4,27 @@
 
 bool PWMSpeedControll::isTimerInit = false;
 
-ledc_channel_config_t motors_channel;
-
 PWMSpeedControll PWMSpeedControll::PWMControll(gpio_num_t gpio, ledc_channel_t channel)
 {
-    motors_channel.gpio_num = gpio;
-    motors_channel.channel = channel;
-    return PWMSpeedControll();
+    PWMSpeedControll ctrl = PWMSpeedControll();
+    ctrl.Ledc_Config.gpio_num = gpio;
+    ctrl.Ledc_Config.channel = channel;
+    return ctrl;
 }
 
 PWMSpeedControll PWMSpeedControll::PWMControll(uint8_t pin, uint8_t channel)
 {
-    motors_channel.gpio_num = pin;
-    motors_channel.channel = (ledc_channel_t)channel;
-    return PWMSpeedControll();
+    PWMSpeedControll ctrl = PWMSpeedControll();
+    ctrl.Ledc_Config.gpio_num = pin;
+    ctrl.Ledc_Config.channel = (ledc_channel_t)channel;
+    return ctrl;
 }
 
 PWMSpeedControll::PWMSpeedControll()
 {
-    motors_channel.duty = 0;
-    motors_channel.speed_mode = LEDC_LOW_SPEED_MODE;
-    motors_channel.timer_sel = LEDC_TIMER_0;
+    Ledc_Config.duty = 0;
+    Ledc_Config.speed_mode = LEDC_LOW_SPEED_MODE;
+    Ledc_Config.timer_sel = LEDC_TIMER_0;
 }
 
 PWMSpeedControll::~PWMSpeedControll()
@@ -34,7 +34,7 @@ PWMSpeedControll::~PWMSpeedControll()
 
 bool PWMSpeedControll::begin()
 {
-    ledc_channel_config(&motors_channel);
+    ledc_channel_config(&Ledc_Config);
     if (PWMSpeedControll::isTimerInit)
     {
         // First to init will configure it
@@ -75,7 +75,7 @@ static uint16_t motorsConv16ToBits(uint16_t bits)
 
 void PWMSpeedControll::SetRatio(uint16_t throttle_value)
 {
-    ledc_set_duty(motors_channel.speed_mode, motors_channel.channel, throttle_value);
-    ledc_update_duty(motors_channel.speed_mode, motors_channel.channel);
+    ledc_set_duty(Ledc_Config.speed_mode, Ledc_Config.channel, throttle_value);
+    ledc_update_duty(Ledc_Config.speed_mode, Ledc_Config.channel);
 }
 
