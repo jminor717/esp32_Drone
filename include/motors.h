@@ -183,7 +183,7 @@ EXTERNC void motorsSetRatio(uint8_t id, uint16_t ratio);
 /**
  * Set the PWM ratio of the motor 'id'
  */
-EXTERNC void servoSetPosition(uint8_t id, int32_t ratio);
+EXTERNC void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick);
 
 /**
  * Get the PWM ratio of the motor 'id'. Return -1 if wrong ID.

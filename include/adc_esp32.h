@@ -109,4 +109,6 @@ void adcTask(void *param);
 
 float analogReadVoltage(uint32_t pin); //should in deck_analog.c
 
+uint32_t analogReadRaw(uint32_t pin);
+
 #endif /* ADC_H_ */

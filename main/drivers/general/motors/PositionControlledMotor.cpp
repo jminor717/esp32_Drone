@@ -4,6 +4,8 @@
 //#include "motor_ctrl_timer.h"
 
 #include "soc/mcpwm_periph.h"
+#include "../common/stabilizer_types.h"
+#include "adc_esp32.h"
 
 #define GPIO_PWM0A_OUT 15 // Set GPIO 15 as PWM0A
 #define GPIO_PWM0B_OUT 16 // Set GPIO 16 as PWM0B
@@ -28,28 +30,29 @@ const int16_t MinimumDutyCycle = int(5.0 * Divisor);
 
 FastPID myPID(Kp, Ki, Kd, Hz, output_bits, output_signed);
 
-PosContMot PosContMot::PosContMotCreate(mcpwm_unit_t unit, mcpwm_timer_t timer, uint8_t GPIOa, uint8_t GPIOb)
+PosContMot PosContMot::PosContMotCreate(mcpwm_unit_t unit, mcpwm_timer_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin)
 {
-    PosContMot ctrl = PosContMot();
+    PosContMot ctrl = PosContMot(GPIOa, GPIOb, FeedbackPin);
     ctrl.this_Timer = timer;
     ctrl.this_Unit = unit;
-    ctrl.GPIOa = GPIOa;
-    ctrl.GPIOb = GPIOb;
+    ctrl.PID_Loop_Offset = ((int)ctrl.this_Timer) + ((int)ctrl.this_Unit * (int)MCPWM_TIMER_MAX);
     return ctrl;
 }
 
-PosContMot PosContMot::PosContMotCreate(uint8_t unit, uint8_t timer, uint8_t GPIOa, uint8_t GPIOb)
+PosContMot PosContMot::PosContMotCreate(uint8_t unit, uint8_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin)
 {
-    PosContMot ctrl = PosContMot();
+    PosContMot ctrl = PosContMot(GPIOa, GPIOb, FeedbackPin);
     ctrl.this_Timer = (mcpwm_timer_t)timer;
     ctrl.this_Unit = (mcpwm_unit_t)unit;
-    ctrl.GPIOa = GPIOa;
-    ctrl.GPIOb = GPIOb;
+    ctrl.PID_Loop_Offset = (((int)ctrl.this_Timer) + ((int)ctrl.this_Unit * (int)MCPWM_TIMER_MAX)) * (SERVO_RATE / 5);
     return ctrl;
 }
 
-PosContMot::PosContMot()
+PosContMot::PosContMot(uint16_t _GPIOa, uint16_t _GPIOb, uint16_t _FeedbackPin)
 {
+    GPIOa = _GPIOa;
+    GPIOb = _GPIOb;
+    PositionFeedbackPin = _FeedbackPin;
     McPwm_Config.frequency = 1000; // frequency = 500Hz,
     McPwm_Config.cmpr_a = 0;       // duty cycle of PWMxA = 0
     McPwm_Config.cmpr_b = 0;       // duty cycle of PWMxb = 0
@@ -78,10 +81,17 @@ bool SameSign(int x, int y)
     return (x >= 0) ^ (y < 0);
 }
 
-void PosContMot::SetPos(int32_t Position)
+void PosContMot::SetPos(int32_t Position, uint32_t Tick)
 {
+    int16_t PidOut = previous_Duty;
+    if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset))
+    {
+        uint32_t feedback =  100;//analogReadRaw(PositionFeedbackPin);
+        PidOut = myPID.step(Position, feedback);
+    }
+
     // todo: get current Pos and run PID
-    int16_t PidOut = Position;//- 30000; //(Position - ((UINT16_MAX - 2) / 2)) >> 4;
+    PidOut = Position; //- 30000; //(Position - ((UINT16_MAX - 2) / 2)) >> 4;
     int16_t PidMag = abs(PidOut);
     MtrDirection NextDirection;
 

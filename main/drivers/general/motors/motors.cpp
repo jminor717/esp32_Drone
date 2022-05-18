@@ -86,7 +86,6 @@ static bool isInit = false;
 //     },
 // };
 
-// LEDC chanels seem to be a bit wonky on the s3 some pins
 //  PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(MOTOR1_GPIO, 2);
 //  PWMSpeedControll pwm_ctrl2 = PWMSpeedControll::PWMControll(MOTOR2_GPIO, 3);
 //  PWMSpeedControll pwm_ctrl3 = PWMSpeedControll::PWMControll(MOTOR3_GPIO, 4);
@@ -94,10 +93,10 @@ static bool isInit = false;
 
 // PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
 
-PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN);
-PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN);
-PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_2, M3A_PIN, M3B_PIN);
-PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M4A_PIN, M4B_PIN);
+PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN);
+PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN, M2_POSITION_PIN);
+PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_2, M3A_PIN, M3B_PIN, M3_POSITION_PIN);
+PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M4A_PIN, M4B_PIN, M4_POSITION_PIN);
 
 PosContMot Servos[NBR_OF_MOTORS] = {RightElevon, LeftElevon, RightRear, LeftRear};
 
@@ -218,9 +217,9 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
     }
 }
 
-void servoSetPosition(uint8_t id, int32_t ratio)
+void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick)
 {
-    Servos[id].SetPos(ratio);
+    Servos[id].SetPos(ratio, Tick);
 }
 
 int motorsGetRatio(uint32_t id)

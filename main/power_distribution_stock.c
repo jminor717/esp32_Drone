@@ -63,6 +63,8 @@ static struct
     uint16_t m4;
 } motorPowerSet;
 
+uint32_t LocalTick = 0;
+
 #ifndef DEFAULT_IDLE_THRUST
 #define DEFAULT_IDLE_THRUST 0
 #endif
@@ -165,11 +167,12 @@ void powerDistribution(const control_t *control)
         motorsSetRatio(MOTOR_M2, motorPower.m2);
         motorsSetRatio(MOTOR_M3, motorPower.m3);
         motorsSetRatio(MOTOR_M4, motorPower.m4);
-        servoSetPosition(SERVO_S1, ServoPosition.s1);
-        servoSetPosition(SERVO_S2, ServoPosition.s2);
-        servoSetPosition(SERVO_S3, ServoPosition.s3);
-        servoSetPosition(SERVO_S4, ServoPosition.s4);
+        servoSetPosition(SERVO_S1, ServoPosition.s1, LocalTick);
+        servoSetPosition(SERVO_S2, ServoPosition.s2, LocalTick);
+        servoSetPosition(SERVO_S3, ServoPosition.s3, LocalTick);
+        servoSetPosition(SERVO_S4, ServoPosition.s4, LocalTick);
     }
+    LocalTick++;
 }
 
 PARAM_GROUP_START(motorPowerSet)
