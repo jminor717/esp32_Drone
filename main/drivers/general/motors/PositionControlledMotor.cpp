@@ -19,12 +19,12 @@ float Divisor = ((2 ^ (output_bits - output_signed)) / 100.0);
  * @brief the minimum duty cycle below which the motor will stop spining
  *
  */
-const int16_t hysteresis = 2.0 * Divisor;
+const int16_t hysteresis = int(2.0 * Divisor);
 /**
  * @brief the minimum duty cycle below which the motor will not start spining
  *
  */
-const int16_t MinimumDutyCycle = 5.0 * Divisor;
+const int16_t MinimumDutyCycle = int(5.0 * Divisor);
 
 FastPID myPID(Kp, Ki, Kd, Hz, output_bits, output_signed);
 
@@ -78,10 +78,10 @@ bool SameSign(int x, int y)
     return (x >= 0) ^ (y < 0);
 }
 
-void PosContMot::SetPos(uint16_t Position)
+void PosContMot::SetPos(int32_t Position)
 {
     // todo: get current Pos and run PID
-    int16_t PidOut = (Position - ((UINT16_MAX-2) / 2)) >> 4;
+    int16_t PidOut = Position;//- 30000; //(Position - ((UINT16_MAX - 2) / 2)) >> 4;
     int16_t PidMag = abs(PidOut);
     MtrDirection NextDirection;
 
@@ -115,37 +115,41 @@ void PosContMot::SetPos(uint16_t Position)
     }
 
     // when we change we need to set the PWM signal for the previous direction low
-    if (NextDirection != current_Direction)
-    {
-        switch (current_Direction)
-        {
-        case Forward:
-            mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
-            break;
-        case Reverse:
-            mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
-            break;
-        default:
-            mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
-            mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
-            break;
-        }
-    }
+    // if (NextDirection != current_Direction)
+    // {
+    //     switch (current_Direction)
+    //     {
+    //     case Forward:
+    //         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
+    //         break;
+    //     case Reverse:
+    //         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
+    //         break;
+    //     default:
+    //         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
+    //         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
+    //         break;
+    //     }
+    // }
 
     // set the duty cycle for the current dirrection
     switch (NextDirection)
     {
     case Forward:
-        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_A, PidOut / Divisor);
+        mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
+        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_A, ((float)PidMag / 327.6));
         if (NextDirection != current_Direction)
             mcpwm_set_duty_type(this_Unit, this_Timer, MCPWM_GEN_A, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
         break;
     case Reverse:
-        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_B, PidOut / Divisor);
+        mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
+        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_B, (((float)PidMag) / 327.6));
         if (NextDirection != current_Direction)
             mcpwm_set_duty_type(this_Unit, this_Timer, MCPWM_GEN_B, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
         break;
     default:
+        mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
+        mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
         break;
     }
 

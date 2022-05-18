@@ -19,7 +19,7 @@ public:
     ~PosContMot();
 
     bool begin();
-    void SetPos(uint16_t throttle_value);
+    void SetPos(int32_t Position);
 
 private:
     PosContMot();

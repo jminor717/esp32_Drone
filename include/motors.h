@@ -173,7 +173,7 @@ EXTERNC bool motorsTest(void);
 /**
  * Set the PWM ratio of the motor 'id'
  */
-EXTERNC void motorsSetRatio(uint32_t id, uint16_t ratio);
+EXTERNC void motorsSetRatio(uint8_t id, int32_t ratio);
 
 /**
  * Get the PWM ratio of the motor 'id'. Return -1 if wrong ID.

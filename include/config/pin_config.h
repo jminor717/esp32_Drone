@@ -37,15 +37,35 @@ total  25 - 2
 #include "config/dev_config.h"
 #include "hal/spi_types.h"
 
-
-
 // battery voltage monitor
-#define CONFIG_VBat_PIN 34
+#define CONFIG_VBat_PIN 8
 #define VBat_VOLTAGE_DIVIDER_RATIO 1.193 // 0.838 //measured
 
 #ifdef V2_BOARD
-// Unused 2, 12, 22, 23, 36, 39
-//  STM32 IO expander
+
+// Servos
+#define M1A_PIN 16
+#define M1B_PIN 17
+#define M1_POSITION_PIN 4
+
+#define M2A_PIN 21
+#define M2B_PIN 47
+#define M2_POSITION_PIN 1
+
+#define M3A_PIN 36
+#define M3B_PIN 37
+#define M3_POSITION_PIN 2
+
+#define M4A_PIN 41
+#define M4B_PIN 42
+#define M4_POSITION_PIN 10
+
+#define CONFIG_MOTOR01_PIN 5
+#define CONFIG_MOTOR02_PIN 6
+#define CONFIG_MOTOR03_PIN 7
+#define CONFIG_MOTOR04_PIN 15
+
+// SPI
 #define SPI_DEV_SCK 13
 #define SPI_DEV_MISO 11
 #define SPI_DEV_MOSI 12
@@ -59,36 +79,15 @@ total  25 - 2
 #define CONFIG_I2C0_PIN_SCL 40
 #define CONFIG_I2C0_PIN_SDA 39
 
-// Servos
-//#define SERVO1 5  1,
-//#define SERVO2 25
-//#define SERVO3 2
-
-
-// #define CONFIG_MOTOR01_PIN 47
-// #define CONFIG_MOTOR02_PIN 48
-// #define CONFIG_MOTOR03_PIN 10
-// #define CONFIG_MOTOR04_PIN 36
-
-// motor outputs
-#define CONFIG_MOTOR01_PIN 15
-#define CONFIG_MOTOR02_PIN 16
-#define CONFIG_MOTOR03_PIN 17
-#define CONFIG_MOTOR04_PIN 10
-
-// Extra DC Motors
-#define ALT_M1 19
-#define ALT_M2 21
+#ifndef SENSOR_AND_DECK_ON_ONE_BUS
+//  vl53l1x
+#define CONFIG_I2C1_PIN_SCL 23
+#define CONFIG_I2C1_PIN_SDA 22
+#endif
 
 // GPS
 #define GPS_RX 35
 #define GPS_TX 14
-
-    #ifndef SENSOR_AND_DECK_ON_ONE_BUS
-        //  vl53l1x
-        #define CONFIG_I2C1_PIN_SCL 23
-        #define CONFIG_I2C1_PIN_SDA 22
-    #endif
 #endif
 
 #define CONFIG_PITCH_CALIB 0
@@ -96,7 +95,6 @@ total  25 - 2
 
 #define BUSS_1_HOST HSPI_HOST
 #define DMA_CHAN 2
-
 
 //
 
@@ -129,4 +127,54 @@ total  25 - 2
 
 // misc
 #define CONFIG_LED_DOUT 15
+#endif
+
+//
+
+//
+
+//
+
+//
+
+#ifdef DontDefMeBro
+// 43 TX
+// 44 RX
+#define M2_POSITION_PIN 1
+#define M3_POSITION_PIN 2
+#define M4B_PIN 42
+#define M4A_PIN 41
+#define CONFIG_I2C0_PIN_SCL 40
+#define CONFIG_I2C0_PIN_SDA 39
+#define CONFIG_MPU_PIN_INT 38
+#define M3B_PIN 37
+#define M3A_PIN 36
+// 35
+// 0 Strapping
+// 45 Strapping
+// 48 RGB
+#define M2B_PIN 47
+#define M2A_PIN 21
+// 20 USB
+// 19 USB
+
+//
+
+#define M1_POSITION_PIN 4
+#define CONFIG_MOTOR01_PIN 5
+#define CONFIG_MOTOR02_PIN 6
+#define CONFIG_MOTOR03_PIN 7
+#define CONFIG_MOTOR04_PIN 15
+#define M1A_PIN 16
+#define M1B_PIN 17
+#define COM13909_INT0 18
+#define CONFIG_VBat_PIN 8
+// 3 Strapping
+// 46 Strapping
+// 9
+#define M4_POSITION_PIN 10
+#define SPI_DEV_MISO 11
+#define SPI_DEV_MOSI 12
+#define SPI_DEV_SCK 13
+#define COM13909_SS 14
 #endif

@@ -36,6 +36,7 @@
 #include "cfassert.h"
 #include "../Submodules/DShotRMT/src/DShotRMT.h"
 #include "drivers/motors/PwmMotors.h"
+#include "drivers/motors/PositionControlledMotor.h"
 
 static uint16_t motorsConvBitsTo16(uint16_t bits);
 static uint16_t motorsConv16ToBits(uint16_t bits);
@@ -85,13 +86,20 @@ static bool isInit = false;
 //     },
 // };
 
-//LEDC chanels seem to be a bit wonky on the s3 some pins 
-// PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(MOTOR1_GPIO, 2);
-// PWMSpeedControll pwm_ctrl2 = PWMSpeedControll::PWMControll(MOTOR2_GPIO, 3);
-// PWMSpeedControll pwm_ctrl3 = PWMSpeedControll::PWMControll(MOTOR3_GPIO, 4);
-// PWMSpeedControll pwm_ctrl4 = PWMSpeedControll::PWMControll(MOTOR4_GPIO, 5);
+// LEDC chanels seem to be a bit wonky on the s3 some pins
+//  PWMSpeedControll pwm_ctrl1 = PWMSpeedControll::PWMControll(MOTOR1_GPIO, 2);
+//  PWMSpeedControll pwm_ctrl2 = PWMSpeedControll::PWMControll(MOTOR2_GPIO, 3);
+//  PWMSpeedControll pwm_ctrl3 = PWMSpeedControll::PWMControll(MOTOR3_GPIO, 4);
+//  PWMSpeedControll pwm_ctrl4 = PWMSpeedControll::PWMControll(MOTOR4_GPIO, 5);
 
 // PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
+
+PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN);
+PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN);
+PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_2, M3A_PIN, M3B_PIN);
+PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M4A_PIN, M4B_PIN);
+
+PosContMot Servos[NBR_OF_MOTORS] = {RightElevon, LeftElevon, RightRear, LeftRear};
 
 DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_0);
 DShotRMT dshot_02((gpio_num_t)MOTOR2_GPIO, RMT_CHANNEL_1);
@@ -115,8 +123,11 @@ void motorsInit(const MotorPerifDef **motorMapSelect)
 
     for (i = 0; i < NBR_OF_MOTORS; i++)
     {
-        //   DShotMotors[i].begin(DSHOT300, false);
+        DEBUG_PRINTI("configuring motor %d", i);
+        //DShotMotors[i].begin(DSHOT300, false);
+        Servos[i].begin();
     }
+
     dshot_01.begin(DSHOT300, false);
     dshot_02.begin(DSHOT300, false);
     dshot_03.begin(DSHOT300, false);
@@ -171,14 +182,14 @@ bool motorsTest(void)
 }
 
 // Ithrust is thrust mapped for 65536 <==> 60 grams
-void motorsSetRatio(uint32_t id, uint16_t ithrust)
+void motorsSetRatio(uint8_t id, int32_t ithrust)
 {
     // if (ithrust >0){
     //     DEBUG_PRINTI("set motor %d to %d", id, ithrust);
     // }
     if (isInit)
     {
-        uint16_t ratio;
+        int32_t ratio;
 
         //! ASSERT(id < NBR_OF_MOTORS);
 
@@ -200,8 +211,9 @@ void motorsSetRatio(uint32_t id, uint16_t ithrust)
 #endif
 
         motor_ratios[id] = ratio;
-//        PwmMotors[id].SetRatio(map(ratio, 0, UINT16_MAX, 0, UINT8_MAX));
+        //        PwmMotors[id].SetRatio(map(ratio, 0, UINT16_MAX, 0, UINT8_MAX));
         DShotMotors[id].send_dshot_value(map(ratio, 0, UINT16_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX), NO_TELEMETRIC);
+        Servos[id].SetPos(ratio);
 #ifdef DEBUG_EP2
         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
 #endif
