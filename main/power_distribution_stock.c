@@ -41,11 +41,19 @@ static bool motorSetEnable = false;
 
 static struct
 {
-    int32_t m1;
-    int32_t m2;
-    int32_t m3;
-    int32_t m4;
+    uint16_t m1;
+    uint16_t m2;
+    uint16_t m3;
+    uint16_t m4;
 } motorPower;
+
+static struct
+{
+    int32_t s1;
+    int32_t s2;
+    int32_t s3;
+    int32_t s4;
+} ServoPosition;
 
 static struct
 {
@@ -115,12 +123,14 @@ void powerDistribution(const control_t *control)
     motorPower.m3 = limitThrust(control->thrust - control->pitch + control->yaw);
     motorPower.m4 = limitThrust(control->thrust + control->roll - control->yaw);
 #elif defined(TWO_PROP_PLANE)
-    // motorPower.m1 = limitThrust(control->thrust + control->yaw);
-    // motorPower.m2 = limitThrust(control->thrust - control->yaw);
-    motorPower.m1 = control->roll;
-    motorPower.m2 = control->yaw;
-    motorPower.m3 = control->roll;
-    motorPower.m4 = control->yaw;
+    motorPower.m1 = limitThrust(control->thrust + control->yaw);
+    motorPower.m2 = limitThrust(control->thrust - control->yaw);
+    motorPower.m3 = limitThrust(control->thrust);
+    motorPower.m4 = limitThrust(control->thrust);
+    ServoPosition.s1 = control->roll;
+    ServoPosition.s2 = -control->roll;
+    ServoPosition.s3 = control->yaw;
+    ServoPosition.s4 = -control->yaw;
 #else
 #error Motor layout not defined!
 #endif
@@ -155,6 +165,10 @@ void powerDistribution(const control_t *control)
         motorsSetRatio(MOTOR_M2, motorPower.m2);
         motorsSetRatio(MOTOR_M3, motorPower.m3);
         motorsSetRatio(MOTOR_M4, motorPower.m4);
+        servoSetPosition(SERVO_S1, ServoPosition.s1);
+        servoSetPosition(SERVO_S2, ServoPosition.s2);
+        servoSetPosition(SERVO_S3, ServoPosition.s3);
+        servoSetPosition(SERVO_S4, ServoPosition.s4);
     }
 }
 

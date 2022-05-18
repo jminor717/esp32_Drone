@@ -50,6 +50,11 @@
 #define MOTOR_M3  2
 #define MOTOR_M4  3
 
+#define SERVO_S1 0
+#define SERVO_S2 1
+#define SERVO_S3 2
+#define SERVO_S4 3
+
 #define MOTOR1_GPIO CONFIG_MOTOR01_PIN
 #define MOTOR2_GPIO CONFIG_MOTOR02_PIN
 #define MOTOR3_GPIO CONFIG_MOTOR03_PIN
@@ -173,7 +178,12 @@ EXTERNC bool motorsTest(void);
 /**
  * Set the PWM ratio of the motor 'id'
  */
-EXTERNC void motorsSetRatio(uint8_t id, int32_t ratio);
+EXTERNC void motorsSetRatio(uint8_t id, uint16_t ratio);
+
+/**
+ * Set the PWM ratio of the motor 'id'
+ */
+EXTERNC void servoSetPosition(uint8_t id, int32_t ratio);
 
 /**
  * Get the PWM ratio of the motor 'id'. Return -1 if wrong ID.

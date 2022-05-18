@@ -124,7 +124,7 @@ void motorsInit(const MotorPerifDef **motorMapSelect)
     for (i = 0; i < NBR_OF_MOTORS; i++)
     {
         DEBUG_PRINTI("configuring motor %d", i);
-        //DShotMotors[i].begin(DSHOT300, false);
+        // DShotMotors[i].begin(DSHOT300, false);
         Servos[i].begin();
     }
 
@@ -182,14 +182,14 @@ bool motorsTest(void)
 }
 
 // Ithrust is thrust mapped for 65536 <==> 60 grams
-void motorsSetRatio(uint8_t id, int32_t ithrust)
+void motorsSetRatio(uint8_t id, uint16_t ithrust)
 {
     // if (ithrust >0){
     //     DEBUG_PRINTI("set motor %d to %d", id, ithrust);
     // }
     if (isInit)
     {
-        int32_t ratio;
+        uint16_t ratio;
 
         //! ASSERT(id < NBR_OF_MOTORS);
 
@@ -211,13 +211,16 @@ void motorsSetRatio(uint8_t id, int32_t ithrust)
 #endif
 
         motor_ratios[id] = ratio;
-        //        PwmMotors[id].SetRatio(map(ratio, 0, UINT16_MAX, 0, UINT8_MAX));
         DShotMotors[id].send_dshot_value(map(ratio, 0, UINT16_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX), NO_TELEMETRIC);
-        Servos[id].SetPos(ratio);
 #ifdef DEBUG_EP2
         DEBUG_PRINT_LOCAL("motors ID = %d ,ithrust_10bit = %d", id, (uint32_t)motorsConv16ToBits(ratio));
 #endif
     }
+}
+
+void servoSetPosition(uint8_t id, int32_t ratio)
+{
+    Servos[id].SetPos(ratio);
 }
 
 int motorsGetRatio(uint32_t id)
