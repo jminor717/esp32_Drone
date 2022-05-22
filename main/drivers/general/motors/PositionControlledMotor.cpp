@@ -5,7 +5,10 @@
 
 #include "soc/mcpwm_periph.h"
 #include "../common/stabilizer_types.h"
+extern "C"
+{
 #include "adc_esp32.h"
+}
 
 #define GPIO_PWM0A_OUT 15 // Set GPIO 15 as PWM0A
 #define GPIO_PWM0B_OUT 16 // Set GPIO 16 as PWM0B
@@ -86,7 +89,7 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     int16_t PidOut = previous_Duty;
     if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset))
     {
-        uint32_t feedback =  100;//analogReadRaw(PositionFeedbackPin);
+        uint32_t feedback =  analogReadRaw(PositionFeedbackPin);
         PidOut = myPID.step(Position, feedback);
     }
 

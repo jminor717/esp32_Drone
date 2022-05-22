@@ -156,7 +156,6 @@ void radiolinkInit(void)
     if (!rf69.init())
     {
         DEBUG_PRINTW("RF69 setup failed\n");
-        fflush(stdout);
     }
     rf69.setTxPower(-2, true);
 

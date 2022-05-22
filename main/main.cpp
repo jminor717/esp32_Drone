@@ -108,15 +108,9 @@ void app_main()
     /*launch the system task */
 
     systemLaunch();
-    vTaskDelay(50);
-    //radiolinkInit();
 
-
-    int32_t lastTick = xTaskGetTickCount();
-    int32_t currentTick = xTaskGetTickCount();
     for (;;)
     {
-        vTaskDelay(1);
-        lastTick = currentTick;
+        vTaskDelay(1000);
     }
 }

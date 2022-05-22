@@ -245,7 +245,7 @@ static void altHoldDecoder(setpoint_t *setpoint, uint8_t type, const unsigned ch
  */
 static void hoverDecoder(setpoint_t *setpoint, uint8_t type, const unsigned char *data, size_t datalen)
 {
-    const struct hoverPacket_s values;
+    struct hoverPacket_s values;
     hoverPacket_Decode_Min(&values, data);
     DEBUG_PRINTI("hover decode got values r%f,p%f,y%f,v%f", values.vx, values.vy, values.yawrate, values.zDistance);
     // ASSERT(datalen == sizeof(struct hoverPacket_s));

@@ -46,11 +46,11 @@ total  25 - 2
 // Servos
 #define M1A_PIN 16
 #define M1B_PIN 17
-#define M1_POSITION_PIN 4
+#define M1_POSITION_PIN 10
 
 #define M2A_PIN 21
 #define M2B_PIN 47
-#define M2_POSITION_PIN 1
+#define M2_POSITION_PIN 4
 
 #define M3A_PIN 36
 #define M3B_PIN 37
@@ -58,7 +58,7 @@ total  25 - 2
 
 #define M4A_PIN 41
 #define M4B_PIN 42
-#define M4_POSITION_PIN 10
+#define M4_POSITION_PIN 1
 
 #define CONFIG_MOTOR01_PIN 5
 #define CONFIG_MOTOR02_PIN 6
@@ -80,14 +80,16 @@ total  25 - 2
 #define CONFIG_I2C0_PIN_SDA 39
 
 #ifndef SENSOR_AND_DECK_ON_ONE_BUS
-//  vl53l1x
-#define CONFIG_I2C1_PIN_SCL 23
-#define CONFIG_I2C1_PIN_SDA 22
+    //  vl53l1x
+    #define CONFIG_I2C1_PIN_SCL 23
+    #define CONFIG_I2C1_PIN_SDA 22
 #endif
 
 // GPS
-#define GPS_RX 35
-#define GPS_TX 14
+#define GPS_RX 19
+#define GPS_TX 20
+
+#define CONFIG_LED_DOUT 48
 #endif
 
 #define CONFIG_PITCH_CALIB 0
@@ -155,12 +157,12 @@ total  25 - 2
 // 48 RGB
 #define M2B_PIN 47
 #define M2A_PIN 21
-// 20 USB
-// 19 USB
+// 20 USB GPS_RX 19
+// 19 USB GPS_TX 20
 
 //
 
-#define M1_POSITION_PIN 4
+#define M1_POSITION_PIN 10
 #define CONFIG_MOTOR01_PIN 5
 #define CONFIG_MOTOR02_PIN 6
 #define CONFIG_MOTOR03_PIN 7

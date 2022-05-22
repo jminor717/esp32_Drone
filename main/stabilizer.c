@@ -274,8 +274,8 @@ static void stabilizerTask(void *param)
     lastWakeTime = xTaskGetTickCount();
     while (!sensorsAreCalibrated())
     {
-        //vTaskDelayUntil(&lastWakeTime, F2T(RATE_MAIN_LOOP));
-        vTaskDelay(M2T(200));
+        vTaskDelayUntil(&lastWakeTime, F2T(RATE_MAIN_LOOP));
+        //vTaskDelay(M2T(200));
     }
     // Initialize tick to something else then 0
     tick = 1;
