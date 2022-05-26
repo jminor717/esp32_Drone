@@ -10,26 +10,26 @@ extern "C"
 #include "adc_esp32.h"
 }
 
-#define GPIO_PWM0A_OUT 15 // Set GPIO 15 as PWM0A
-#define GPIO_PWM0B_OUT 16 // Set GPIO 16 as PWM0B
+#define DEBUG_MODULE "PosCont"
+#include "debug_cf.h"
 
-float Kp = 0.1, Ki = 0.5, Kd = 0.5, Hz = 50;
+float Kp = 5, Ki = -1, Kd = 0.001, Hz = 25;
 int output_bits = 12;
 bool output_signed = true;
 
 //-2^(n-1)  to  (2^(n-1))-1
-float Divisor = ((2 ^ (output_bits - output_signed)) / 100.0);
+float Divisor = 0.024414; // (100.0 / (2 ^ output_bits));
 
 /**
  * @brief the minimum duty cycle below which the motor will stop spining
  *
  */
-const int16_t hysteresis = int(2.0 * Divisor);
+const int16_t hysteresis = int(12 / Divisor);
 /**
  * @brief the minimum duty cycle below which the motor will not start spining
  *
  */
-const int16_t MinimumDutyCycle = int(5.0 * Divisor);
+const int16_t MinimumDutyCycle = int(16 / Divisor);
 
 FastPID myPID(Kp, Ki, Kd, Hz, output_bits, output_signed);
 
@@ -56,7 +56,8 @@ PosContMot::PosContMot(uint16_t _GPIOa, uint16_t _GPIOb, uint16_t _FeedbackPin)
     GPIOa = _GPIOa;
     GPIOb = _GPIOb;
     PositionFeedbackPin = _FeedbackPin;
-    McPwm_Config.frequency = 1000; // frequency = 500Hz,
+    previous_Duty = 0;
+    McPwm_Config.frequency = 15000; // frequency = 500Hz,
     McPwm_Config.cmpr_a = 0;       // duty cycle of PWMxA = 0
     McPwm_Config.cmpr_b = 0;       // duty cycle of PWMxb = 0
     McPwm_Config.counter_mode = MCPWM_UP_COUNTER;
@@ -89,12 +90,14 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     int16_t PidOut = previous_Duty;
     if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset))
     {
-        uint32_t feedback =  analogReadRaw(PositionFeedbackPin);
-        PidOut = myPID.step(Position, feedback);
+        uint32_t feedback = analogReadRaw(PositionFeedbackPin);
+        PidOut = myPID.step(Position >> 4, feedback);
+        // if (PositionFeedbackPin == 1)
+        // {
+        //     DEBUG_PRINTI("%d,%d    %d  __ %f", feedback, Position >> 4, PidOut, ((float)abs(PidOut)) * Divisor);
+        // }
     }
 
-    // todo: get current Pos and run PID
-    PidOut = Position; //- 30000; //(Position - ((UINT16_MAX - 2) / 2)) >> 4;
     int16_t PidMag = abs(PidOut);
     MtrDirection NextDirection;
 
@@ -117,14 +120,15 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
         }
     }
 
-    // determine what dirrection the PID is comanding the motor in
+    // determine what direction the PID is commanding the motor in
     if (PidOut >= 1)
     {
-        NextDirection = Forward;
+        NextDirection = Reverse;
     }
     else if (PidOut <= -1)
     {
-        NextDirection = Reverse;
+        NextDirection = Forward;
+        PidMag *= 2; // TODO figure out why the PID is operating with a range from -2048 to 4095
     }
 
     // when we change we need to set the PWM signal for the previous direction low
@@ -150,13 +154,13 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     {
     case Forward:
         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
-        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_A, ((float)PidMag / 327.6));
+        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_A, ((float)PidMag * Divisor));
         if (NextDirection != current_Direction)
             mcpwm_set_duty_type(this_Unit, this_Timer, MCPWM_GEN_A, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
         break;
     case Reverse:
         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_A);
-        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_B, (((float)PidMag) / 327.6));
+        mcpwm_set_duty(this_Unit, this_Timer, MCPWM_GEN_B, (((float)PidMag) * Divisor));
         if (NextDirection != current_Direction)
             mcpwm_set_duty_type(this_Unit, this_Timer, MCPWM_GEN_B, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
         break;
