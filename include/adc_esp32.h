@@ -52,14 +52,12 @@
 
 /******** Types ********/
 
-typedef struct __attribute__((packed))
-{
+typedef struct __attribute__((packed)) {
     uint16_t vref;
     uint16_t val;
 } AdcPair;
 
-typedef struct __attribute__((packed))
-{
+typedef struct __attribute__((packed)) {
     AdcPair vbat;
 } AdcGroup;
 
@@ -105,7 +103,7 @@ void adcInterruptHandler(void);
 /**
  * ADC task
  */
-void adcTask(void *param);
+void adcTask(void* param);
 
 float analogReadVoltage(uint32_t pin); //should in deck_analog.c
 

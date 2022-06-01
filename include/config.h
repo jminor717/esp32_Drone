@@ -80,7 +80,6 @@
 #define STABILIZER_TASK_PRI     5
 // #define LPS_DECK_TASK_PRI       5
 #define SENSORS_TASK_PRI        4
-// #define ADC_TASK_PRI            3
 // #define FLOW_TASK_PRI           3
 // #define MULTIRANGER_TASK_PRI    3
 // #define LIGHTHOUSE_TASK_PRI     3
@@ -100,6 +99,7 @@
 // #define UART2_TEST_TASK_PRI     1
 #define LEDSEQCMD_TASK_PRI      1
 #define PM_TASK_PRI             0
+#define ADC_TASK_PRI            0
 // #define USDWRITE_TASK_PRI       0
 // #define PROXIMITY_TASK_PRI      0
     // if task watchdog triggered,KALMAN_TASK_PRI should set lower or set lower flow frequency

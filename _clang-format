@@ -1,0 +1,4 @@
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+# LLVM, Google, Chromium, Mozilla, WebKit, Microsoft, GNU
+BasedOnStyle: WebKit
+IndentWidth: 4

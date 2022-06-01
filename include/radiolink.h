@@ -55,19 +55,19 @@ typedef void (*P2PCallback)(P2PPacket *);
 #define EXTERNC
 #endif
 
-EXTERNC void radiolinkInit(void);
-EXTERNC bool radiolinkTest(void);
-EXTERNC struct crtpLinkOperations *radiolinkGetLink();
+EXTERNC void radioLinkInit(void);
+EXTERNC bool radioLinkTest(void);
+EXTERNC struct crtpLinkOperations *radioLinkGetLink();
 
 #undef EXTERNC
 
 
 
-void radiolinkSetChannel(uint8_t channel);
-void radiolinkSetDatarate(uint8_t datarate);
-void radiolinkSetAddress(uint64_t address);
-void radiolinkSetPowerDbm(int8_t powerDbm);
-//!void radiolinkSyslinkDispatch(SyslinkPacket *slp);
+void radioLinkSetChannel(uint8_t channel);
+void radioLinkSetDatarate(uint8_t datarate);
+void radioLinkSetAddress(uint64_t address);
+void radioLinkSetPowerDbm(int8_t powerDbm);
+//!void radioLinkSyslinkDispatch(SyslinkPacket *slp);
 
 
 

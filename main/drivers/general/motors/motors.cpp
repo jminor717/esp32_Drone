@@ -27,31 +27,33 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "stm32_legacy.h"
+#include "../Submodules/DShotRMT/src/DShotRMT.h"
+#include "drivers/motors/PositionControlledMotor.h"
+#include "drivers/motors/PwmMotors.h"
+
+#include "cfassert.h"
+#include "log.h"
 #include "motors.h"
 #include "pm_esplane.h"
-#include "log.h"
+#include "stm32_legacy.h"
+
 #define DEBUG_MODULE "MOTORS"
 #include "debug_cf.h"
-#include "cfassert.h"
-#include "../Submodules/DShotRMT/src/DShotRMT.h"
-#include "drivers/motors/PwmMotors.h"
-#include "drivers/motors/PositionControlledMotor.h"
 
 static uint16_t motorsConvBitsTo16(uint16_t bits);
 static uint16_t motorsConv16ToBits(uint16_t bits);
 
-uint32_t motor_ratios[] = {0, 0, 0, 0};
+uint32_t motor_ratios[] = { 0, 0, 0, 0 };
 
 void motorsPlayTone(uint16_t frequency, uint16_t duration_msec);
-void motorsPlayMelody(uint16_t *notes);
+void motorsPlayMelody(uint16_t* notes);
 void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio);
 
-const MotorPerifDef **motorMap; /* Current map configuration */
+const MotorPerifDef** motorMap; /* Current map configuration */
 
-const uint32_t MOTORS[] = {MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4};
+const uint32_t MOTORS[] = { MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4 };
 
-const uint16_t testsound[NBR_OF_MOTORS] = {NOTE_A4, NOTE_A5, NOTE_F5, NOTE_D5};
+const uint16_t testsound[NBR_OF_MOTORS] = { NOTE_A4, NOTE_A5, NOTE_F5, NOTE_D5 };
 
 static bool isInit = false;
 
@@ -98,30 +100,28 @@ PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1
 PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_2, M3A_PIN, M3B_PIN, M3_POSITION_PIN);
 PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M4A_PIN, M4B_PIN, M4_POSITION_PIN);
 
-PosContMot Servos[NBR_OF_MOTORS] = {RightElevon, LeftElevon, RightRear, LeftRear};
+PosContMot Servos[NBR_OF_MOTORS] = { RightElevon, LeftElevon, RightRear, LeftRear };
 
 DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_0);
 DShotRMT dshot_02((gpio_num_t)MOTOR2_GPIO, RMT_CHANNEL_1);
 DShotRMT dshot_03((gpio_num_t)MOTOR3_GPIO, RMT_CHANNEL_2);
 DShotRMT dshot_04((gpio_num_t)MOTOR4_GPIO, RMT_CHANNEL_3);
 
-DShotRMT DShotMotors[NBR_OF_MOTORS] = {dshot_01, dshot_02, dshot_03, dshot_04};
+DShotRMT DShotMotors[NBR_OF_MOTORS] = { dshot_01, dshot_02, dshot_03, dshot_04 };
 
 // Initialization. Will set all motors ratio to 0%
-void motorsInit(const MotorPerifDef **motorMapSelect)
+void motorsInit(const MotorPerifDef** motorMapSelect)
 {
     int i;
 
-    if (isInit)
-    {
+    if (isInit) {
         // First to init will configure it
         return;
     }
 
     motorMap = motorMapSelect;
 
-    for (i = 0; i < NBR_OF_MOTORS; i++)
-    {
+    for (i = 0; i < NBR_OF_MOTORS; i++) {
         DEBUG_PRINTI("configuring motor %d", i);
         // DShotMotors[i].begin(DSHOT300, false);
         Servos[i].begin();
@@ -147,10 +147,9 @@ void motorsInit(const MotorPerifDef **motorMapSelect)
     isInit = true;
 }
 
-void motorsDeInit(const MotorPerifDef **motorMapSelect)
+void motorsDeInit(const MotorPerifDef** motorMapSelect)
 {
-    for (int i = 0; i < NBR_OF_MOTORS; i++)
-    {
+    for (int i = 0; i < NBR_OF_MOTORS; i++) {
         //!   ledc_stop(motors_channel[i].speed_mode, motors_channel[i].channel, 0);
     }
 }
@@ -159,8 +158,7 @@ bool motorsTest(void)
 {
     int i;
 
-    for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++)
-    {
+    for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++) {
         // if (motorMap[i]->drvType == BRUSHED)
         // {
 #ifdef ACTIVATE_STARTUP_SOUND
@@ -186,8 +184,7 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
     // if (ithrust >0){
     //     DEBUG_PRINTI("set motor %d to %d", id, ithrust);
     // }
-    if (isInit)
-    {
+    if (isInit) {
         uint16_t ratio;
 
         //! ASSERT(id < NBR_OF_MOTORS);
@@ -196,8 +193,7 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
 
 #ifdef ENABLE_THRUST_BAT_COMPENSATED
 
-        if (motorMap[id]->drvType == BRUSHED)
-        {
+        if (motorMap[id]->drvType == BRUSHED) {
             float thrust = ((float)ithrust / 65536.0f) * 40; // Modify according to actual weight
             float volts = -0.0006239f * thrust * thrust + 0.088f * thrust;
             float supply_voltage = pmGetBatteryVoltage();
@@ -264,7 +260,7 @@ void motorsPlayTone(uint16_t frequency, uint16_t duration_msec)
 }
 
 // Plays a melody from a note array
-void motorsPlayMelody(uint16_t *notes)
+void motorsPlayMelody(uint16_t* notes)
 {
     // int i = 0;
     // uint16_t note;     // Note in hz

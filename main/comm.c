@@ -32,24 +32,25 @@
 #include "crtp.h"
 //#include "console.h"
 #include "crtpservice.h"
-#include "param.h"
 #include "debug_cf.h"
 #include "log.h"
+#include "param.h"
+
 #if (COMMS_MODE == WIFI_COMMS_MODE)
 #include "wifi_esp32.h"
 #include "wifilink.h"
 #else
 #include "radiolink.h"
 #endif
-#include "platformservice.h"
 #include "crtp_localization_service.h"
+#include "platformservice.h"
+
 
 static bool isInit;
 
 void commInit(void)
 {
-    if (isInit)
-    {
+    if (isInit) {
         return;
     }
 
@@ -59,7 +60,7 @@ void commInit(void)
 #if (COMMS_MODE == WIFI_COMMS_MODE)
     wifilinkInit();
 #else
-    radiolinkInit();
+    radioLinkInit();
 #endif
 
     crtpInit();
@@ -68,9 +69,9 @@ void commInit(void)
 #if (COMMS_MODE == WIFI_COMMS_MODE)
     crtpSetLink(wifilinkGetLink());
 #else
-    crtpSetLink(radiolinkGetLink());
+    crtpSetLink(radioLinkGetLink());
 #endif
-    
+
     crtpserviceInit();
     // platformserviceInit();
     // logInit();
@@ -81,8 +82,8 @@ void commInit(void)
     // TODO: check for USB first and prefer USB over radio
     // if (usbTest())
     //   crtpSetLink(usbGetLink);
-    // else if (radiolinkTest())
-    //     crtpSetLink(radiolinkGetLink());
+    // else if (radioLinkTest())
+    //     crtpSetLink(radioLinkGetLink());
     isInit = true;
 }
 

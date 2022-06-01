@@ -95,7 +95,7 @@
 //   switch (groupType)
 //   {
 //     case SYSLINK_RADIO_GROUP:
-//      //! radiolinkSyslinkDispatch(slp);
+//      //! radioLinkSyslinkDispatch(slp);
 //       break;
 //     case SYSLINK_PM_GROUP:
 //     //!  pmSyslinkUpdate(slp);
