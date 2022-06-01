@@ -10,7 +10,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RadioHead.h>
 #else
-#include <..\Common\Submodules\RadioHead\RadioHead.h>
+#include <../Common/Submodules/RadioHead/RadioHead.h>
 #endif
 
 /////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 ENV IDF_PYTHON_ENV_PATH=/opt/esp/python_env/idf4.4_py3.6_env
 
-RUN wget --no-verbose ${QEMU_URL} \
+RUN wget --no-verbose --no-check-certificate ${QEMU_URL} \
 #   && echo "${QEMU_SHA256} *${QEMU_DIST}" | sha256sum --check --strict - \
   && tar -xf $QEMU_DIST -C /opt \
   && rm ${QEMU_DIST}

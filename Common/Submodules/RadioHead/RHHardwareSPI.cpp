@@ -7,7 +7,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RHHardwareSPI.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHHardwareSPI.h>
+#include <../Common/Submodules/RadioHead/RHHardwareSPI.h>
 #endif
 
 #ifdef RH_HAVE_HARDWARE_SPI

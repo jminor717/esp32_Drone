@@ -7,7 +7,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RHGenericSPI.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHGenericSPI.h>
+#include <../Common/Submodules/RadioHead/RHGenericSPI.h>
 #endif
 
 RHGenericSPI::RHGenericSPI(Frequency frequency, BitOrder bitOrder, DataMode dataMode)

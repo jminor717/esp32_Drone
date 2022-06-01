@@ -53,7 +53,7 @@
 #include <SPI.h>
 
 #define RH_PLATFORM 14
-#include <..\Common\Submodules\RadioHead\RH_RF69.h>
+#include <../Common/Submodules/RadioHead/RH_RF69.h>
 
 #include "stm32_legacy.h"
 

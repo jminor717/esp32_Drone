@@ -14,8 +14,8 @@
 #include <RadioHead\RHGenericSPI.h>
 #include <RadioHead\RHSPIDriver.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHGenericSPI.h>
-#include <..\Common\Submodules\RadioHead\RHSPIDriver.h>
+#include <../Common/Submodules/RadioHead/RHGenericSPI.h>
+#include <../Common/Submodules/RadioHead/RHSPIDriver.h>
 #endif
 
 // The crystal oscillator frequency of the RF69 module

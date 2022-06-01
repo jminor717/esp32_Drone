@@ -6,7 +6,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RHSPIDriver.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHSPIDriver.h>
+#include <../Common/Submodules/RadioHead/RHSPIDriver.h>
 #endif
 
 // Some platforms may need special slave select driving

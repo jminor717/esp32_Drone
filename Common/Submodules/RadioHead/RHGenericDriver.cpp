@@ -6,7 +6,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RHGenericDriver.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHGenericDriver.h>
+#include <../Common/Submodules/RadioHead/RHGenericDriver.h>
 #endif
 
 

@@ -6,7 +6,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RH_RF69.h>
 #else
-#include <..\Common\Submodules\RadioHead\RH_RF69.h>
+#include <../Common/Submodules/RadioHead/RH_RF69.h>
 #define DEBUG_MODULE "RH_RF69"
 #include "debug_cf.h"
 #endif

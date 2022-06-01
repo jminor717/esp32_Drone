@@ -10,7 +10,7 @@
 #ifdef PIO_BUILD_ENV
 #include <RadioHead\RHGenericSPI.h>
 #else
-#include <..\Common\Submodules\RadioHead\RHGenericSPI.h>
+#include <../Common/Submodules/RadioHead/RHGenericSPI.h>
 #endif
 
 /////////////////////////////////////////////////////////////////////
