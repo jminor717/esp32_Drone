@@ -378,9 +378,9 @@ static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned
     setpoint->mode.pitch = modeVelocity;
     setpoint->mode.yaw = modeDisable;
 
-    setpoint->attitudeRate.roll = DataOut.Rx * 257;
-    setpoint->attitudeRate.pitch = DataOut.Ry * 257; // UINT16_MAX / 255
-    setpoint->attitudeRate.yaw = DataOut.Lx * 257;
+    setpoint->attitudeRate.roll = DataOut.Rx * 255;
+    setpoint->attitudeRate.pitch = DataOut.Ry * 255; // UINT16_MAX / 255
+    setpoint->attitudeRate.yaw = DataOut.Lx * 255;
 }
 
 /* ---===== 3 - packetDecoders array =====--- */

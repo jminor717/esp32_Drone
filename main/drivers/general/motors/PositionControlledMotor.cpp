@@ -13,7 +13,7 @@ extern "C" {
 #define DEBUG_MODULE "PosCont"
 #include "debug_cf.h"
 
-float Kp = 5, Ki = -1, Kd = 0.001, Hz = 25;
+float Kp = 5, Ki = -10, Kd = -1, Hz = 25;
 int output_bits = 12;
 bool output_signed = true;
 
@@ -86,8 +86,8 @@ bool SameSign(int x, int y)
 /**
  * @brief will iterate the PID loop of the specifed motor and attempt to drive the motor to the specified position
  * @remarks this should be called on every run of the main control loop
- * 
- * @param Position 
+ *
+ * @param Position
  * @param Tick tick variable from the main control loop to determine how often PID should be run
  */
 void PosContMot::SetPos(int32_t Position, uint32_t Tick)
@@ -95,9 +95,9 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     int16_t PidOut = previous_Duty;
     if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
         uint32_t feedback = analogReadRaw(PositionFeedbackPin);
-        PidOut = myPID.step(Position >> 4, feedback);
-        // if (PositionFeedbackPin == 1)
-        //     DEBUG_PRINTI("%d,%d    %d  __ %f", feedback, Position >> 4, PidOut, ((float)abs(PidOut)) * Divisor);
+        PidOut = myPID.step(Position >> 4, feedback - 2047);
+        if (PositionFeedbackPin == 10)
+            DEBUG_PRINTI("%d,%d    %d  __ %f", feedback - 2047, Position >> 4, PidOut, ((float)abs(PidOut)) * Divisor);
     } else {
         return;
     }

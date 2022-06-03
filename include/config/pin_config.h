@@ -44,8 +44,8 @@ total  25 - 2
 #ifdef V2_BOARD
 
 // Servos
-#define M1A_PIN 16
-#define M1B_PIN 17
+#define M1A_PIN 46
+#define M1B_PIN 9
 #define M1_POSITION_PIN 10
 
 #define M2A_PIN 21
@@ -90,6 +90,7 @@ total  25 - 2
 #define GPS_TX 20
 
 #define CONFIG_LED_DOUT 48
+#define EXTRA_PWM_OUT 35
 #endif
 
 #define CONFIG_PITCH_CALIB 0
@@ -140,10 +141,10 @@ total  25 - 2
 //
 
 #ifdef DontDefMeBro
+#define M4_POSITION_PIN 1
+#define M3_POSITION_PIN 2
 // 43 TX
 // 44 RX
-#define M2_POSITION_PIN 1
-#define M3_POSITION_PIN 2
 #define M4B_PIN 42
 #define M4A_PIN 41
 #define CONFIG_I2C0_PIN_SCL 40
@@ -151,10 +152,10 @@ total  25 - 2
 #define CONFIG_MPU_PIN_INT 38
 #define M3B_PIN 37
 #define M3A_PIN 36
-// 35
+#define EXTRA_PWM_OUT 35
 // 0 Strapping
 // 45 Strapping
-// 48 RGB
+#define CONFIG_LED_DOUT 48
 #define M2B_PIN 47
 #define M2A_PIN 21
 // 20 USB GPS_RX 19
@@ -167,14 +168,14 @@ total  25 - 2
 #define CONFIG_MOTOR02_PIN 6
 #define CONFIG_MOTOR03_PIN 7
 #define CONFIG_MOTOR04_PIN 15
-#define M1A_PIN 16
-#define M1B_PIN 17
+// 16
+// 17
 #define COM13909_INT0 18
 #define CONFIG_VBat_PIN 8
 // 3 Strapping
-// 46 Strapping
-// 9
-#define M4_POSITION_PIN 10
+#define M1A_PIN 46 // 46 Strapping  only used to determine logging level during boot
+#define M1B_PIN 9
+#define M2_POSITION_PIN 10
 #define SPI_DEV_MISO 11
 #define SPI_DEV_MOSI 12
 #define SPI_DEV_SCK 13
