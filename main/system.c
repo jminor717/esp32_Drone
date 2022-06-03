@@ -24,23 +24,21 @@
  *
  * system.c - Top level module implementation
  */
-
+/* FreeRtos includes */
+#include "system.h"
+#include "adc_esp32.h"
+#include "config.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "ledseq.h"
+#include "log.h"
+#include "param.h"
+#include "platform.h"
+#include "pm_esplane.h"
+#include "version.h"
 #include <stdbool.h>
 
-/* FreeRtos includes */
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-
-#include "version.h"
-#include "config.h"
-#include "param.h"
-#include "log.h"
-#include "ledseq.h"
-#include "adc_esp32.h"
-#include "pm_esplane.h"
-#include "system.h"
-#include "platform.h"
 //#include "storage.h"
 #include "configblock.h"
 #include "worker.h"
@@ -56,8 +54,9 @@
 #endif
 
 #include "comm.h"
-#include "stabilizer.h"
 #include "commander.h"
+#include "stabilizer.h"
+
 //*#include "console.h"
 //#include "mem.h"
 //#include "proximity.h"
@@ -95,35 +94,35 @@ xSemaphoreHandle canStartMutex;
 static StaticSemaphore_t canStartMutexBuffer;
 
 /* Private functions */
-static void systemTask(void *arg);
+static void systemTask(void* arg);
 
 /* Public functions */
 void systemLaunch(void)
 {
-  STATIC_MEM_TASK_CREATE(systemTask, systemTask, SYSTEM_TASK_NAME, NULL, SYSTEM_TASK_PRI);
+    STATIC_MEM_TASK_CREATE(systemTask, systemTask, SYSTEM_TASK_NAME, NULL, SYSTEM_TASK_PRI);
 }
 
 // This must be the first module to be initialized!
 void systemInit(void)
 {
-  if(isInit)
-    return;
+    if (isInit)
+        return;
 
-  DEBUG_PRINT_LOCAL("----------------------------\n");
-  DEBUG_PRINT_LOCAL("%s is up and running!\n", platformConfigGetDeviceTypeName());
+    DEBUG_PRINT_LOCAL("----------------------------\n");
+    DEBUG_PRINT_LOCAL("%s is up and running!\n", platformConfigGetDeviceTypeName());
 
-  canStartMutex = xSemaphoreCreateMutexStatic(&canStartMutexBuffer);
-  xSemaphoreTake(canStartMutex, portMAX_DELAY);
+    canStartMutex = xSemaphoreCreateMutexStatic(&canStartMutexBuffer);
+    xSemaphoreTake(canStartMutex, portMAX_DELAY);
 
-  //wifilinkInit();
-  //sysLoadInit();
+    //wifilinkInit();
+    //sysLoadInit();
 
-  /* Initialized here so that DEBUG_PRINT (buffered) can be used early */
-  debugInit();
-  crtpInit();
-  //consoleInit();
+    /* Initialized here so that DEBUG_PRINT (buffered) can be used early */
+    debugInit();
+    crtpInit();
+    //consoleInit();
 
-  /* DEBUG_PRINT("----------------------------\n");
+    /* DEBUG_PRINT("----------------------------\n");
   DEBUG_PRINT("%s is up and running!\n", platformConfigGetDeviceTypeName());
 
   if (V_PRODUCTION_RELEASE) {
@@ -136,86 +135,86 @@ void systemInit(void)
               *((int*)(MCU_ID_ADDRESS+8)), *((int*)(MCU_ID_ADDRESS+4)),
               *((int*)(MCU_ID_ADDRESS+0)), *((short*)(MCU_FLASH_SIZE_ADDRESS)));*/
 
-  //configblockInit();
-  //storageInit();
-  workerInit();
-  adcInit();
-  //ledseqInit();
-  pmInit();
- // buzzerInit();
-//  peerLocalizationInit();
+    //configblockInit();
+    //storageInit();
+    workerInit();
+    adcInit();
+    //ledseqInit();
+    pmInit();
+    // buzzerInit();
+    //  peerLocalizationInit();
 
 #ifdef APP_ENABLED
-  appInit();
+    appInit();
 #endif
 
-  isInit = true;
+    isInit = true;
 }
 
 bool systemTest()
 {
-  bool pass=isInit;
+    bool pass = isInit;
 
-  //pass &= ledseqTest();
- // pass &= pmTest();
- // DEBUG_PRINTI("pmTest = %d", pass);
- // pass &= workerTest();
-  //DEBUG_PRINTI("workerTest = %d", pass);
-  //pass &= buzzerTest();
-  return pass;
+    //pass &= ledseqTest();
+    // pass &= pmTest();
+    // DEBUG_PRINTI("pmTest = %d", pass);
+    // pass &= workerTest();
+    //DEBUG_PRINTI("workerTest = %d", pass);
+    //pass &= buzzerTest();
+    return pass;
 }
 
 /* Private functions implementation */
 
-void systemTask(void *arg)
+void systemTask(void* arg)
 {
-  bool pass = true;
+    bool pass = true;
 
-  ledInit();
-  ledSet(CHG_LED, 1);
+    ledInit();
+    ledSet(CHG_LED, 255);
 #if (COMMS_MODE == WIFI_COMMS_MODE)
-  wifiInit();
+    wifiInit();
 #endif
-  vTaskDelay(M2T(500));
+    vTaskDelay(M2T(500));
 
 #ifdef DEBUG_QUEUE_MONITOR
-  queueMonitorInit();E
+    queueMonitorInit();
 #endif
 
 #ifdef ENABLE_UART1
-  uart1Init(9600);
+    uart1Init(9600);
 #endif
 #ifdef ENABLE_UART2
-  uart2Init(115200);
+    uart2Init(115200);
 #endif
 
-  //Init the high-levels modules
-  systemInit();
-  DEBUG_PRINTI("finish systemInit");
-  commInit();
-  DEBUG_PRINTI("finish commInit");
-  commanderInit();
-  DEBUG_PRINTI("finish commanderInit");
+    //Init the high-levels modules
+    systemInit();
+    DEBUG_PRINTI("finish systemInit");
+    commInit();
+    DEBUG_PRINTI("finish commInit");
+    commanderInit();
+    DEBUG_PRINTI("finish commanderInit");
 
-  StateEstimatorType estimator = anyEstimator;
-  estimatorKalmanTaskInit();
-  DEBUG_PRINTI("finish estimatorKalmanTaskInit");
-  //deckInit();
-  //estimator = deckGetRequiredEstimator();
-  stabilizerInit(estimator);
-  DEBUG_PRINTI("finish stabilizerInit");
-  //if (deckGetRequiredLowInterferenceRadioMode() && platformConfigPhysicalLayoutAntennasAreClose())
-  //{
-  //  platformSetLowInterferenceRadioMode();
-  //}
-  //soundInit();
-  //memInit();
+    StateEstimatorType estimator = anyEstimator;
+    estimatorKalmanTaskInit();
+    DEBUG_PRINTI("finish estimatorKalmanTaskInit");
+    //deckInit();
+    //estimator = deckGetRequiredEstimator();
+    stabilizerInit(estimator);
+    DEBUG_PRINTI("finish stabilizerInit");
+    //if (deckGetRequiredLowInterferenceRadioMode() && platformConfigPhysicalLayoutAntennasAreClose())
+    //{
+    //  platformSetLowInterferenceRadioMode();
+    //}
+    //soundInit();
+    //memInit();
 
 #ifdef PROXIMITY_ENABLED
-  proximityInit();
+    proximityInit();
 #endif
 
-	/* Test each modules */
+    /* Test each modules */
 #if (COMMS_MODE == WIFI_COMMS_MODE)
     pass &= wifiTest();
     DEBUG_PRINTI("wifilinkTest = %d ", pass);
@@ -242,35 +241,27 @@ void systemTask(void *arg)
     //  pass &= peerLocalizationTest();
 
     // Start the firmware
-    if (pass)
-    {
+    if (pass) {
         selftestPassed = 1;
         systemStart();
         DEBUG_PRINTI("systemStart ! selftestPassed = %d", selftestPassed);
         // soundSetEffect(SND_STARTUP);
         //! ledseqRun(&seq_alive);
         //! ledseqRun(&seq_testPassed);
-    }
-    else
-    {
+    } else {
         selftestPassed = 0;
-        if (systemTest())
-        {
-            while (1)
-            {
+        if (systemTest()) {
+            while (1) {
                 //! ledseqRun(&seq_testFailed);
                 vTaskDelay(M2T(2000));
                 // System can be forced to start by setting the param to 1 from the cfclient
-                if (selftestPassed)
-                {
+                if (selftestPassed) {
                     DEBUG_PRINT("Start forced.\n");
                     systemStart();
                     break;
                 }
             }
-        }
-        else
-        {
+        } else {
             ledInit();
             ledSet(SYS_LED, true);
         }
@@ -284,46 +275,45 @@ void systemTask(void *arg)
         vTaskDelay(portMAX_DELAY);
 }
 
-
 /* Global system variables */
 void systemStart()
 {
-  xSemaphoreGive(canStartMutex);
+    xSemaphoreGive(canStartMutex);
 #ifndef DEBUG_EP2
-  //watchdogInit();
+    //watchdogInit();
 #endif
 }
 
 void systemWaitStart(void)
 {
-  //This permits to guarantee that the system task is initialized before other
-  //tasks waits for the start event.
-  while(!isInit)
-    vTaskDelay(2);
+    //This permits to guarantee that the system task is initialized before other
+    //tasks waits for the start event.
+    while (!isInit)
+        vTaskDelay(2);
 
-  xSemaphoreTake(canStartMutex, portMAX_DELAY);
-  xSemaphoreGive(canStartMutex);
+    xSemaphoreTake(canStartMutex, portMAX_DELAY);
+    xSemaphoreGive(canStartMutex);
 }
 
 void systemSetCanFly(bool val)
 {
-  canFly = val;
+    canFly = val;
 }
 
 bool systemCanFly(void)
 {
-  return canFly;
+    return canFly;
 }
 
 void systemSetArmed(bool val)
 {
-  armed = val;
+    armed = val;
 }
 
 bool systemIsArmed()
 {
 
-  return armed || forceArm;
+    return armed || forceArm;
 }
 // void vApplicationIdleHook( void )
 // {

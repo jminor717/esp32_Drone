@@ -22,11 +22,11 @@
 #ifndef __LED_H__
 #define __LED_H__
 
-#include <stdbool.h>
 #include "config/pin_config.h"
+#include <stdbool.h>
 
 #define LED_GPIO_BLUE  0
-#define LED_GPIO_GREEN 1  
+#define LED_GPIO_GREEN 1
 #define LED_GPIO_RED   2
 
 
@@ -40,7 +40,11 @@
 
 #define LED_NUM 3
 
-typedef enum {LED_BLUE = 0, LED_RED, LED_GREEN} led_t;
+typedef enum {
+    LED_BLUE = 0,
+    LED_RED,
+    LED_GREEN,
+} led_t;
 
 void ledInit();
 bool ledTest();
@@ -52,9 +56,11 @@ void ledClearAll(void);
 void ledSetAll(void);
 
 // Procedures to set the status of the LEDs
-void ledSet(led_t led, bool value);
+void ledSet(led_t led, uint8_t value);
 
-void ledTask(void *param);
+void SetLedRaw(uint8_t r, uint8_t g, uint8_t b);
+
+void ledTask(void* param);
 
 //Legacy functions
 #define ledSetRed(VALUE) ledSet(LED_RED, VALUE)
