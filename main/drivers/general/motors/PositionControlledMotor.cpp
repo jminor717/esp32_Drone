@@ -96,8 +96,8 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
         uint32_t feedback = analogReadRaw(PositionFeedbackPin);
         PidOut = myPID.step(Position >> 4, feedback - 2047);
-        if (PositionFeedbackPin == 10)
-            DEBUG_PRINTI("%d,%d    %d  __ %f", feedback - 2047, Position >> 4, PidOut, ((float)abs(PidOut)) * Divisor);
+        // if (PositionFeedbackPin == 10)
+        //     DEBUG_PRINTI("%d,%d    %d  __ %f", feedback - 2047, Position >> 4, PidOut, ((float)abs(PidOut)) * Divisor);
     } else {
         return;
     }

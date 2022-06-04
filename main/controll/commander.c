@@ -26,18 +26,20 @@
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/task.h"
+
 
 #include "commander.h"
 #include "crtp_commander.h"
 #include "crtp_commander_high_level.h"
 
 #include "cf_math.h"
-#include "param.h"
-#include "stm32_legacy.h"
-#include "static_mem.h"
 #include "debug_cf.h"
+#include "param.h"
+#include "static_mem.h"
+#include "stm32_legacy.h"
+
 
 static bool isInit;
 const static setpoint_t nullSetpoint;
@@ -66,96 +68,95 @@ void commanderInit(void)
     xQueueSend(priorityQueue, &priorityDisable, 0);
 
     crtpCommanderInit();
-    crtpCommanderHighLevelInit();
+    // crtpCommanderHighLevelInit();
     lastUpdate = xTaskGetTickCount();
 
     isInit = true;
 }
 
-void commanderSetSetpoint(setpoint_t *setpoint, int priority)
+void commanderSetSetpoint(setpoint_t* setpoint, int priority)
 {
-  int currentPriority;
+    int currentPriority;
 
-  const BaseType_t peekResult = xQueuePeek(priorityQueue, &currentPriority, 0);
-  ASSERT(peekResult == pdTRUE);
+    const BaseType_t peekResult = xQueuePeek(priorityQueue, &currentPriority, 0);
+    ASSERT(peekResult == pdTRUE);
 
-  if (priority >= currentPriority) {
-      //?DEBUG_PRINTI("xQueueOverwrite commanderSetSetpoint");
-      setpoint->timestamp = xTaskGetTickCount();
-      // This is a potential race but without effect on functionality
-      xQueueOverwrite(setpointQueue, setpoint);
-      xQueueOverwrite(priorityQueue, &priority);
-      // Send the high-level planner to idle so it will forget its current state
-      // and start over if we switch from low-level to high-level in the future.
-      crtpCommanderHighLevelStop();
-  }
+    if (priority >= currentPriority) {
+        //?DEBUG_PRINTI("xQueueOverwrite commanderSetSetpoint");
+        setpoint->timestamp = xTaskGetTickCount();
+        // This is a potential race but without effect on functionality
+        xQueueOverwrite(setpointQueue, setpoint);
+        xQueueOverwrite(priorityQueue, &priority);
+        // Send the high-level planner to idle so it will forget its current state
+        // and start over if we switch from low-level to high-level in the future.
+        //! crtpCommanderHighLevelStop();
+    }
 }
 
 void commanderNotifySetpointsStop(int remainValidMillisecs)
 {
-  uint32_t currentTime = xTaskGetTickCount();
-  int timeSetback = MIN(
-    COMMANDER_WDT_TIMEOUT_SHUTDOWN - M2T(remainValidMillisecs),
-    currentTime
-  );
-  //?DEBUG_PRINTI("xQueueOverwrite commanderNotifySetpointsStop");
-  xQueuePeek(setpointQueue, &tempSetpoint, 0);
-  tempSetpoint.timestamp = currentTime - timeSetback;
-  xQueueOverwrite(setpointQueue, &tempSetpoint);
-  crtpCommanderHighLevelTellState(&lastState);
+    uint32_t currentTime = xTaskGetTickCount();
+    int timeSetback = MIN(
+        COMMANDER_WDT_TIMEOUT_SHUTDOWN - M2T(remainValidMillisecs),
+        currentTime);
+    //?DEBUG_PRINTI("xQueueOverwrite commanderNotifySetpointsStop");
+    xQueuePeek(setpointQueue, &tempSetpoint, 0);
+    tempSetpoint.timestamp = currentTime - timeSetback;
+    xQueueOverwrite(setpointQueue, &tempSetpoint);
+    //   !crtpCommanderHighLevelTellState(&lastState);
 }
 
-void commanderGetSetpoint(setpoint_t *setpoint, const state_t *state)
+void commanderGetSetpoint(setpoint_t* setpoint, const state_t* state)
 {
-  xQueuePeek(setpointQueue, setpoint, 0);
-  lastUpdate = setpoint->timestamp;
-  uint32_t currentTime = xTaskGetTickCount();
+    xQueuePeek(setpointQueue, setpoint, 0);
+    lastUpdate = setpoint->timestamp;
+    uint32_t currentTime = xTaskGetTickCount();
 
-  if ((currentTime - setpoint->timestamp) > COMMANDER_WDT_TIMEOUT_SHUTDOWN) {
-    if (enableHighLevel) {
-      crtpCommanderHighLevelGetSetpoint(setpoint, state);
+    if ((currentTime - setpoint->timestamp) > COMMANDER_WDT_TIMEOUT_SHUTDOWN) {
+        if (enableHighLevel) {
+            //!   crtpCommanderHighLevelGetSetpoint(setpoint, state);
+        }
+        if (!enableHighLevel) { //!|| crtpCommanderHighLevelIsStopped()
+            memcpy(setpoint, &nullSetpoint, sizeof(nullSetpoint));
+        }
+    } else if ((currentTime - setpoint->timestamp) > COMMANDER_WDT_TIMEOUT_STABILIZE) {
+        //?DEBUG_PRINTI("xQueueOverwrite commanderGetSetpoint");
+        xQueueOverwrite(priorityQueue, &priorityDisable);
+        // Leveling ...
+        setpoint->mode.x = modeDisable;
+        setpoint->mode.y = modeDisable;
+        setpoint->mode.roll = modeAbs;
+        setpoint->mode.pitch = modeAbs;
+        setpoint->mode.yaw = modeVelocity;
+        setpoint->attitude.roll = 0;
+        setpoint->attitude.pitch = 0;
+        setpoint->attitudeRate.yaw = 0;
+        // Keep Z as it is
     }
-    if (!enableHighLevel || crtpCommanderHighLevelIsStopped()) {
-      memcpy(setpoint, &nullSetpoint, sizeof(nullSetpoint));
-    }
-  } else if ((currentTime - setpoint->timestamp) > COMMANDER_WDT_TIMEOUT_STABILIZE) {
-      //?DEBUG_PRINTI("xQueueOverwrite commanderGetSetpoint");
-      xQueueOverwrite(priorityQueue, &priorityDisable);
-      // Leveling ...
-      setpoint->mode.x = modeDisable;
-      setpoint->mode.y = modeDisable;
-      setpoint->mode.roll = modeAbs;
-      setpoint->mode.pitch = modeAbs;
-      setpoint->mode.yaw = modeVelocity;
-      setpoint->attitude.roll = 0;
-      setpoint->attitude.pitch = 0;
-      setpoint->attitudeRate.yaw = 0;
-      // Keep Z as it is
-  }
-  // This copying is not strictly necessary because stabilizer.c already keeps
-  // a static state_t containing the most recent state estimate. However, it is
-  // not accessible by the public interface.
-  lastState = *state;
+    // This copying is not strictly necessary because stabilizer.c already keeps
+    // a static state_t containing the most recent state estimate. However, it is
+    // not accessible by the public interface.
+    lastState = *state;
 }
 
 bool commanderTest(void)
 {
-  return isInit;
+    return isInit;
 }
 
 uint32_t commanderGetInactivityTime(void)
 {
-  return xTaskGetTickCount() - lastUpdate;
+    return xTaskGetTickCount() - lastUpdate;
 }
 
 int commanderGetActivePriority(void)
 {
-  int priority;
+    int priority;
 
-  const BaseType_t peekResult = xQueuePeek(priorityQueue, &priority, 0);
-  ASSERT(peekResult == pdTRUE);
+    const BaseType_t peekResult = xQueuePeek(priorityQueue, &priority, 0);
+    ASSERT(peekResult == pdTRUE);
 
-  return priority;
+    return priority;
 }
 
 PARAM_GROUP_START(commander)

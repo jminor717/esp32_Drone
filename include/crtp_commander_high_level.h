@@ -34,7 +34,7 @@ SOFTWARE.
 
 /*
 Header file for high-level commander that computes smooth setpoints based on high-level inputs.
-*/
+
 
 #ifndef CRTP_COMMANDER_HIGH_LEVEL_H_
 #define CRTP_COMMANDER_HIGH_LEVEL_H_
@@ -55,10 +55,10 @@ typedef enum {
 } crtpCommanderTrajectoryType_t;
 
 /* Public functions */
-void crtpCommanderHighLevelInit(void);
+//! void crtpCommanderHighLevelInit(void);
 
 // Retrieves the current setpoint
-void crtpCommanderHighLevelGetSetpoint(setpoint_t* setpoint, const state_t *state);
+//! void crtpCommanderHighLevelGetSetpoint(setpoint_t* setpoint, const state_t *state);
 
 // When flying sequences of high-level commands, the high-level commander uses
 // its own history of commands to determine the initial conditions of the next
@@ -66,10 +66,10 @@ void crtpCommanderHighLevelGetSetpoint(setpoint_t* setpoint, const state_t *stat
 // setpoint mode to high-level, any past command history is invalid because of
 // the intervening low-level commands. Therefore, we must tell the high-level
 // commander what initial conditions to use for trajectory planning.
-void crtpCommanderHighLevelTellState(const state_t *state);
+//! void crtpCommanderHighLevelTellState(const state_t *state);
 
 // True if we have landed or emergency-stopped.
-bool crtpCommanderHighLevelIsStopped();
+//! bool crtpCommanderHighLevelIsStopped();
 
 // Public API - can be used from an app
 
@@ -80,7 +80,7 @@ bool crtpCommanderHighLevelIsStopped();
  * @param duration_s       time it should take until target height is reached (s)
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelTakeoff(const float absoluteHeight_m, const float duration_s);
+//! int crtpCommanderHighLevelTakeoff(const float absoluteHeight_m, const float duration_s);
 
 /**
  * @brief vertical takeoff from current x-y position to given absolute or relative
@@ -91,8 +91,7 @@ int crtpCommanderHighLevelTakeoff(const float absoluteHeight_m, const float dura
  * @param relative         whether the height is relative to the current position
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelTakeoffWithVelocity(const float height_m, const float velocity_m_s, bool relative);
-
+//! int crtpCommanderHighLevelTakeoffWithVelocity(const float height_m, const float velocity_m_s, bool relative);
 
 /**
  * @brief vertical takeoff from current x-y position to given height
@@ -102,7 +101,7 @@ int crtpCommanderHighLevelTakeoffWithVelocity(const float height_m, const float 
  * @param yaw              yaw (rad)
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelTakeoffYaw(const float absoluteHeight_m, const float duration_s, const float yaw);
+//! int crtpCommanderHighLevelTakeoffYaw(const float absoluteHeight_m, const float duration_s, const float yaw);
 
 /**
  * @brief vertical land from current x-y position to given height
@@ -111,7 +110,7 @@ int crtpCommanderHighLevelTakeoffYaw(const float absoluteHeight_m, const float d
  * @param duration_s       time it should take until target height is reached (s)
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelLand(const float absoluteHeight_m, const float duration_s);
+//! int crtpCommanderHighLevelLand(const float absoluteHeight_m, const float duration_s);
 
 /**
  * @brief vertical land from current x-y position to given absolute or relative
@@ -122,7 +121,7 @@ int crtpCommanderHighLevelLand(const float absoluteHeight_m, const float duratio
  * @param relative         whether the height is relative to the current position
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelLandWithVelocity(const float height_m, const float velocity_m_s, bool relative);
+//! int crtpCommanderHighLevelLandWithVelocity(const float height_m, const float velocity_m_s, bool relative);
 
 /**
  * @brief vertical land from current x-y position to given height
@@ -132,7 +131,7 @@ int crtpCommanderHighLevelLandWithVelocity(const float height_m, const float vel
  * @param yaw              yaw (rad)
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelLandYaw(const float absoluteHeight_m, const float duration_s, const float yaw);
+//! int crtpCommanderHighLevelLandYaw(const float absoluteHeight_m, const float duration_s, const float yaw);
 
 /**
  * @brief stops the current trajectory (turns off the motors)
@@ -144,7 +143,7 @@ int crtpCommanderHighLevelLandYaw(const float absoluteHeight_m, const float dura
  * should never fail, but we provide the error code nevertheless for sake of
  * consistency with the other high-level commander functions.
  */
-int crtpCommanderHighLevelStop();
+//! int crtpCommanderHighLevelStop();
 
 /**
  * @brief Go to an absolute or relative position
@@ -157,14 +156,14 @@ int crtpCommanderHighLevelStop();
  * @param relative   true if x, y, z is relative to the current position
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelGoTo(const float x, const float y, const float z, const float yaw, const float duration_s, const bool relative);
+//! int crtpCommanderHighLevelGoTo(const float x, const float y, const float z, const float yaw, const float duration_s, const bool relative);
 
 /**
  * @brief Returns whether the trajectory with the given ID is defined
  *
  * @param trajectoryId The id of the trajectory
  */
-bool crtpCommanderHighLevelIsTrajectoryDefined(uint8_t trajectoryId);
+//! bool crtpCommanderHighLevelIsTrajectoryDefined(uint8_t trajectoryId);
 
 /**
  * @brief starts executing a specified trajectory
@@ -177,7 +176,7 @@ bool crtpCommanderHighLevelIsTrajectoryDefined(uint8_t trajectoryId);
  * @param reversed     set to True, if trajectory should be executed in reverse
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelStartTrajectory(const uint8_t trajectoryId, const float timeScale, const bool relative, const bool reversed);
+//! int crtpCommanderHighLevelStartTrajectory(const uint8_t trajectoryId, const float timeScale, const bool relative, const bool reversed);
 
 /**
  * @brief Define a trajectory that has previously been uploaded to memory.
@@ -188,14 +187,14 @@ int crtpCommanderHighLevelStartTrajectory(const uint8_t trajectoryId, const floa
  * @param nPieces      Nr of pieces in the trajectory
  * @return zero if the command succeeded, an error code otherwise
  */
-int crtpCommanderHighLevelDefineTrajectory(const uint8_t trajectoryId, const crtpCommanderTrajectoryType_t type, const uint32_t offset, const uint8_t nPieces);
+//! int crtpCommanderHighLevelDefineTrajectory(const uint8_t trajectoryId, const crtpCommanderTrajectoryType_t type, const uint32_t offset, const uint8_t nPieces);
 
 /**
  * @brief Get the size of the allocated trajectory memory
  *
  * @return uint32_t The size of the trajectory memory in bytes
  */
-uint32_t crtpCommanderHighLevelTrajectoryMemSize();
+//! uint32_t crtpCommanderHighLevelTrajectoryMemSize();
 
 /**
  * @brief Copy trajectory data to the trajectory memeory. After the copy crtpCommanderHighLevelDefineTrajectory()
@@ -208,7 +207,7 @@ uint32_t crtpCommanderHighLevelTrajectoryMemSize();
  * @return true   If data was copied
  * @return false  If data is too large
  */
-bool crtpCommanderHighLevelWriteTrajectory(const uint32_t offset, const uint32_t length, const uint8_t* data);
+//! bool crtpCommanderHighLevelWriteTrajectory(const uint32_t offset, const uint32_t length, const uint8_t* data);
 
 /**
  * @brief Copy data from the trajectory memory.
@@ -219,7 +218,7 @@ bool crtpCommanderHighLevelWriteTrajectory(const uint32_t offset, const uint32_t
  * @return true              If data was copied
  * @return false             If length is too large
  */
-bool crtpCommanderHighLevelReadTrajectory(const uint32_t offset, const uint32_t length, uint8_t* destination);
+//! bool crtpCommanderHighLevelReadTrajectory(const uint32_t offset, const uint32_t length, uint8_t* destination);
 
 /**
  * @brief Query if the current trajectory has finished
@@ -227,6 +226,6 @@ bool crtpCommanderHighLevelReadTrajectory(const uint32_t offset, const uint32_t 
  * @return true   The trajectory has reached the end
  * @return false  The trejectory is still running
  */
-bool crtpCommanderHighLevelIsTrajectoryFinished();
+//! bool crtpCommanderHighLevelIsTrajectoryFinished();
 
-#endif /* CRTP_COMMANDER_HIGH_LEVEL_H_ */
+//! #endif /* CRTP_COMMANDER_HIGH_LEVEL_H_ */

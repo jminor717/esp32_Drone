@@ -36,13 +36,13 @@ SOFTWARE.
 /*
 High-level commander: computes smooth setpoints based on high-level inputs
 such as: take-off, landing, polynomial trajectories.
-*/
+
 
 #include <string.h>
 #include <errno.h>
 #include <math.h>
 
-/* FreeRtos includes */
+// FreeRtos includes 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -120,7 +120,7 @@ static bool handleMemWrite(const uint32_t memAddr, const uint8_t writeLen, const
 //   .write = handleMemWrite,
 // };
 
-STATIC_MEM_TASK_ALLOC(crtpCommanderHighLevelTask, CMD_HIGH_LEVEL_TASK_STACKSIZE);
+//! STATIC_MEM_TASK_ALLOC(crtpCommanderHighLevelTask, CMD_HIGH_LEVEL_TASK_STACKSIZE);
 
 struct data_set_group_mask {
   uint8_t groupMask; // mask for which groups this CF belongs to
@@ -808,3 +808,5 @@ PARAM_GROUP_START(hlCommander)
 PARAM_ADD(PARAM_FLOAT, vtoff, &defaultTakeoffVelocity)
 PARAM_ADD(PARAM_FLOAT, vland, &defaultLandingVelocity)
 PARAM_GROUP_STOP(hlCommander)
+
+//*/
