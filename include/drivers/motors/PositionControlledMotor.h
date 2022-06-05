@@ -28,7 +28,7 @@ private:
     mcpwm_timer_t this_Timer;
     uint16_t GPIOa, GPIOb, PositionFeedbackPin;
     uint8_t PID_Loop_Offset;
-    int16_t previous_Duty;
+    float previous_Duty;
     MtrDirection current_Direction;
     bool chanel_A_State;
     bool chanel_B_State;

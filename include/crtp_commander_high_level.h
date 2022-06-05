@@ -54,7 +54,7 @@ typedef enum {
   // Future types might include versions without yaw
 } crtpCommanderTrajectoryType_t;
 
-/* Public functions */
+// Public functions */
 //! void crtpCommanderHighLevelInit(void);
 
 // Retrieves the current setpoint

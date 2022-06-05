@@ -177,6 +177,7 @@
         "OPMODE",
         "Rssi",
         "RSSI",
+        "setpoint",
         "vbat",
         "vref",
         "Wunused",

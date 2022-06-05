@@ -7,6 +7,6 @@
 [submodule "Submodules/DShotRMT"]
 	path = Submodules/DShotRMT
 	url = https://github.com/ahalekelly/DShotRMT.git
-[submodule "Submodules/FastPID"]
-	path = Submodules/FastPID
-	url = https://github.com/mike-matera/FastPID.git
+[submodule "Submodules/Arduino-PID-Library"]
+	path = Submodules/Arduino-PID-Library
+	url = https://github.com/br3ttb/Arduino-PID-Library.git
