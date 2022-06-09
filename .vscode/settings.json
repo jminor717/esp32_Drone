@@ -172,6 +172,7 @@
         "crtp",
         "dshot",
         "IRAM",
+        "KALMAN",
         "Ledc",
         "mcpwm",
         "OPMODE",

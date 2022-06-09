@@ -99,8 +99,8 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
         setpoint = Position;
         input = feedback;
         myPID3.Compute();
-        if (PositionFeedbackPin == 10)
-            DEBUG_PRINTI("%d,%d::%d        %.2f", feedback, Position, feedback - Position, output);
+        // if (PositionFeedbackPin == 10)
+        //     DEBUG_PRINTI("%d,%d::%d        %.2f", feedback, Position, feedback - Position, output);
     } else {
         return;
     }

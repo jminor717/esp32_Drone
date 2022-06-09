@@ -177,18 +177,18 @@
 #define configBASE_STACK_SIZE 2048
 
 //Task stack sizes
-#define SYSTEM_TASK_STACKSIZE         (6 * configBASE_STACK_SIZE)
+#define SYSTEM_TASK_STACKSIZE         (4 * configBASE_STACK_SIZE)
 #define LEDSEQCMD_TASK_STACKSIZE      (2 * configBASE_STACK_SIZE)
 #define ADC_TASK_STACKSIZE            (1 * configBASE_STACK_SIZE)
-#define PM_TASK_STACKSIZE             (4 * configBASE_STACK_SIZE)
+#define PM_TASK_STACKSIZE             (2 * configBASE_STACK_SIZE)
 #define CRTP_TX_TASK_STACKSIZE        (2 * configBASE_STACK_SIZE)
-#define CRTP_RX_TASK_STACKSIZE        (6 * configBASE_STACK_SIZE)
+#define CRTP_RX_TASK_STACKSIZE        (3 * configBASE_STACK_SIZE)
 #define CRTP_RXTX_TASK_STACKSIZE      (1 * configBASE_STACK_SIZE)
 #define LOG_TASK_STACKSIZE            (3 * configBASE_STACK_SIZE)
 #define MEM_TASK_STACKSIZE            (2 * configBASE_STACK_SIZE)
 #define PARAM_TASK_STACKSIZE          (2 * configBASE_STACK_SIZE)
-#define SENSORS_TASK_STACKSIZE        (5 * configBASE_STACK_SIZE)
-#define STABILIZER_TASK_STACKSIZE     (5 * configBASE_STACK_SIZE)
+#define SENSORS_TASK_STACKSIZE        (2 * configBASE_STACK_SIZE)
+#define STABILIZER_TASK_STACKSIZE     (4 * configBASE_STACK_SIZE)
 #define NRF24LINK_TASK_STACKSIZE      (1 * configBASE_STACK_SIZE)
 #define ESKYLINK_TASK_STACKSIZE       (1 * configBASE_STACK_SIZE)
 #define SYSLINK_TASK_STACKSIZE        (1 * configBASE_STACK_SIZE)
@@ -201,7 +201,7 @@
 #define EXTRX_TASK_STACKSIZE          (1 * configBASE_STACK_SIZE)
 #define UART_RX_TASK_STACKSIZE        (1 * configBASE_STACK_SIZE)
 #define ZRANGER_TASK_STACKSIZE        (2 * configBASE_STACK_SIZE)
-#define ZRANGER2_TASK_STACKSIZE       (4 * configBASE_STACK_SIZE)
+#define ZRANGER2_TASK_STACKSIZE       (2 * configBASE_STACK_SIZE)
 #define FLOW_TASK_STACKSIZE           (3 * configBASE_STACK_SIZE)
 #define USDLOG_TASK_STACKSIZE         (2 * configBASE_STACK_SIZE)
 #define USDWRITE_TASK_STACKSIZE       (2 * configBASE_STACK_SIZE)
@@ -211,7 +211,7 @@
 #define ACTIVEMARKER_TASK_STACKSIZE   (1 * configBASE_STACK_SIZE)
 #define AI_DECK_TASK_STACKSIZE        (1 * configBASE_STACK_SIZE)
 #define UART2_TASK_STACKSIZE          (1 * configBASE_STACK_SIZE)
-
+#define KALMAN_TASK_STACKSIZE         configMINIMAL_STACK_SIZE + (2 * configBASE_STACK_SIZE)
 //The radio channel. From 0 to 125
 //TODO:
 #define RADIO_RATE_2M 2

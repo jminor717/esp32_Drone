@@ -72,9 +72,9 @@ STATIC_MEM_QUEUE_ALLOC(txQueue, RADIOLINK_TX_QUEUE_SIZE, sizeof(CRTPPacket));
 static xQueueHandle crtpPacketDelivery;
 STATIC_MEM_QUEUE_ALLOC(crtpPacketDelivery, RADIOLINK_CRTP_QUEUE_SIZE, sizeof(CRTPPacket));
 
-STATIC_MEM_TASK_ALLOC(radioLinkTask, SYSTEM_TASK_STACKSIZE); //todo test lowering the stack size
+STATIC_MEM_TASK_ALLOC(radioLinkTask, LEDSEQCMD_TASK_STACKSIZE); // todo test lowering the stack size
 
-STATIC_MEM_TASK_ALLOC(radioISRTask, SYSTEM_TASK_STACKSIZE);
+STATIC_MEM_TASK_ALLOC(radioISRTask, ADC_TASK_STACKSIZE);
 
 /* Allow ISR to comunicate with main task */
 static xSemaphoreHandle RF69InteruptMutex;

@@ -331,7 +331,7 @@ static void stabilizerTask(void* param)
                 // DEBUG_PRINTI("powering Motors");
                 powerDistribution(&control);
                 if (tick % 100 == 0) {
-                    SetLedRaw(control.roll >> 8, control.pitch >> 8, control.yaw >> 8);
+                    SetLedRaw((control.roll + 32768) >> 8, (control.pitch + 32768) >> 8, (control.yaw + 32768) >> 8);
                     //DEBUG_PRINTI("set thrust to %f, R:%d, P:%d, Y:%d", control.thrust, control.roll, control.pitch, control.yaw);
                 }
             }
