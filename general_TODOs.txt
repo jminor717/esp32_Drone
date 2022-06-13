@@ -1,5 +1,7 @@
 1. issues are for chumps
 2. add switch to allow for on off control other than just connecting and disconnecting the battery
-3. correct pin-out so that plugging in the battery doesn't cause the props to immediately start spinning
-4. buy the level shifter needed to talk to the led's instead of forgetting to add it to cart
-5. 
+
+REV 3.1 board improvements
+1. power status LEDs on board
+2. MISO line filer on spi bus
+3. 

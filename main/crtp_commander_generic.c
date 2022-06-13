@@ -367,7 +367,7 @@ static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned
     // setpoint->attitude.roll = getChannelUnitMultiplier(DataOut.Rx, 0, 255);
     // setpoint->attitude.pitch = getChannelUnitMultiplier(DataOut.Ry, 0, 255);
 
-    setpoint->thrust = (DataOut.R2 + DataOut.L2) * 128.5;
+    setpoint->thrust = (DataOut.R2 + DataOut.L2) * INT8_MAX;
 
     setpoint->mode.x = modeDisable;
     setpoint->mode.y = modeDisable;
@@ -378,9 +378,9 @@ static void ControllerDecoder(setpoint_t *setpoint, uint8_t type, const unsigned
     setpoint->mode.pitch = modeVelocity;
     setpoint->mode.yaw = modeDisable;
 
-    setpoint->attitudeRate.roll = DataOut.Rx * 255;
-    setpoint->attitudeRate.pitch = DataOut.Ry * 255; // UINT16_MAX / 255
-    setpoint->attitudeRate.yaw = DataOut.Lx * 255;
+    setpoint->attitudeRate.roll = DataOut.Rx * UINT8_MAX;
+    setpoint->attitudeRate.pitch = DataOut.Ry * UINT8_MAX; // UINT16_MAX / 255
+    setpoint->attitudeRate.yaw = DataOut.Lx * UINT8_MAX;
 }
 
 /* ---===== 3 - packetDecoders array =====--- */

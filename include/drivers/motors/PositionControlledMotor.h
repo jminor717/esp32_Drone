@@ -1,18 +1,22 @@
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
 
 #include "driver/mcpwm.h"
 
-enum MtrDirection
-{
+enum MtrDirection {
     Stationary,
     Forward,
     Reverse
 };
 
-class PosContMot
-{
+
+struct MtrConfig {
+    
+};
+
+class PosContMot {
 public:
     static PosContMot PosContMotCreate(mcpwm_unit_t unit, mcpwm_timer_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin);
     static PosContMot PosContMotCreate(uint8_t unit, uint8_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin);

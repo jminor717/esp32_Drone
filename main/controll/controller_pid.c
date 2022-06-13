@@ -1,16 +1,19 @@
 
-#include "stabilizer.h"
 #include "../common/stabilizer_types.h"
+#include "stabilizer.h"
+
 
 #include "attitude_controller.h"
-#include "sensfusion6.h"
-#include "position_controller.h"
 #include "controller_pid.h"
+#include "position_controller.h"
+#include "sensfusion6.h"
 
-#include "log.h"
+
 #include "debug_cf.h"
-#include "param.h"
+#include "log.h"
 #include "math3d.h"
+#include "param.h"
+
 
 #define ATTITUDE_UPDATE_DT (float)(1.0f / ATTITUDE_RATE)
 
@@ -49,95 +52,80 @@ static float capAngle(float angle)
 {
     float result = angle;
 
-    while (result > 180.0f)
-    {
+    while (result > 180.0f) {
         result -= 360.0f;
     }
 
-    while (result < -180.0f)
-    {
+    while (result < -180.0f) {
         result += 360.0f;
     }
 
     return result;
 }
 
-void controllerPid(control_t *control, setpoint_t *setpoint,
-                   const sensorData_t *sensors,
-                   const state_t *state,
-                   const uint32_t tick)
+void controllerPid(control_t* control, setpoint_t* setpoint,
+    const sensorData_t* sensors,
+    const state_t* state,
+    const uint32_t tick)
 {
-    //DEBUG_PRINTI("controller_Pid_Test start Update");
+    // DEBUG_PRINTI("controller_Pid_Test start Update");
 
-    if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick))
-    {
-        // Rate-controled YAW is moving YAW angle setpoint
-        if (setpoint->mode.yaw == modeVelocity)
-        {
+    if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick)) {
+        // Rate-controled YAW is moving YAW angle setpoint modeAngularVelocity
+        if (setpoint->mode.yaw == modeVelocity) {
             attitudeDesired.yaw += setpoint->attitudeRate.yaw * ATTITUDE_UPDATE_DT;
-        }
-        else
-        {
+        } else {
             attitudeDesired.yaw = setpoint->attitude.yaw;
         }
 
         attitudeDesired.yaw = capAngle(attitudeDesired.yaw);
     }
 
-    if (RATE_DO_EXECUTE(POSITION_RATE, tick))
-    {
+    if (RATE_DO_EXECUTE(POSITION_RATE, tick)) {
         positionController(&actuatorThrust, &attitudeDesired, setpoint, state);
     }
 
-    if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick))
-    {
+    if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick)) {
         // Switch between manual and automatic position control
-        if (setpoint->mode.z == modeDisable)
-        {
+        if (setpoint->mode.z == modeDisable) {
             actuatorThrust = setpoint->thrust;
         }
-        if (setpoint->mode.x == modeDisable || setpoint->mode.y == modeDisable)
-        {
+        if (setpoint->mode.x == modeDisable || setpoint->mode.y == modeDisable) {
             attitudeDesired.roll = setpoint->attitude.roll;
             attitudeDesired.pitch = setpoint->attitude.pitch;
         }
 
         attitudeControllerCorrectAttitudePID(state->attitude.roll, state->attitude.pitch, state->attitude.yaw,
-                                             attitudeDesired.roll, attitudeDesired.pitch, attitudeDesired.yaw,
-                                             &rateDesired.roll, &rateDesired.pitch, &rateDesired.yaw);
+            attitudeDesired.roll, attitudeDesired.pitch, attitudeDesired.yaw,
+            &rateDesired.roll, &rateDesired.pitch, &rateDesired.yaw);
 
         // For roll and pitch, if velocity mode, overwrite rateDesired with the setpoint
         // value. Also reset the PID to avoid error buildup, which can lead to unstable
         // behavior if level mode is engaged later
-        if (setpoint->mode.roll == modeVelocity)
-        {
+        if (setpoint->mode.roll == modeVelocity) {
             rateDesired.roll = setpoint->attitudeRate.roll;
             attitudeControllerResetRollAttitudePID();
         }
-        if (setpoint->mode.pitch == modeVelocity)
-        {
+        if (setpoint->mode.pitch == modeVelocity) {
             rateDesired.pitch = setpoint->attitudeRate.pitch;
             attitudeControllerResetPitchAttitudePID();
         }
 
         // TODO: Investigate possibility to subtract gyro drift.
         attitudeControllerCorrectRatePID(sensors->gyro.x, -sensors->gyro.y, sensors->gyro.z,
-                                         rateDesired.roll, rateDesired.pitch, rateDesired.yaw);
+            rateDesired.roll, rateDesired.pitch, rateDesired.yaw);
 
         attitudeControllerGetActuatorOutput(&control->roll,
-                                            &control->pitch,
-                                            &control->yaw);
+            &control->pitch,
+            &control->yaw);
 
-        if (setpoint->mode.roll == modeDisable)
-        {
+        if (setpoint->mode.roll == modeDisable) {
             control->roll = setpoint->attitudeRate.roll;
         }
-        if (setpoint->mode.pitch == modeDisable)
-        {
+        if (setpoint->mode.pitch == modeDisable) {
             control->pitch = setpoint->attitudeRate.pitch;
         }
-        if (setpoint->mode.yaw == modeDisable)
-        {
+        if (setpoint->mode.yaw == modeDisable) {
             control->yaw = setpoint->attitudeRate.yaw;
         }
 
@@ -153,17 +141,13 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
         accelz = sensors->acc.z;
     }
 
-    if (tiltCompensationEnabled)
-    {
+    if (tiltCompensationEnabled) {
         control->thrust = actuatorThrust / sensfusion6GetInvThrustCompensationForTilt();
-    }
-    else
-    {
+    } else {
         control->thrust = actuatorThrust;
     }
 
-    if (control->thrust == 0)
-    {
+    if (control->thrust == 0) {
         control->thrust = 0;
         control->roll = 0;
         control->pitch = 0;

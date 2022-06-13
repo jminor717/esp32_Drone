@@ -84,12 +84,12 @@ bool SameSign(int x, int y)
  */
 void PosContMot::SetPos(int32_t Position, uint32_t Tick)
 {
-
-
     // int16_t PidOut = previous_Duty;
     uint32_t feedback = analogReadRaw(PositionFeedbackPin);
     if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
         Position = Position >> 4;
+        Position += 2047;
+        //feedback -= 2047;
         if (Position < Min_Angle) {
             Position = Min_Angle;
         } else if (Position > Max_Angle) {

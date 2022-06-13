@@ -48,7 +48,7 @@ static const adc_bits_width_t width = SOC_ADC_DIGI_MAX_BITWIDTH; // SOC_ADC_DIGI
 static const adc_atten_t atten = ADC_ATTEN_DB_11; // 11dB attenuation (ADC_ATTEN_DB_11) gives full-scale voltage 3.9V
 static const adc_unit_t unit = ADC_UNIT_1;
 #define DEFAULT_VREF 1100 // Use adc2_vref_to_gpio() to obtain a better estimate
-#define NO_OF_SAMPLES 4 // Multisampling
+#define NO_OF_SAMPLES 20 // Multisampling
 #define SAMPLE_RATE 10000
 
 #if CONFIG_IDF_TARGET_ESP32
@@ -78,8 +78,6 @@ const adc_unit_t GPIO_TO_ADC_UNIT[] = {
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8
 };
 #endif
-
-#define ActiveChanels 5
 
 #if CONFIG_IDF_TARGET_ESP32
 #define ADC_RESULT_BYTE 2
@@ -174,6 +172,8 @@ void continuous_adc_Test()
     memset(result, 0xcc, NO_OF_SAMPLES);
 
     while (1) {
+        uint8_t cnt[11] = { 0 };
+        uint32_t sume[11] = { 0 };
         // todo Make this a task and pass data between this and the analog reads
         ret = adc_digi_read_bytes(result, NO_OF_SAMPLES * ADC_RESULT_BYTE, &ret_num, ADC_MAX_DELAY);
         if (ret == ESP_OK || ret == ESP_ERR_INVALID_STATE) {
@@ -194,7 +194,8 @@ void continuous_adc_Test()
                  * Either decrease the conversion speed, or increase the frequency you call `adc_digi_read_bytes`
                  */
             }
-
+            memset(cnt, 0, 10);
+            memset(sume, 0, 10);
             ESP_LOGI("TASK:", "ret is %x, ret_num is %d", ret, ret_num);
             for (int i = 0; i < ret_num; i += ADC_RESULT_BYTE) {
                 adc_digi_output_data_t* p = (void*)&result[i];
@@ -203,7 +204,9 @@ void continuous_adc_Test()
 #else
                 if (ADC_CONV_MODE == ADC_CONV_BOTH_UNIT || ADC_CONV_MODE == ADC_CONV_ALTER_UNIT || ADC_CONV_MODE == ADC_CONV_SINGLE_UNIT_1) {
                     if (check_valid_data(p)) {
-                        DEBUG_PRINTI("Unit: %d,_Channel: %d, Value: %x", p->type2.unit + 1, p->type2.channel, p->type2.data);
+                        DEBUG_PRINTI("Unit: %d,_Channel: %d, Value: %d", p->type2.unit + 1, p->type2.channel, p->type2.data);
+                        sume[p->type2.channel] += p->type2.data;
+                        cnt[p->type2.channel]++;
                     } else {
                         // abort();
                         DEBUG_PRINTI("Invalid data [%d_%d_%x]", p->type2.unit + 1, p->type2.channel, p->type2.data);
@@ -218,6 +221,9 @@ void continuous_adc_Test()
 #endif //#if CONFIG_IDF_TARGET_ESP32S2
 #endif
             }
+
+            DEBUG_PRINTI("%-2d:%-4d    %-2d:%-4d    %-2d:%-4d    %-2d:%-4d    %-2d:%-4d", cnt[0], sume[0], cnt[1], sume[1], cnt[3], sume[3], cnt[7], sume[7], cnt[9], sume[9]);
+
             // See `note 1`
             vTaskDelay(1);
         } else if (ret == ESP_ERR_TIMEOUT) {
@@ -301,10 +307,9 @@ void adcInit(void)
     checkEfuse();
     // Configure ADC
     if (unit == ADC_UNIT_1) {
-        //continuous_adc_init(adc1_chan_mask, adc2_chan_mask, channelsInUse, sizeof(channelsInUse) / sizeof(adc_channel_t));
-        //adc_digi_start();
-
-        //continuous_adc_Test();
+        // continuous_adc_init(adc1_chan_mask, adc2_chan_mask, channelsInUse, sizeof(channelsInUse) / sizeof(adc_channel_t));
+        // adc_digi_start();
+        // continuous_adc_Test();
 
         // adc1_config_width(width);
         for (int i = 0; i < numChanels; i++) {
@@ -333,9 +338,10 @@ void adcTask(void* param)
             uint16_t reading = adc1_get_raw((adc1_channel_t)ch);
 
             // exponential moving average
-            uint8_t window = 15;
-            float k = 2.0 / (window + 1);
-            AveragedAdcData[ch] = k * reading + (1 - k) * AveragedAdcData[ch];
+            // uint8_t window = 31;
+            // float k = 2.0 / (window + 1); //  == 1 / 8
+            // AveragedAdcData[ch] = k * reading + (1 - k) * AveragedAdcData[ch];
+            AveragedAdcData[ch] = (reading >> 4) + ((0.9375) * AveragedAdcData[ch]); //optimize math for k = 1/16
         }
     }
 }
