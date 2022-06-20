@@ -1,0 +1,242 @@
+# Query: ^(?! \\*).+ \\/ 
+# Flags: RegExp
+# Excluding: Submodules,components,Controller
+
+330 results - 60 files
+include\filter.h:
+  104:   float K = tanf(sample_time / (2.0f * tau));
+  105:   float poly = K * K + K / Q + 1.0f;
+  106:   filter->a[0] = 2.0f * (K * K - 1.0f) / poly;
+  107:   filter->a[1] = (K * K - K / Q + 1.0f) / poly;
+  108:   filter->b[0] = K * K / poly;
+
+include\math3d.h:
+   46: static inline float radians(float degrees) { return (M_PI_F / 180.0f) * degrees; }
+   47: static inline float degrees(float radians) { return (180.0f / M_PI_F) * radians; }
+  137: 	return mkvec(a.x / b.x, a.y / b.y, a.z / b.z);
+  141: 	return mkvec(1.0f / a.x, 1.0f / a.y, 1.0f / a.z);
+  167: 		return vscl(maxnorm / norm, v);
+  564: 	float scale = sinf(angle / 2) / vmag(axis);
+  596: 	struct vec const qimag = vscl(sinhalfangle / sinangle, cross);
+  607: 	float cr = cosf(r / 2.0f); float sr = sinf(r / 2.0f);
+  608: 	float cp = cosf(p / 2.0f); float sp = sinf(p / 2.0f);
+  609: 	float cy = cosf(y / 2.0f); float sy = sinf(y / 2.0f);
+  625: 	float q2 = vmag2(rpy) / 4.0f;
+  630: 		float w = 1.0f / sqrtf(1.0f + q2);
+  636: 	float w = sqrtf(fmax(0.0f, 1.0f + m.m[0][0] + m.m[1][1] + m.m[2][2])) / 2.0f;
+  637: 	float x = sqrtf(fmax(0.0f, 1.0f + m.m[0][0] - m.m[1][1] - m.m[2][2])) / 2.0f;
+  638: 	float y = sqrtf(fmax(0.0f, 1.0f - m.m[0][0] + m.m[1][1] - m.m[2][2])) / 2.0f;
+  639: 	float z = sqrtf(fmax(0.0f, 1.0f - m.m[0][0] - m.m[1][1] + m.m[2][2])) / 2.0f;
+  663: 	float s = 1.0f / sqrtf(1.0f - q.w * q.w);
+  756: 	float s = 1.0f / sqrtf(qdot(q, q));
+  765: 	float const r = (dt / 2) * gyro.x;
+  766: 	float const p = (dt / 2) * gyro.y;
+  767: 	float const y = (dt / 2) * gyro.z;
+  797: 		float s = sinf(theta * (1 - t)) / sinf(theta);
+  798: 		t = sinf(theta * t) / sinf(theta);
+  899: 		float s = (b[i] - vdot(a, origin)) / a_dir;
+  962: 	float const tolerance2 = n * fsqr(tolerance) / 10.0f;
+
+include\dspLib\xtensa_math.h:
+    65:    * - xtensa_cortexM0l_math.lib (Cortex-M0 / Cortex-M0+, Little endian)
+    66:    * - xtensa_cortexM0b_math.lib (Cortex-M0 / Cortex-M0+, Big endian)
+  1955:     i = (int32_t) ((x - S->x1) / xSpacing);
+  1978:       y = y0 + (x - x0) * ((y1 - y0) / (x1 - x0));
+  2039:    *     x1 = 1/2 * ( x0 + in / x0)        [each iteration]
+
+main\crtp.c:
+  285:         stats.rxRate = (uint16_t)(1000.0f * stats.rxCount / interval);
+  286:         stats.txRate = (uint16_t)(1000.0f * stats.txCount / interval);
+
+
+main\outlierFilter.c:
+   76:     errorDistance = fabsf(error / errorBaseDistance);
+  106: #define LH_TICKS_PER_FRAME (1000 / 120)
+  110: static const int32_t lhGoodSampleWindowChange = LH_TICKS_PER_FRAME / 2;
+
+
+main\sensfusion6.c:
+  188:   gx = gx * M_PI_F / 180;
+  189:   gy = gy * M_PI_F / 180;
+  190:   gz = gz * M_PI_F / 180;
+  272:   *yaw = atan2f(2*(qw*qz + qx*qy), qw*qw + qx*qx - qy*qy - qz*qz) * 180 / M_PI_F;
+  273:   *pitch = asinf(gx) * 180 / M_PI_F; //Pitch seems to be inverted
+  274:   *roll = atan2f(gy, gz) * 180 / M_PI_F;
+  306:   // (A dot G) / |G|,  (|G| = 1) -> (A dot G)
+
+main\sensors_mpu6050_hm5883L_ms5611.c:
+  345:         sensorData.mag.x = (float)headingx / MAG_GAUSS_PER_LSB; //to gauss
+  346:         sensorData.mag.y = (float)headingy / MAG_GAUSS_PER_LSB;
+  347:         sensorData.mag.z = (float)headingz / MAG_GAUSS_PER_LSB;
+  405:     accScaled.x = (accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;
+  407:     accScaled.x = -(accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;   
+  410:     accScaled.y = (accelRaw.y) * SENSORS_G_PER_LSB_CFG / accScale;
+  411:     accScaled.z = (accelRaw.z) * SENSORS_G_PER_LSB_CFG / accScale;
+  572:     cosPitch = cosf(PITCH_CALIB * (float)M_PI / 180);
+  573:     sinPitch = sinf(PITCH_CALIB * (float)M_PI / 180);
+  574:     cosRoll = cosf(ROLL_CALIB * (float)M_PI / 180);
+  575:     sinRoll = sinf(ROLL_CALIB * (float)M_PI / 180);
+  585:     mpu6050SetSlave4MasterDelay(15); // read slaves at 500Hz = (8000Hz / (1 + 15))
+  587:     mpu6050SetSlave4MasterDelay(9); // read slaves at 100Hz = (500Hz / (1 + 4))
+  775:             accScale = accScaleSum / SENSORS_ACC_SCALE_SAMPLES;
+  810:             gyroBiasOut->x = (float)(gyroBiasSampleSum.x) / SENSORS_BIAS_SAMPLES;
+  811:             gyroBiasOut->y = (float)(gyroBiasSampleSum.y) / SENSORS_BIAS_SAMPLES;
+  812:             gyroBiasOut->z = (float)(gyroBiasSampleSum.z) / SENSORS_BIAS_SAMPLES;
+  815:             gyroBiasStdDev.x = sqrtf((float)(gyroBiasSampleSumSquares.x) / SENSORS_BIAS_SAMPLES - (gyroBiasOut->x * gyroBiasOut->x));
+  816:             gyroBiasStdDev.y = sqrtf((float)(gyroBiasSampleSumSquares.y) / SENSORS_BIAS_SAMPLES - (gyroBiasOut->y * gyroBiasOut->y));
+  817:             gyroBiasStdDev.z = sqrtf((float)(gyroBiasSampleSumSquares.z) / SENSORS_BIAS_SAMPLES - (gyroBiasOut->z * gyroBiasOut->z));
+  877:     varOut->x = (sumSq[0] - ((int64_t)sum[0] * sum[0]) / SENSORS_NBR_OF_BIAS_SAMPLES);
+  878:     varOut->y = (sumSq[1] - ((int64_t)sum[1] * sum[1]) / SENSORS_NBR_OF_BIAS_SAMPLES);
+  879:     varOut->z = (sumSq[2] - ((int64_t)sum[2] * sum[2]) / SENSORS_NBR_OF_BIAS_SAMPLES);
+  881:     meanOut->x = (float)sum[0] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  882:     meanOut->y = (float)sum[1] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  883:     meanOut->z = (float)sum[2] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  900:     meanOut->x = sum[0] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  901:     meanOut->y = sum[1] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  902:     meanOut->z = sum[2] / SENSORS_NBR_OF_BIAS_SAMPLES;
+  981:             pitch = tanf(-acc.x / (sqrtf(acc.y * acc.y + acc.z * acc.z))) * 180 / (float)M_PI;
+  982:             roll = tanf(acc.y / acc.z) * 180 / (float)M_PI;
+
+
+main\statsCnt.c:
+  43:         float dt_s = dt_ms / 1000.0f;
+  46:         counter->latestRate = dv / dt_s;
+
+
+main\controll\controller_mellinger.c:
+  266:     err_d_roll = ((radians(setpoint->attitudeRate.roll) - prev_setpoint_omega_roll) - (stateAttitudeRateRoll - prev_omega_roll)) / dt;
+  267:     err_d_pitch = (-(radians(setpoint->attitudeRate.pitch) - prev_setpoint_omega_pitch) - (stateAttitudeRatePitch - prev_omega_pitch)) / dt;
+
+main\controll\controller_pid.c:
+   18: #define ATTITUDE_UPDATE_DT (float)(1.0f / ATTITUDE_RATE)
+  145:         control->thrust = actuatorThrust / sensfusion6GetInvThrustCompensationForTilt();
+
+main\controll\estimator_kalman.c:
+  191: #define CONTROL_TO_ACC (GRAVITY_MAGNITUDE * 60.0f / (CF_MASS * 1000.0f) / 65536.0f)
+  344:             nextPrediction = osTick + S2T(1.0f / PREDICT_RATE);
+  374:                 float baroAslAverage = baroAslAccumulator / baroAccumulatorCount;
+  381:                 nextBaroUpdate = osTick + S2T(1.0f / BARO_RATE);
+  496:     gyroAverage.x = gyroAccumulator.x * DEG_TO_RAD / gyroAccumulatorCount;
+  497:     gyroAverage.y = gyroAccumulator.y * DEG_TO_RAD / gyroAccumulatorCount;
+  498:     gyroAverage.z = gyroAccumulator.z * DEG_TO_RAD / gyroAccumulatorCount;
+  502:     accAverage.x = accAccumulator.x * GRAVITY_MAGNITUDE / accAccumulatorCount;
+  503:     accAverage.y = accAccumulator.y * GRAVITY_MAGNITUDE / accAccumulatorCount;
+  504:     accAverage.z = accAccumulator.z * GRAVITY_MAGNITUDE / accAccumulatorCount;
+  507:     float thrustAverage = thrustAccumulator * CONTROL_TO_ACC / thrustAccumulatorCount;
+
+main\controll\filter.c:
+  105:   float dval = sample / (lpfData->b0 + lpfData->b1 + lpfData->b2);
+
+main\controll\kalman_core.c:
+  150: // PI / 2 --- facing positive Y
+  152: // 3 * PI / 2 --- facing negative Y
+  180:   initialQuaternion[0] = xtensa_cos_f32(initialYaw / 2);
+  183:   initialQuaternion[3] = xtensa_sin_f32(initialYaw / 2);
+  341:   struct vec const err_quat = vscl(2.0f / q_residual.w, quatimagpart(q_residual));
+  429:       h[KC_STATE_X] = (dx1 / d1 - dx0 / d0);
+  430:       h[KC_STATE_Y] = (dy1 / d1 - dy0 / d0);
+  431:       h[KC_STATE_Z] = (dz1 / d1 - dz0 / d0);
+  506:   predictedNX = (flow->dt * Npix / thetapix ) * ((dx_g * this->R[2][2] / z_g) - omegaFactor * omegay_b);
+  510:   hx[KC_STATE_Z] = (Npix * flow->dt / thetapix) * ((this->R[2][2] * dx_g) / (-z_g * z_g));
+  511:   hx[KC_STATE_PX] = (Npix * flow->dt / thetapix) * (this->R[2][2] / z_g);
+  519:   predictedNY = (flow->dt * Npix / thetapix ) * ((dy_g * this->R[2][2] / z_g) + omegaFactor * omegax_b);
+  523:   hy[KC_STATE_Z] = (Npix * flow->dt / thetapix) * ((this->R[2][2] * dy_g) / (-z_g * z_g));
+  524:   hy[KC_STATE_PY] = (Npix * flow->dt / thetapix) * (this->R[2][2] / z_g);
+  539:     float angle = fabsf(acosf(this->R[2][2])) - DEG_TO_RAD * (15.0f / 2.0f);
+  544:     float predictedDistance = this->S[KC_STATE_Z] / this->R[2][2];
+  550:     h[KC_STATE_Z] = 1 / this->R[2][2];
+  744:    *            ~ (I + [[-d]] + [[-d]]^2 / 2) Sigma_pre (I + [[-d]] + [[-d]]^2 / 2)'
+  793:     dz = this->S[KC_STATE_PZ] * dt + zacc * dt2 / 2.0f; // thrust can only be produced in the body's Z direction
+  798:     this->S[KC_STATE_Z] += this->R[2][0] * dx + this->R[2][1] * dy + this->R[2][2] * dz - GRAVITY_MAGNITUDE * dt2 / 2.0f;
+  813:     dx = this->S[KC_STATE_PX] * dt + acc->x * dt2 / 2.0f;
+  814:     dy = this->S[KC_STATE_PY] * dt + acc->y * dt2 / 2.0f;
+  815:     dz = this->S[KC_STATE_PZ] * dt + acc->z * dt2 / 2.0f; // thrust can only be produced in the body's Z direction
+  820:     this->S[KC_STATE_Z] += this->R[2][0] * dx + this->R[2][1] * dy + this->R[2][2] * dz - GRAVITY_MAGNITUDE * dt2 / 2.0f;
+  929:     float ca = xtensa_cos_f32(angle / 2.0f);
+  930:     float sa = xtensa_sin_f32(angle / 2.0f);
+  931:     float dq[4] = {ca, sa * v0 / angle, sa * v1 / angle, sa * v2 / angle};
+  941:     this->q[0] = tmpq0 / norm;
+  942:     this->q[1] = tmpq1 / norm;
+  943:     this->q[2] = tmpq2 / norm;
+  944:     this->q[3] = tmpq3 / norm;
+  950:      *            ~ (I + [[-d]] + [[-d]]^2 / 2) Sigma_pre (I + [[-d]] + [[-d]]^2 / 2)'
+
+main\controll\pid.c:
+  68:     float deriv = (pid->error - pid->prevError) / pid->dt;
+
+main\controll\position_controller_pid.c:
+  193:   float cosyaw = cosf(state->attitude.yaw * (float)M_PI / 180.0f);
+  194:   float sinyaw = sinf(state->attitude.yaw * (float)M_PI / 180.0f);
+  222:   this.pidVZ.pid.outputLimit = (UINT16_MAX / 2 / thrustScale);
+  223:   //this.pidVZ.pid.outputLimit = (this.thrustBase - this.thrustMin) / thrustScale;
+  229:   float yawRad = state->attitude.yaw * (float)M_PI / 180;
+
+main\controll\position_estimator_altitude.c:
+  109:   estimate->velocity.z = (state->estimatedZ - prev_estimatedZ) / dt;
+
+
+
+main\drivers\general\wifi\wifi_esp32.c:
+  87:         vTaskDelay(1 / portTICK_PERIOD_MS);
+
+main\drivers\i2c_devices\ms5611\ms5611.c:
+  148:                / ((1 << EXTRA_PRECISION) * 100.0);
+  167:            / ((1 << EXTRA_PRECISION) * 100.0);
+  202:                / ((1 << EXTRA_PRECISION) * 100.0f);
+  368:         //return (1.f - powf(*pressure / CONST_SEA_PRESSURE, CONST_PF)) * CONST_PF2;
+  369:         //return ((powf((1015.7f / *pressure), CONST_PF) - 1.0f) * (25.f + 273.15f)) / 0.0065f;
+  370:         return ((powf((1015.7f / *pressure), CONST_PF) - 1.0f) * (FIX_TEMP + 273.15f)) / 0.0065f;
+
+
+
+
+main\drivers\i2c_devices\vl53l1\vl53l1x.c:
+  283: 	uint32_t delay_ms = (wait_us + 900) / 1000;
+
+main\drivers\i2c_devices\vl53l1\zranger2.c:
+  100:   expCoeff = logf(expStdB / expStdA) / (expPointB - expPointA);
+  133:     rangeSet(rangeDown, range_last / 1000.0f);
+
+main\drivers\i2c_devices\vl53l1\core\src\vl53l1_api.c:
+   448: 			sum_spads += RMData.EffectiveSpadRtnCount / 256;
+   455: 		/* FixPoint1616_t / uint16_t = FixPoint1616_t */
+   456: 		xTalkStoredMeanSignalRate = sum_signalRate / total_count;
+   490: 			 * Fixed1616 / int := Fixed1616
+   501: 				(xTalkStoredMeanRange / xTalkCalDistanceAsInt));
+   752: 			DeviceAddress / 2);
+   802: 				(FixPoint1616_t)(25 * 65536 / 100));
+  1325: 	adjustedIMP += (adjustedIMP * 64) / 1000;
+  1344: 	adjustedIMP -= (adjustedIMP * 64) / 1000;
+  1607: 	user_zone.x_centre = (pRoi->BotRightX + pRoi->TopLeftX  + 1) / 2;
+  1608: 	user_zone.y_centre = (pRoi->TopLeftY  + pRoi->BotRightY + 1) / 2;
+  1967: 		/* Fix1616 + (fix1616 * uint16_t / fix1616) * 65536 = fix1616 */
+  1971: 			partial = partial / RAS;
+  2482: 	UnderMax = 1 + (Max / 2);
+  2483: 	OverMax = Max + (Max / 2);
+  2538: 		IncRounding = total_count / 2;
+  2789: 				high1616 = (high1616 + 32768) / gain;
+  2790: 				low1616 = (low1616 + 32768) / gain;
+
+main\drivers\i2c_devices\vl53l1\core\src\vl53l1_core_support.c:
+  107: 	 *  2^30 = (2^24) (1.0us) * 4096 (2^12) / 64 (PLL Multiplier)
+  114: 	pll_period_us = (0x01 << 30) / fast_osc_frequency;
+  270: 		tmp_int = ((tmp_int << frac_bits) + (time_us / 2)) / time_us;
+  314: 		tmp_int = (tmp_int + ((uint32_t)num_spads / 2)) / (uint32_t)num_spads;
+  374: 	tmp_long_int =  tmp_long_int / (0x01 << 9);
+  391: 	tmp_long_int =  tmp_long_int / (0x01 << 22);
+  403: 		range_mm = range_mm / (0x01 << 2);
+  405: 		range_mm = range_mm / (0x01 << 1);
+
+main\drivers\i2c_devices\vl53l1\core\src\vl53l1_core.c:
+  1017: 	central_rate_int = ((int32_t)central_rate * (1 << 4)) / (1000);
+  1035: 	range_ignore_thresh_int = range_ignore_thresh_int / 1000;
+  1045: 	range_ignore_thresh_int = (range_ignore_thresh_int + (1<<4)) / (1<<5);
+  1543: 	*px_ll = (int16_t)x_centre - ((int16_t)width + 1) / 2;
+  1551: 	*py_ll = (int16_t)y_centre - ((int16_t)height + 1) / 2;
+  1857: 	timeout_mclks = timeout_mclks / macro_period_us;
+
+
+
+main\systemFiles\platform_cf2.c:
+  53:     *nrOfConfigs = sizeof(configs) / sizeof(platformConfig_t);
+

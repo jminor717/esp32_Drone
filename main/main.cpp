@@ -40,7 +40,7 @@ extern "C" {
 #include "platform.h"
 #include "system.h"
 // #include "wifi_esp32.h"
-#include <../Common/Data_type.h>
+// #include <../Common/Data_type.h>
 
 #define DEBUG_MODULE "APP_MAIN"
 #include "debug_cf.h"

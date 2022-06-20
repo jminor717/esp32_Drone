@@ -101,11 +101,11 @@ void powerStop()
     motorsSetRatio(MOTOR_M4, 0);
 }
 
-void powerDistribution(const control_t *control)
+void powerDistribution(const control_t* control, const setpoint_t* setpoint)
 {
 #if defined(QUAD_FORMATION_X)
-    int16_t r = control->roll / 2.0f;
-    int16_t p = control->pitch / 2.0f;
+    int16_t r = control->roll * 0.5f;
+    int16_t p = control->pitch * 0.5f;
     motorPower.m1 = limitThrust(control->thrust - r + p + control->yaw);
     motorPower.m2 = limitThrust(control->thrust - r - p - control->yaw);
     motorPower.m3 = limitThrust(control->thrust + r - p + control->yaw);

@@ -329,16 +329,16 @@ static void stabilizerTask(void* param)
                 powerStop();
             } else {
                 // DEBUG_PRINTI("powering Motors");
-                powerDistribution(&control);
+                powerDistribution(&control, &setpoint);
                 if (tick % 100 == 0) {
                     SetLedRaw((control.roll + 32768) >> 8, (control.pitch + 32768) >> 8, (control.yaw + 32768) >> 8);
                     //DEBUG_PRINTI("set thrust to %f, R:%d, P:%d, Y:%d", control.thrust, control.roll, control.pitch, control.yaw);
                 }
             }
         }
-        // calcSensorToOutputLatency(&sensorData);
+        calcSensorToOutputLatency(&sensorData);
         tick++;
-        // STATS_CNT_RATE_EVENT(&stabilizerRate);
+        STATS_CNT_RATE_EVENT(&stabilizerRate);
 
         if (!rateSupervisorValidate(&rateSupervisorContext, xTaskGetTickCount())) {
             // if (!rateWarningDisplayed)
