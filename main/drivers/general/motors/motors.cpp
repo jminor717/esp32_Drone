@@ -95,10 +95,10 @@ static bool isInit = false;
 
 // PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
 
-PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN);
-PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN, M2_POSITION_PIN);
-PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_2, M3A_PIN, M3B_PIN, M3_POSITION_PIN);
-PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M4A_PIN, M4B_PIN, M4_POSITION_PIN);
+PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN, DIRECT, 2400);
+PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN, M2_POSITION_PIN, DIRECT, 2047);
+PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M3A_PIN, M3B_PIN, M3_POSITION_PIN, REVERSE, 2047);
+PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 1713);
 
 PosContMot Servos[NBR_OF_MOTORS] = { RightElevon, LeftElevon, RightRear, LeftRear };
 
@@ -215,7 +215,22 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
 
 void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick)
 {
-    Servos[id].SetPos(ratio, Tick);
+    switch (id) {
+    case 0:
+        RightElevon.SetPos(ratio, Tick);
+        break;
+    case 1:
+        RightRear.SetPos(ratio, Tick);
+        break;
+    case 2:
+        LeftRear.SetPos(ratio, Tick);
+        break;
+    case 3:
+        LeftElevon.SetPos(ratio, Tick);
+        break;
+    default:
+        break;
+    }
 }
 
 int motorsGetRatio(uint32_t id)

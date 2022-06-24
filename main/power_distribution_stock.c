@@ -129,10 +129,10 @@ void powerDistribution(const control_t* control, const setpoint_t* setpoint)
     motorPower.m2 = limitThrust(control->thrust - control->yaw);
     motorPower.m3 = limitThrust(control->thrust);
     motorPower.m4 = limitThrust(control->thrust);
-    ServoPosition.s1 = control->roll;
-    ServoPosition.s2 = -control->roll;
+    ServoPosition.s1 = control->roll + control->pitch;
+    ServoPosition.s2 = -control->yaw;
     ServoPosition.s3 = control->yaw;
-    ServoPosition.s4 = -control->yaw;
+    ServoPosition.s4 = control->roll - control->pitch;
 #else
 #error Motor layout not defined!
 #endif

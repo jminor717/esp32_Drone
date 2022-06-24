@@ -174,8 +174,8 @@ void systemTask(void* arg)
     ledSet(CHG_LED, 255);
 #if (COMMS_MODE == WIFI_COMMS_MODE)
     wifiInit();
-#endif
     vTaskDelay(M2T(500));
+#endif
 
 #ifdef DEBUG_QUEUE_MONITOR
     queueMonitorInit();

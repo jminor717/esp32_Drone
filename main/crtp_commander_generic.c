@@ -372,7 +372,7 @@ static void ControllerDecoder(setpoint_t* setpoint, uint8_t type, const unsigned
     //setpoint->velocity.z = DataOut.R2 / 26.5;
 
     setpoint->mode.roll = modeDisable;
-    setpoint->mode.pitch = modeVelocity;
+    setpoint->mode.pitch = modeDisable;
     setpoint->mode.yaw = modeDisable;
     //angle = (((rx * 256) / 16) + 2047) * (330 / 4096)
     //165 + 15 = (((rx * 24)/ 16) + 2047) * (330 / 4096)
