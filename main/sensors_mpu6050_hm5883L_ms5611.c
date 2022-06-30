@@ -171,15 +171,20 @@ static void applyAxis3fLpf(lpf2pData *data, Axis3f *in);
 static bool isBarometerPresent = false;
 static bool isMagnetometerPresent = false;
 static bool isVl53l1xPresent = false;
+#ifdef SENSORS_ENABLE_RANGE_VL53L0X
 static bool isVl53l0xPresent = false;
+#endif
+#ifdef SENSORS_ENABLE_FLOW_PMW3901
 static bool isPmw3901Present = false;
+#endif
 
 static bool isMpu6050TestPassed = false;
+#ifdef SENSORS_ENABLE_MAG_HM5883L
 static bool isHmc5883lTestPassed = false;
+#endif
+#ifdef SENSORS_ENABLE_PRESSURE_MS5611
 static bool isMs5611TestPassed = false;
-static bool isVl53l1xTestPassed = false;
-static bool isPmw3901TestPassed = false;
-
+#endif
 // Pre-calculated values for accelerometer alignment
 float cosPitch;
 float sinPitch;

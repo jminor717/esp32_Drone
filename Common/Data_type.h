@@ -6,7 +6,9 @@
 
 #define CRTP_MAX_DATA_SIZE 30
 
-static uint8_t calculate_cksum(uint8_t *data, size_t len)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+static uint8_t calculate_cksum(uint8_t* data, size_t len)
 {
     unsigned char *c = data;
     int i;
@@ -19,6 +21,7 @@ static uint8_t calculate_cksum(uint8_t *data, size_t len)
 
     return cksum;
 }
+#pragma GCC diagnostic pop
 
 typedef struct _CRTPPacket
 {

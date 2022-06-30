@@ -42,6 +42,8 @@ extern "C" {
 // #include "wifi_esp32.h"
 // #include <../Common/Data_type.h>
 
+#include "../common/GPSCalc.h"
+
 #define DEBUG_MODULE "APP_MAIN"
 #include "debug_cf.h"
 }
@@ -104,8 +106,14 @@ void app_main()
     }
 
     DEBUG_PRINTI("prepairing to Launch system \n");
-    /*launch the system task */
 
+    struct coordinate self = { .lat = 0.01, .lon = 0.001, .elv = 0.1 };
+    struct coordinate target = { .lat = 0.02, .lon = 0.002, .elv = 0.2 };
+    struct PointingVector vector = CalculateOrientationToTarget(self, target, true);
+
+    DEBUG_PRINTI("Distance: %0.3f km, Azimuth: %0.4f deg, Altitude: %0.4f deg", vector.Distance, vector.Azimuth, vector.Altitude);
+   
+    /*launch the system task */
     systemLaunch();
 
     for (;;) {
