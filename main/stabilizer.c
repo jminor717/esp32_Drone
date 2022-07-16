@@ -271,13 +271,13 @@ static void stabilizerTask(void* param)
     // Wait for sensors to be calibrated
     lastWakeTime = xTaskGetTickCount();
     while (!sensorsAreCalibrated()) {
-        vTaskDelayUntil(&lastWakeTime, F2T(RATE_MAIN_LOOP));
-        // vTaskDelay(M2T(200));
+        //vTaskDelayUntil(&lastWakeTime, F2T(RATE_MAIN_LOOP));
+        vTaskDelay(F2T(RATE_MAIN_LOOP));
     }
     // Initialize tick to something else then 0
     tick = 1;
 
-    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 890, 1003, 1);
+    rateSupervisorInit(&rateSupervisorContext, xTaskGetTickCount(), M2T(1000), 880, 1003, 1);
 
     DEBUG_PRINTI("Ready to fly.\n");
 
@@ -321,7 +321,7 @@ static void stabilizerTask(void* param)
 
             controller(&control, &setpoint, &sensorData, &state, tick);
 
-            checkEmergencyStopTimeout();
+            //! checkEmergencyStopTimeout();
 
             checkStops = systemIsArmed();
             if (emergencyStop || (systemIsArmed() == false)) {
@@ -332,7 +332,7 @@ static void stabilizerTask(void* param)
                 powerDistribution(&control, &setpoint);
                 if (tick % 100 == 0) {
                     SetLedRaw((control.roll + 32768) >> 8, (control.pitch + 32768) >> 8, (control.yaw + 32768) >> 8);
-                    //DEBUG_PRINTI("set thrust to %f, R:%d, P:%d, Y:%d", control.thrust, control.roll, control.pitch, control.yaw);
+                    // DEBUG_PRINTI("set thrust to %f, R:%d, P:%d, Y:%d", control.thrust, control.roll, control.pitch, control.yaw);
                 }
             }
         }

@@ -16,17 +16,17 @@ extern "C" {
 #include "debug_cf.h"
 
 // const int16_t Min_Angle = 900, Max_Angle = 3300;
-const int16_t Min_Angle = 300, Max_Angle = 3700;
+const int16_t Min_Angle = 500, Max_Angle = 3500;
 
 // float kpd = 1.2, kid = 2, kdd = 0.01; // modify for optimal performance
 // float kpd = 0.5, kid = 0.1, kdd = 0.01;
-// float kpd = 2, kid = 1, kdd = 0.05;
-float kpd = 2, kid = 1, kdd = 0.05;
+// float kpd = 1.5, kid = 1, kdd = 0.08;
+float kpd = 2, kid = 1, kdd = 0;
 #ifdef velocityCtrl
 float kpv = 2, kiv = 1, kdv = 0.05;
 #endif
-int ProportionOn = P_ON_E; // P_ON_E   P_ON_M
-float aTuneStep = 80, aTuneNoise = 4, aTuneStartValue = 0;
+int ProportionOn = P_ON_M; // P_ON_E   P_ON_M
+float aTuneStep = 80, aTuneNoise = 5, aTuneStartValue = 0;
 unsigned int aTuneLookBack = 20;
 
 PosContMot PosContMot::PosContMotCreate(mcpwm_unit_t unit, mcpwm_timer_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin, uint8_t direction, uint16_t offset)
@@ -86,7 +86,7 @@ bool PosContMot::begin()
     // 2. initial mcpwm configuration
     mcpwm_init(this_Unit, this_Timer, &McPwm_Config); // Configure PWM0A & PWM0B with above settings
     positionPID->SetSampleTime(1000 / SERVO_RATE);
-    positionPID->SetOutputLimits(-1000, 1000);
+    positionPID->SetOutputLimits(-100, 100);
     positionPID->SetMode(AUTOMATIC);
 #ifdef velocityCtrl
     velocityPID->SetSampleTime(1000 / SERVO_RATE);
@@ -95,11 +95,11 @@ bool PosContMot::begin()
 #endif
     if (tuning) {
         output = aTuneStartValue;
-        aTune->SetControlType(0);
+        aTune->SetControlType(1);
         aTune->SetNoiseBand(aTuneNoise);
         aTune->SetOutputStep(aTuneStep);
         aTune->SetLookbackSec((int)aTuneLookBack);
-        aTune->SetSetpoint(ZeroOffset);
+        aTune->SetSetpoint(2048); // ZeroOffset
     }
 
     return true;
@@ -136,22 +136,24 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     Position += ZeroOffset;
     bool currentAngleHigh = feedback > Max_Angle;
     bool currentAngleLow = feedback < Min_Angle;
-    // if (tuning) {
-    //     int val = aTune->Runtime();
-    //     if (val != 0) {
-    //         tuning = false;
-    //     }
-    //     if (!tuning) { // we're done, set the tuning parameters
-    //         kpd = aTune->GetKp();
-    //         kid = aTune->GetKi();
-    //         kdd = aTune->GetKd();
-    //         positionPID->SetTunings(kpd, kid, kdd);
-    //         aTune->Cancel();
-    //         tuning = false;
-    //         DEBUG_PRINTI("kp:%f, ki:%f, kd:%f        %d,%d", kpd, kid, kdd, (int)this_Unit, (int)this_Timer);
-    //     }
-    // } else
-    if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
+#if initial_tuning
+    if (tuning) {
+        int val = aTune->Runtime(Tick);
+        if (val != 0) {
+            tuning = false;
+        }
+        if (!tuning) { // we're done, set the tuning parameters
+            kpd = aTune->GetKp();
+            kid = aTune->GetKi();
+            kdd = aTune->GetKd();
+            positionPID->SetTunings(kpd, kid, kdd);
+            aTune->Cancel();
+            tuning = false;
+            DEBUG_PRINTI("kp:%f, ki:%f, kd:%f        %d,%d", kpd, kid, kdd, (int)this_Unit, (int)this_Timer);
+        }
+    } else
+#endif
+        if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
         // feedback -= 2047;
         input_vel = (feedback - input);
         input = feedback;
@@ -172,30 +174,28 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
         return;
     }
 
-    MtrDirection NextDirection;
+    MtrDirection NextDirection = Stationary;
 #ifdef velocityCtrl
     float PidMag = abs(output_vel);
 #else
     float PidMag = abs(output);
 #endif
-    if ((absInt(feedback - Position) <= 5)) {
+    if ((absInt(feedback - Position) <= 10)) {
         NextDirection = Stationary;
     } else {
         // apply hysteresis logic to PID output value
-        if (previous_Duty == 0) {
-            // we were in a stoped state
-            if (PidMag < 20) {
-                output = 0;
-                NextDirection = Stationary;
-            }
-        } else {
-            if (PidMag < 30) {
-                output = 0;
-                NextDirection = Stationary;
-            } else if (PidMag < 50.0) {
-                // PidMag = 50;
-            }
+        // if (previous_Duty == 0) {
+        //     // we were in a stoped state
+        //     if (PidMag < 20) {
+        //         output = 0;
+        //         NextDirection = Stationary;
+        //     }
+        // } else {
+        if (PidMag < 30) {
+            output = 0;
+            NextDirection = Stationary;
         }
+        // }
 
         // determine what direction the PID is commanding the motor in
         if (output >= 1) {
@@ -212,14 +212,25 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
             }
         }
 
-        if ((currentAngleHigh && NextDirection == Reverse) || (currentAngleLow && NextDirection == Forward)) {
-            NextDirection = Stationary;
+        if (currentAngleHigh && NextDirection == Reverse) {
+            if (direction_Setting == DIRECT) {
+                NextDirection = Reverse;
+            } else {
+                NextDirection = Forward;
+            }
+        }
+        if (currentAngleLow && NextDirection == Forward) {
+            if (direction_Setting == DIRECT) {
+                NextDirection = Forward;
+            } else {
+                NextDirection = Reverse;
+            }
         }
 
-        if (PositionFeedbackPin == 1) { // || PositionFeedbackPin == 10
-            if (RATE_DO_EXECUTE_WITH_OFFSET(25, Tick, PID_Loop_Offset))
-                DEBUG_PRINTI("%d,%d::%d        %.2f,%.2f: %.2f        %d,%d", feedback, Position, feedback - Position, output, input_vel, output_vel, (int)this_Unit, (int)this_Timer);
-        }
+        // if (PositionFeedbackPin == 1|| PositionFeedbackPin == 10) { //
+        //     if (RATE_DO_EXECUTE_WITH_OFFSET(25, Tick, PID_Loop_Offset))
+        //         DEBUG_PRINTI("%d,%d::%d        %.2f,%.2f: %.2f        %d,%d", feedback, Position, feedback - Position, output, input_vel, output_vel, (int)this_Unit, (int)this_Timer);
+        // }
     }
 
     // set the duty cycle for the current dirrection

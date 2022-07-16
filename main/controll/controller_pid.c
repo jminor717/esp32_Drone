@@ -79,6 +79,22 @@ void controllerPid(control_t* control, setpoint_t* setpoint,
         }
 
         attitudeDesired.yaw = capAngle(attitudeDesired.yaw);
+
+        if (setpoint->mode.roll == modeAngularVelocity) {
+            attitudeDesired.roll += setpoint->attitudeRate.roll * ATTITUDE_UPDATE_DT;
+        } else {
+            attitudeDesired.roll = setpoint->attitude.roll;
+        }
+
+        attitudeDesired.roll = capAngle(attitudeDesired.roll);
+
+        if (setpoint->mode.pitch == modeAngularVelocity) {
+            attitudeDesired.pitch += setpoint->attitudeRate.pitch * ATTITUDE_UPDATE_DT;
+        } else {
+            attitudeDesired.pitch = setpoint->attitude.pitch;
+        }
+
+        attitudeDesired.pitch = capAngle(attitudeDesired.pitch);
     }
 
     if (RATE_DO_EXECUTE(POSITION_RATE, tick)) {
@@ -108,6 +124,13 @@ void controllerPid(control_t* control, setpoint_t* setpoint,
         }
         if (setpoint->mode.pitch == modeVelocity) {
             rateDesired.pitch = setpoint->attitudeRate.pitch;
+            attitudeControllerResetPitchAttitudePID();
+        }
+
+        if (setpoint->mode.roll == modeAngularVelocity) {
+            attitudeControllerResetRollAttitudePID();
+        }
+        if (setpoint->mode.pitch == modeAngularVelocity) {
             attitudeControllerResetPitchAttitudePID();
         }
 

@@ -24,7 +24,7 @@ void PID_ATune::Cancel()
     running = false;
 }
 
-int PID_ATune::Runtime()
+int PID_ATune::Runtime(long now)
 {
     justevaled = false;
     if (peakCount > 9 && running) {
@@ -32,9 +32,8 @@ int PID_ATune::Runtime()
         FinishUp();
         return 1;
     }
-    unsigned long now = millis();
 
-    if ((now - lastTime) < sampleTime)
+    if ((now - lastTime) < 5000)
         return false;
     lastTime = now;
     float refVal = *input;
@@ -171,8 +170,17 @@ void PID_ATune::SetLookbackSec(int value)
 {
     if (value < 1)
         value = 1;
+
+    if (value < 25) {
+        nLookBack = value * 4;
+        sampleTime = 250;
+    } else {
+        nLookBack = 100;
+        sampleTime = value * 10;
+    }
+
     nLookBack = 100;
-    sampleTime = 100;
+    sampleTime = 5000;
 }
 
 int PID_ATune::GetLookbackSec()

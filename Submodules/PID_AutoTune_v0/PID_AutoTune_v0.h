@@ -9,7 +9,7 @@ class PID_ATune
   public:
   //commonly used functions **************************************************************************
     PID_ATune(float*, float*);                       	// * Constructor.  links the Autotune to a given PID
-    int Runtime();						   			   	// * Similar to the PID Compue function, returns non 0 when done
+    int Runtime(long now);						   			   	// * Similar to the PID Compue function, returns non 0 when done
 	void Cancel();									   	// * Stops the AutoTune	
 	
 	void SetOutputStep(float);						   	// * how far above and below the starting value will the output step?	

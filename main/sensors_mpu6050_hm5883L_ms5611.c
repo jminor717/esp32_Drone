@@ -663,7 +663,7 @@ static void IRAM_ATTR sensors_inta_isr_handler(void *arg)
     xSemaphoreGiveFromISR(sensorsDataReady, &xHigherPriorityTaskWoken);
 
     if (xHigherPriorityTaskWoken) {
-        portYIELD_FROM_ISR();
+       //? portYIELD_FROM_ISR();
     }
 }
 

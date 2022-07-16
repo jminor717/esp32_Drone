@@ -126,13 +126,18 @@ void powerDistribution(const control_t* control, const setpoint_t* setpoint)
     motorPower.m4 = limitThrust(control->thrust + control->roll - control->yaw);
 #elif defined(TWO_PROP_PLANE)
     motorPower.m1 = limitThrust(control->thrust + control->yaw);
-    motorPower.m2 = limitThrust(control->thrust - control->yaw);
+    motorPower.m2 = limitThrust(control->thrust);
     motorPower.m3 = limitThrust(control->thrust);
-    motorPower.m4 = limitThrust(control->thrust);
-    ServoPosition.s1 = control->roll + control->pitch;
-    ServoPosition.s2 = -control->yaw;
-    ServoPosition.s3 = control->yaw;
-    ServoPosition.s4 = control->roll - control->pitch;
+    motorPower.m4 = limitThrust(control->thrust - control->yaw);
+    int16_t pitchStab = 0;
+    if (setpoint->mode.pitch == modeAngularVelocity) {
+        pitchStab = control->pitch;
+    }
+
+    ServoPosition.s1 = setpoint->attitudeRate.roll + (setpoint->attitudeRate.pitch - pitchStab);
+    // ServoPosition.s2 = -setpoint->attitudeRate.yaw;
+    // ServoPosition.s3 = setpoint->attitudeRate.yaw;
+    ServoPosition.s4 = setpoint->attitudeRate.roll - (setpoint->attitudeRate.pitch - pitchStab);
 #else
 #error Motor layout not defined!
 #endif

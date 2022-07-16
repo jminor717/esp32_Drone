@@ -6,6 +6,8 @@
 
 #include "driver/mcpwm.h"
 
+#define initial_tuning false
+
 enum MtrDirection {
     Stationary,
     Forward,
@@ -41,6 +43,6 @@ private:
     PID* positionPID;
     PID* velocityPID;
     PID_ATune* aTune;
-    bool tuning = false;
+    bool tuning = initial_tuning;
     //  static bool pwm_timmer_init();
 };
