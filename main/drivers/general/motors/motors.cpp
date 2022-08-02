@@ -39,6 +39,7 @@
 
 #define DEBUG_MODULE "MOTORS"
 #include "debug_cf.h"
+#include "static_mem.h"
 
 static uint16_t motorsConvBitsTo16(uint16_t bits);
 static uint16_t motorsConv16ToBits(uint16_t bits);
@@ -100,6 +101,8 @@ PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1,
 PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M3A_PIN, M3B_PIN, M3_POSITION_PIN, REVERSE, 2047);
 PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 1713);
 
+int32_t RightElevonRatio, RightRearRatio, LeftRearRatio, LeftElevonRatio;
+
 PosContMot Servos[NBR_OF_MOTORS] = { RightElevon, LeftElevon, RightRear, LeftRear };
 
 DShotRMT dshot_01((gpio_num_t)MOTOR1_GPIO, RMT_CHANNEL_0);
@@ -108,6 +111,10 @@ DShotRMT dshot_03((gpio_num_t)MOTOR3_GPIO, RMT_CHANNEL_2);
 DShotRMT dshot_04((gpio_num_t)MOTOR4_GPIO, RMT_CHANNEL_3);
 
 DShotRMT DShotMotors[NBR_OF_MOTORS] = { dshot_01, dshot_02, dshot_03, dshot_04 };
+
+void ServoTask(void *param);
+
+STATIC_MEM_TASK_ALLOC(ServoTask, PM_TASK_STACKSIZE);
 
 // Initialization. Will set all motors ratio to 0%
 void motorsInit(const MotorPerifDef** motorMapSelect)
@@ -144,6 +151,8 @@ void motorsInit(const MotorPerifDef** motorMapSelect)
     // PwmMotors[1] = pwm_ctrl2;
     // PwmMotors[2] = pwm_ctrl3;
     // PwmMotors[3] = pwm_ctrl4;
+    STATIC_MEM_TASK_CREATE(ServoTask, ServoTask, "SERVO_TASK", NULL, PM_TASK_PRI);
+
     isInit = true;
 }
 
@@ -215,31 +224,46 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
 
 void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick)
 {
+
+    //RightElevonRatio, RightRearRatio, LeftRearRatio, LeftElevonRatio;
     switch (id) {
     case 0:
-        RightElevon.SetPos(ratio, Tick);
+        RightElevonRatio = ratio;
         break;
     case 1:
-        RightRear.SetPos(ratio, Tick);
+        RightRearRatio = ratio;
         break;
     case 2:
-        LeftRear.SetPos(ratio, Tick);
+        LeftRearRatio = ratio;
         break;
     case 3:
-        LeftElevon.SetPos(ratio, Tick);
+        LeftElevonRatio = ratio;
         break;
     default:
         break;
     }
 }
 
+
+void ServoTask(void *param){
+    uint32_t Tick =0;
+
+    while(1){
+        RightElevon.SetPos(RightElevonRatio, Tick);
+        RightRear.SetPos(RightRearRatio, Tick);
+        LeftRear.SetPos(LeftRearRatio, Tick);
+        LeftElevon.SetPos(LeftElevonRatio, Tick);
+        vTaskDelay(1);
+        Tick++;
+    }
+}
+
 int motorsGetRatio(uint32_t id)
 {
-    int ratio = 0;
+    // int ratio = 0;
     //! ASSERT(id < NBR_OF_MOTORS);
     //  ratio = motorsConvBitsTo16((uint16_t)ledc_get_duty(motors_channel[id].speed_mode, motors_channel[id].channel));
-    return ratio;
-    return 0;
+    return motor_ratios[id];
 }
 
 void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio)

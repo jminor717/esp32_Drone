@@ -29,6 +29,12 @@ int ProportionOn = P_ON_M; // P_ON_E   P_ON_M
 float aTuneStep = 80, aTuneNoise = 5, aTuneStartValue = 0;
 unsigned int aTuneLookBack = 20;
 
+const uint32_t inputVoltage_cv = 1200 * 1200, motorResistance_cOhm = 5000, averagePowerLimit_cw = 100, motorMaxHeatEnergy_cj = 1000;
+const float Const1 = (inputVoltage_cv / 100) / (float)motorResistance_cOhm;
+const float MaxStaticDuty = averagePowerLimit_cw / Const1;
+const float deltaT = 1 / SERVO_RATE;
+float motorHeatEnergy_cj = 0;
+
 PosContMot PosContMot::PosContMotCreate(mcpwm_unit_t unit, mcpwm_timer_t timer, uint16_t GPIOa, uint16_t GPIOb, uint16_t FeedbackPin, uint8_t direction, uint16_t offset)
 {
     PosContMot ctrl = PosContMot(GPIOa, GPIOb, FeedbackPin, direction, offset);
@@ -233,7 +239,19 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
         // }
     }
 
-    // set the duty cycle for the current dirrection
+    //Const1 2.88 
+    // motorHeatEnergy_cj += (((inputVoltage_cv * (PidMag / 100)) / motorResistance_cOhm) - averagePowerLimit_cw) * deltaT;
+    motorHeatEnergy_cj += ((PidMag * Const1) - averagePowerLimit_cw) * deltaT;
+    if(motorHeatEnergy_cj < 0){
+        motorHeatEnergy_cj = 0;
+    }
+    if (motorHeatEnergy_cj > motorMaxHeatEnergy_cj && PidMag > MaxStaticDuty)
+    {
+        PidMag = MaxStaticDuty;
+    }
+    
+
+    // set the duty cycle for the current direction
     switch (NextDirection) {
     case Forward:
         mcpwm_set_signal_low(this_Unit, this_Timer, MCPWM_GEN_B);
