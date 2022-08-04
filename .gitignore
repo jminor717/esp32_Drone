@@ -3,7 +3,7 @@
 **/.vscode/c_cpp_properties.json
 **/.vscode/launch.json
 **/.vscode/ipch
-include/versioning
+versioning
 include/buildVersion.h
 node_modules
 .vscode/

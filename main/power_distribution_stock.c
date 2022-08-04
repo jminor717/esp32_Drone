@@ -95,6 +95,10 @@ bool powerDistributionTest(void)
 
 void powerStop()
 {
+    motorPower.m1 = 0;
+    motorPower.m2 = 0;
+    motorPower.m3 = 0;
+    motorPower.m4 = 0;
     motorsSetRatio(MOTOR_M1, 0);
     motorsSetRatio(MOTOR_M2, 0);
     motorsSetRatio(MOTOR_M3, 0);
