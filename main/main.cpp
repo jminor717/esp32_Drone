@@ -37,6 +37,33 @@ extern "C" {
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "esp_eth.h"
+#include "esp_flash_partitions.h"
+#include "esp_netif.h"
+#include "esp_ota_ops.h"
+#include "esp_partition.h"
+#include "esp_tls_crypto.h"
+#include "protocol_examples_common.h"
+#include "string.h"
+#include <esp_event.h>
+#include <esp_http_server.h>
+#include <esp_wifi.h>
+#include <math.h>
+#include <string.h>
+#include <sys/param.h>
+
+#include "nmea.h"
+
+#include "gpgga.h"
+#include "gpgll.h"
+#include "gpgsa.h"
+#include "gpgsv.h"
+#include "gprmc.h"
+#include "gptxt.h"
+#include "gpvtg.h"
+
 #include "platform.h"
 #include "system.h"
 // #include "wifi_esp32.h"
@@ -112,7 +139,7 @@ void app_main()
     struct PointingVector vector = CalculateOrientationToTarget(self, target, true);
 
     DEBUG_PRINTI("Distance: %0.3f km, Azimuth: %0.4f deg, Altitude: %0.4f deg", vector.Distance, vector.Azimuth, vector.Altitude);
-   
+
     /*launch the system task */
     systemLaunch();
 

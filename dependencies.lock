@@ -1,3 +1,15 @@
-manifest_hash: c770a695e065f94af8cb38482af465269b65b1f159ce7f6157a3d0b20bea8145
+dependencies:
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 4.4.1
+  igrr/libnmea:
+    component_hash: 25ea527f892761c4311831ecadfa0cb1a3a323501c43b4a8263639beec01ae57
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.1.1
+manifest_hash: 638f5800d3eacda624958eb3431c28d53260bde30f17bdf9792c702b27c62449
 target: esp32s3
 version: 1.0.0

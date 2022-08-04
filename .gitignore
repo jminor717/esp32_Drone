@@ -6,6 +6,7 @@
 versioning
 include/buildVersion.h
 node_modules
+managed_components
 .vscode/
 *.bin
 **/build
