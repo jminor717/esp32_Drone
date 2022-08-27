@@ -165,7 +165,9 @@
         "rhgenericdriver.h": "c",
         "wifilink.h": "c",
         "radiolink.h": "c",
-        "system.h": "c"
+        "system.h": "c",
+        "crtp_localization_service.h": "c",
+        "esp_eth.h": "c"
     },
     "cSpell.words": [
         "CLPT",
@@ -176,6 +178,7 @@
         "Ledc",
         "mcpwm",
         "OPMODE",
+        "rodata",
         "Rssi",
         "RSSI",
         "setpoint",
@@ -191,5 +194,5 @@
         "target/esp32s3.cfg"
     ],
     "idf.flashType": "UART",
-    "idf.portWin": "COM13"
+    "idf.portWin": "COM5"
 }

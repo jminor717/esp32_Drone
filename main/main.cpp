@@ -37,23 +37,10 @@ extern "C" {
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
+#include "drivers\WIFI\WifiServer.h"
+
 #include "driver/gpio.h"
 #include "driver/uart.h"
-#include "esp_eth.h"
-#include "esp_flash_partitions.h"
-#include "esp_netif.h"
-#include "esp_ota_ops.h"
-#include "esp_partition.h"
-#include "esp_tls_crypto.h"
-#include "protocol_examples_common.h"
-#include "string.h"
-#include <esp_event.h>
-#include <esp_http_server.h>
-#include <esp_wifi.h>
-#include <math.h>
-#include <string.h>
-#include <sys/param.h>
-
 #include "nmea.h"
 
 #include "gpgga.h"
@@ -69,6 +56,8 @@ extern "C" {
 // #include "wifi_esp32.h"
 // #include <../Common/Data_type.h>
 
+#include "param.h"
+
 #include "../common/GPSCalc.h"
 
 #define DEBUG_MODULE "APP_MAIN"
@@ -78,8 +67,14 @@ extern "C" {
 #include "radiolink.h"
 #define DebugTasks defined(CONFIG_FREERTOS_USE_TRACE_FACILITY) && defined(CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
 
+#define Print_Params true
+
 #if DebugTasks
 void ProfileTaskStats(char* pcWriteBuffer);
+#endif
+
+#if Print_Params
+void PrintParams(char* pcWriteBuffer, size_t BufferSize);
 #endif
 
 extern "C" {
@@ -142,6 +137,16 @@ void app_main()
 
     /*launch the system task */
     systemLaunch();
+
+#if Print_Params
+    vTaskDelay(5000);
+    // Start_OTA_Wifi_Server();
+    char* pcWriteBuffer;
+    pcWriteBuffer = (char*)malloc(50000);
+    PrintParams(pcWriteBuffer, 50000);
+    DEBUG_PRINTI("%s", pcWriteBuffer);
+    free(pcWriteBuffer);
+#endif
 
     for (;;) {
         vTaskDelay(1000);
@@ -207,5 +212,40 @@ void ProfileTaskStats(char* pcWriteBuffer)
 
         // The array is no longer needed, free the memory it consumes.
         vPortFree(pxTaskStatusArray);
+    }
+}
+
+void PrintParams(char* pcWriteBuffer, size_t BufferSize)
+{
+    int numParams = getParamsLen();
+    size_t totalLen = 0;
+    char* group = (char*)malloc(20);
+
+    // Make sure the write buffer does not contain a string.
+    *pcWriteBuffer = 0x00;
+    sprintf(pcWriteBuffer, "num p: %d\r\n", numParams);
+    pcWriteBuffer += strlen((char*)pcWriteBuffer);
+
+    param_s* paramsToPrint = getParamsArr();
+    for (uint16_t i = 0; i < numParams; i++) {
+        paramVarId_t VarId = {
+            .id = 1,
+            .ptr = i
+        };
+        if (paramsToPrint[i].type & PARAM_GROUP) {
+            // memset(group, 0 , 20);
+            group = paramsToPrint[i].name;
+            // sprintf(pcWriteBuffer, "i: %-3d, n:%-16s\r\n", i, paramsToPrint[i].name);
+        }else if (paramsToPrint[i].type == PARAM_FLOAT) {
+            sprintf(pcWriteBuffer, "i: %-3d, n:%-16s, g:%-16s, type:F,%-3d  v:%0.4f\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetFloat(VarId));
+        } else {
+            sprintf(pcWriteBuffer, "i: %-3d, n:%-16s, g:%-16s, type:i,%-3d  v:%d\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetInt(VarId));
+        }
+        size_t localLen = strlen((char*)pcWriteBuffer);
+        pcWriteBuffer += localLen;
+        totalLen += localLen;
+        if (totalLen > BufferSize - 100) {
+            break;
+        }
     }
 }

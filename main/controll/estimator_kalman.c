@@ -317,7 +317,7 @@ static void kalmanTask(void *parameters)
         if (coreData.resetEstimation)
         {
             estimatorKalmanInit();
-            //!paramSetInt(paramGetVarId("kalman", "resetEstimation"), 0);
+            paramSetInt(paramGetVarId("kalman", "resetEstimation"), 0);
             //TODO: what are params used for
         }
 

@@ -24,3 +24,4 @@ struct PointingVector {
 };
 
 struct PointingVector CalculateOrientationToTarget(struct coordinate self, struct coordinate target, bool oblate);
+struct GPSCord LocationToPoint(struct coordinate c, bool oblate);

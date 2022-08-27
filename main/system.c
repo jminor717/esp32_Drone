@@ -47,8 +47,10 @@
 //#include "uart1.h"
 //#include "uart2.h"
 #if (COMMS_MODE == WIFI_COMMS_MODE)
-#include "wifi_esp32.h"
-#include "wifilink.h"
+#include "drivers\WIFI\wifi_esp32.h"
+#include "drivers\WIFI\wifilink.h"
+
+
 #else
 #include "radiolink.h"
 #endif
