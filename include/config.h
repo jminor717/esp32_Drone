@@ -225,6 +225,8 @@
 
 #define COMMS_MODE RF69_COMMS_MODE
 
+#define ENABLE_WIFI_OTA
+
 #define M1Type BRUSHLESS
 #define M2Type BRUSHLESS
 #define M3Type BRUSHLESS

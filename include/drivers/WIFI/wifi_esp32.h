@@ -1,15 +1,20 @@
 #ifndef WIFI_ESP32_H_
-    #define WIFI_ESP32_H_
+#define WIFI_ESP32_H_
 #include <stdbool.h>
 #include <stdint.h>
 
-#define WIFI_RX_TX_PACKET_SIZE   (64)
+#define WIFI_RX_TX_PACKET_SIZE (64)
+
+typedef enum {
+    OTA,
+    CommsLink
+} WifiServerType;
 
 /* Structure used for in/out data via USB */
 typedef struct
 {
-  uint8_t size;
-  uint8_t data[WIFI_RX_TX_PACKET_SIZE];
+    uint8_t size;
+    uint8_t data[WIFI_RX_TX_PACKET_SIZE];
 } UDPPacket;
 
 /**
@@ -17,7 +22,7 @@ typedef struct
  *
  * @note Initialize CRTP link only if USE_CRTP_WIFI is defined
  */
-void wifiInit(void);
+void wifiInit(WifiServerType ServerType);
 
 /**
  * Test the WIFI status.
@@ -39,7 +44,7 @@ bool wifiTest(void);
  *
  * @return true if byte received, false if timout reached.
  */
-bool wifiGetDataBlocking(UDPPacket *in);
+bool wifiGetDataBlocking(UDPPacket* in);
 
 /**
  * Sends raw data using a lock. Should be used from

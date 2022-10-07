@@ -1,5 +1,5 @@
 
-#include "drivers\WIFI\WifiServer.h"
+#include "drivers\WIFI\OtaServer.h"
 #include "esp_eth.h"
 #include "esp_flash_partitions.h"
 #include "esp_netif.h"
@@ -35,16 +35,31 @@ static basic_auth_info_t auth_info = {
     .password = "12345",
 };
 
-static void wifi_task(void* Param);
-static void ota_task(void* Param);
+// static void wifi_task(void* Param);
+// static void ota_task(void* Param);
+static httpd_handle_t start_webserver(void);
 char* SerialData;
 
-void Start_OTA_Wifi_Server(){
+void Start_OTA_Wifi_Server()
+{
     DEBUG_PRINTI("OTA Bitch!\n");
 
+    start_webserver();
+    DEBUG_PRINTI("start_webserver");
+
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    esp_ota_img_states_t ota_state;
+    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+            // Validate image some how, then call:
+            esp_ota_mark_app_valid_cancel_rollback();
+            // If needed: esp_ota_mark_app_invalid_rollback_and_reboot();
+        }
+    }
+
     //Put all the wifi stuff in a separate task so that we don't have to wait for a connection
-    xTaskCreate(wifi_task, "wifi_task", 4096, NULL, 0, NULL);
-    xTaskCreate(ota_task, "ota_task", 8192, NULL, 5, NULL);
+    // xTaskCreate(wifi_task, "wifi_task", 4096, NULL, 0, NULL);
+    // xTaskCreate(ota_task, "ota_task", 8192, NULL, 5, NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -315,6 +330,7 @@ static httpd_handle_t start_webserver(void)
     return NULL;
 }
 
+/*
 //-----------------------------------------------------------------------------
 static void disconnect_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
@@ -344,23 +360,24 @@ static void wifi_task(void* Param)
 {
     DEBUG_PRINTI("Wifi task starting");
 
-    httpd_handle_t server = NULL;
+    // httpd_handle_t server = NULL;
 
-    esp_netif_init();
-    DEBUG_PRINTI("esp_netif_init");
-    esp_event_loop_create_default();
-    DEBUG_PRINTI("esp_event_loop_create_default");
-    example_connect();
-    DEBUG_PRINTI("example_connect");
+    // esp_netif_init();
+    // DEBUG_PRINTI("esp_netif_init");
+    // esp_event_loop_create_default();
+    // DEBUG_PRINTI("esp_event_loop_create_default");
+    // example_connect();
+    // DEBUG_PRINTI("example_connect");
 
-    // Register event handlers to stop the server when Wi-Fi is disconnected, and re-start it upon connection
-    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server);
-    esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server);
+    // // Register event handlers to stop the server when Wi-Fi is disconnected, and re-start it upon connection
+    // esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server);
+    // esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server);
 
-    server = start_webserver();
+    // server =
+    start_webserver();
     DEBUG_PRINTI("start_webserver");
 
-    const uint32_t task_delay_ms = 10;
+    const uint32_t task_delay_ms = 1000;
     while (1) {
         vTaskDelay(task_delay_ms / portTICK_RATE_MS);
     }
@@ -400,3 +417,4 @@ static void ota_task(void* Param)
         vTaskDelay(task_delay_ms / portTICK_RATE_MS);
     }
 }
+*/

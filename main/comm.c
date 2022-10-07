@@ -102,8 +102,8 @@ bool commTest(void)
     // DEBUG_PRINTI("platformserviceTest = %d ", pass);
     // pass &= consoleTest();
     // DEBUG_PRINTI("consoleTest = %d ", pass);
-    // pass &= paramTest();
-    // DEBUG_PRINTI("paramTest = %d ", pass);
+    pass &= paramTest();
+    DEBUG_PRINTI("paramTest = %d ", pass);
 
     return pass;
 }

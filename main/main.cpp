@@ -37,8 +37,6 @@ extern "C" {
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
-#include "drivers\WIFI\WifiServer.h"
-
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "nmea.h"
@@ -65,7 +63,10 @@ extern "C" {
 }
 
 #include "radiolink.h"
-#define DebugTasks defined(CONFIG_FREERTOS_USE_TRACE_FACILITY) && defined(CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
+
+#if defined(CONFIG_FREERTOS_USE_TRACE_FACILITY) && defined(CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
+#define DebugTasks
+#endif
 
 #define Print_Params true
 
@@ -118,8 +119,6 @@ void app_main()
 
     ESP_ERROR_CHECK(ret);
 
-    // wifiInit();
-
     /*Initialize the platform.*/
     if (platformInit() == false) {
         DEBUG_PRINTW("platformInit failed");
@@ -140,7 +139,6 @@ void app_main()
 
 #if Print_Params
     vTaskDelay(5000);
-    // Start_OTA_Wifi_Server();
     char* pcWriteBuffer;
     pcWriteBuffer = (char*)malloc(50000);
     PrintParams(pcWriteBuffer, 50000);

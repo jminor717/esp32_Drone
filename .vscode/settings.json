@@ -167,7 +167,8 @@
         "radiolink.h": "c",
         "system.h": "c",
         "crtp_localization_service.h": "c",
-        "esp_eth.h": "c"
+        "esp_eth.h": "c",
+        "wifiserver.h": "c"
     },
     "cSpell.words": [
         "CLPT",

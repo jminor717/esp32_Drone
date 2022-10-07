@@ -46,13 +46,10 @@
 //#include "uart_syslink.h"
 //#include "uart1.h"
 //#include "uart2.h"
-#if (COMMS_MODE == WIFI_COMMS_MODE)
+
+#if (COMMS_MODE == WIFI_COMMS_MODE || defined(ENABLE_WIFI_OTA))
 #include "drivers\WIFI\wifi_esp32.h"
 #include "drivers\WIFI\wifilink.h"
-
-
-#else
-#include "radiolink.h"
 #endif
 
 #include "comm.h"
@@ -175,8 +172,13 @@ void systemTask(void* arg)
     ledInit();
     ledSet(CHG_LED, 255);
 #if (COMMS_MODE == WIFI_COMMS_MODE)
-    wifiInit();
+    wifiInit(CommsLink);
     vTaskDelay(M2T(500));
+#else 
+#ifdef ENABLE_WIFI_OTA
+    wifiInit(OTA);
+    vTaskDelay(M2T(500));
+#endif
 #endif
 
 #ifdef DEBUG_QUEUE_MONITOR
