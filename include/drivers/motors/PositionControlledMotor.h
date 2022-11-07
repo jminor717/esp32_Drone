@@ -8,6 +8,8 @@
 
 #define initial_tuning false
 
+#define find_stall_speed false
+
 enum MtrDirection {
     Stationary,
     Forward,
@@ -16,6 +18,18 @@ enum MtrDirection {
 
 struct MtrConfig {
 };
+
+class PID_Knocker {
+public:
+    PID_Knocker(float startStall, float stopStall, uint32_t tolerance);
+    float Knock(uint32_t currentTick, float PidOutput, int32_t PosSetpoint, uint32_t PosMeasured, float Velocity);
+
+private:
+    uint32_t Tick, StartKnockTick, PositionTolerance;
+    float StallSpeedStatic;
+    float StallSpeedMoving;
+};
+
 
 class PosContMot {
 public:
@@ -28,6 +42,9 @@ public:
 
 private:
     PosContMot(uint16_t _GPIOa, uint16_t _GPIOb, uint16_t _FeedbackPin, int direction, uint16_t offset);
+    void MoveMotor(MtrDirection NextDirection, float PidMag);
+    float FindStallInDirection(MtrDirection SearchDirection);
+    PID_Knocker *TheOneWhoKnocks;
     mcpwm_config_t McPwm_Config;
     mcpwm_unit_t this_Unit;
     mcpwm_timer_t this_Timer;
@@ -44,5 +61,9 @@ private:
     PID* velocityPID;
     PID_ATune* aTune;
     bool tuning = initial_tuning;
+    bool findingStall = find_stall_speed;
+    float stallSpeed = 61;
+
     //  static bool pwm_timmer_init();
 };
+

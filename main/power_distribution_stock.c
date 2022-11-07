@@ -28,12 +28,13 @@
 
 #include "power_distribution.h"
 
-#include <string.h>
 #include "log.h"
-#include "param.h"
-#include "num.h"
-#include "platform.h"
 #include "motors.h"
+#include "num.h"
+#include "param.h"
+#include "platform.h"
+#include <string.h>
+
 #define DEBUG_MODULE "PWR_DIST"
 #include "debug_cf.h"
 
@@ -138,37 +139,30 @@ void powerDistribution(const control_t* control, const setpoint_t* setpoint)
         pitchStab = control->pitch;
     }
 
-    ServoPosition.s1 = setpoint->attitudeRate.roll + (setpoint->attitudeRate.pitch - pitchStab);
+    ServoPosition.s1 = setpoint->attitudeRate.roll + (setpoint->attitudeRate.pitch); // - pitchStab
     // ServoPosition.s2 = -setpoint->attitudeRate.yaw;
     // ServoPosition.s3 = setpoint->attitudeRate.yaw;
-    ServoPosition.s4 = setpoint->attitudeRate.roll - (setpoint->attitudeRate.pitch - pitchStab);
+    ServoPosition.s4 = setpoint->attitudeRate.roll - (setpoint->attitudeRate.pitch); //- pitchStab
 #else
 #error Motor layout not defined!
 #endif
 
-    if (motorSetEnable)
-    {
+    if (motorSetEnable) {
         motorsSetRatio(MOTOR_M1, motorPowerSet.m1);
         motorsSetRatio(MOTOR_M2, motorPowerSet.m2);
         motorsSetRatio(MOTOR_M3, motorPowerSet.m3);
         motorsSetRatio(MOTOR_M4, motorPowerSet.m4);
-    }
-    else
-    {
-        if (motorPower.m1 < idleThrust)
-        {
+    } else {
+        if (motorPower.m1 < idleThrust) {
             motorPower.m1 = idleThrust;
         }
-        if (motorPower.m2 < idleThrust)
-        {
+        if (motorPower.m2 < idleThrust) {
             motorPower.m2 = idleThrust;
         }
-        if (motorPower.m3 < idleThrust)
-        {
+        if (motorPower.m3 < idleThrust) {
             motorPower.m3 = idleThrust;
         }
-        if (motorPower.m4 < idleThrust)
-        {
+        if (motorPower.m4 < idleThrust) {
             motorPower.m4 = idleThrust;
         }
 

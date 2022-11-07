@@ -231,8 +231,8 @@ static void radioLinkTask(void* param)
 
                     // if (cmd.data[0] == ControllerType)
                     // {
-                    //     struct RawControllsPackett_s DataOut;
-                    //     memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+                    //     struct RawControlsPacket_s DataOut;
+                    //     memcpy(&DataOut, cmd.data + 1, sizeof(RawControlsPacket_s));
 
                     // TODO: tailor responce based of of current state and cmd inputs, eg acknowledge specific button presses
                     // }

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
  * Controller\*,components\*
  */
 
@@ -68,7 +68,7 @@ extern "C" {
 #define DebugTasks
 #endif
 
-#define Print_Params true
+#define Print_Params false
 
 #if DebugTasks
 void ProfileTaskStats(char* pcWriteBuffer);
@@ -231,13 +231,12 @@ void PrintParams(char* pcWriteBuffer, size_t BufferSize)
             .ptr = i
         };
         if (paramsToPrint[i].type & PARAM_GROUP) {
-            // memset(group, 0 , 20);
             group = paramsToPrint[i].name;
             // sprintf(pcWriteBuffer, "i: %-3d, n:%-16s\r\n", i, paramsToPrint[i].name);
         }else if (paramsToPrint[i].type == PARAM_FLOAT) {
-            sprintf(pcWriteBuffer, "i: %-3d, n:%-16s, g:%-16s, type:F,%-3d  v:%0.4f\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetFloat(VarId));
+            sprintf(pcWriteBuffer, "i:%-3d n: %-16s g: %-12s type:F,%-2d v:%0.4f\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetFloat(VarId));
         } else {
-            sprintf(pcWriteBuffer, "i: %-3d, n:%-16s, g:%-16s, type:i,%-3d  v:%d\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetInt(VarId));
+            sprintf(pcWriteBuffer, "i:%-3d n: %-16s g: %-12s type:i,%-2d v:%d\r\n", i, paramsToPrint[i].name, group, paramsToPrint[i].type, paramGetInt(VarId));
         }
         size_t localLen = strlen((char*)pcWriteBuffer);
         pcWriteBuffer += localLen;

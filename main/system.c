@@ -176,8 +176,8 @@ void systemTask(void* arg)
     vTaskDelay(M2T(500));
 #else 
 #ifdef ENABLE_WIFI_OTA
-    wifiInit(OTA);
-    vTaskDelay(M2T(500));
+    // wifiInit(OTA);
+    // vTaskDelay(M2T(500));
 #endif
 #endif
 

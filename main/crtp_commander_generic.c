@@ -336,8 +336,8 @@ static void positionDecoder(setpoint_t* setpoint, uint8_t type, const unsigned c
  */
 static void ControllerDecoder(setpoint_t* setpoint, uint8_t type, const unsigned char* data, size_t datalen)
 {
-    struct RawControllsPackett_s DataOut;
-    memcpy(&DataOut, data + 1, sizeof(RawControllsPackett_s));
+    struct RawControlsPacket_s DataOut;
+    memcpy(&DataOut, data + 1, sizeof(RawControlsPacket_s));
 
     // DEBUG_PRINTI("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
     //              DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
@@ -372,7 +372,7 @@ static void ControllerDecoder(setpoint_t* setpoint, uint8_t type, const unsigned
     //setpoint->velocity.z = DataOut.R2 / 26.5;
 
     setpoint->mode.roll = modeDisable;
-    setpoint->mode.pitch = modeDisable;
+    setpoint->mode.pitch = modeAngularVelocity;
     setpoint->mode.yaw = modeDisable;
     //angle = (((rx * 256) / 16) + 2047) * (330 / 4096)
     //165 + 15 = (((rx * 24)/ 16) + 2047) * (330 / 4096)

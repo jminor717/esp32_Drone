@@ -31,6 +31,8 @@
 #include "cfassert.h"
 #include "commander.h"
 #include "crtp.h"
+#include "drivers\WIFI\wifi_esp32.h"
+
 #define DEBUG_MODULE "CRPTDECODE"
 #include "debug_cf.h"
 
@@ -40,17 +42,17 @@ static void commanderCrtpCB(CRTPPacket* pk);
 
 void crtpCommanderInit(void)
 {
-  if(isInit) {
-    return;
-  }
+    if (isInit) {
+        return;
+    }
 
-  crtpInit();
-  crtpRegisterPortCB(CRTP_PORT_SETPOINT, commanderCrtpCB);
-  crtpRegisterPortCB(CRTP_PORT_SETPOINT_GENERIC, commanderCrtpCB);
-  isInit = true;
+    crtpInit();
+    crtpRegisterPortCB(CRTP_PORT_SETPOINT, commanderCrtpCB);
+    crtpRegisterPortCB(CRTP_PORT_SETPOINT_GENERIC, commanderCrtpCB);
+    isInit = true;
 }
 
-typedef void (*metaCommandDecoder_t)(const void *data, size_t datalen);
+typedef void (*metaCommandDecoder_t)(const void* data, size_t datalen);
 
 /* ---===== 2 - Decoding functions =====--- */
 
@@ -58,45 +60,51 @@ typedef void (*metaCommandDecoder_t)(const void *data, size_t datalen);
  * commanderNotifySetpointsStop() for description and motivation.
  */
 struct notifySetpointsStopPacket {
-  uint32_t remainValidMillisecs;
+    uint32_t remainValidMillisecs;
 } __attribute__((packed));
-void notifySetpointsStopDecoder(const void *data, size_t datalen)
+void notifySetpointsStopDecoder(const void* data, size_t datalen)
 {
-  ASSERT(datalen == sizeof(struct notifySetpointsStopPacket));
-  const struct notifySetpointsStopPacket *values = data;
-  commanderNotifySetpointsStop(values->remainValidMillisecs);
+    ASSERT(datalen == sizeof(struct notifySetpointsStopPacket));
+    const struct notifySetpointsStopPacket* values = data;
+    commanderNotifySetpointsStop(values->remainValidMillisecs);
 }
 
- /* ---===== packetDecoders array =====--- */
+void StartOTAWifi(const void* data, size_t datalen)
+{
+    wifiInit(OTA);
+}
+
+/* ---===== packetDecoders array =====--- */
 const static metaCommandDecoder_t metaCommandDecoders[] = {
-  [metaNotifySetpointsStop] = notifySetpointsStopDecoder,
+    [metaNotifySetpointsStop] = notifySetpointsStopDecoder,
+    [metaStartOTAWifi] = StartOTAWifi,
 };
 
 /* Decoder switch */
 static void commanderCrtpCB(CRTPPacket* pk)
 {
-  static setpoint_t setpoint;
-  //DEBUG_PRINTI("commanderCrtpCB got type p%d, c%d, d%d", pk->port, pk->channel, pk->data[0]);
+    static setpoint_t setpoint;
+    // DEBUG_PRINTI("commanderCrtpCB got type p%d, c%d, d%d", pk->port, pk->channel, pk->data[0]);
 
-  if(pk->port == CRTP_PORT_SETPOINT && pk->channel == 0) {
-    crtpCommanderRpytDecodeSetpoint(&setpoint, pk);
-    commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
-  } else if (pk->port == CRTP_PORT_SETPOINT_GENERIC) {
-    switch (pk->channel) {
-    case SET_SETPOINT_CHANNEL:
-      crtpCommanderGenericDecodeSetpoint(&setpoint, pk);
-      commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
-      break;
-    case META_COMMAND_CHANNEL: {
-        uint8_t metaCmd = pk->data[0];
-        if (metaCmd < nMetaCommands && (metaCommandDecoders[metaCmd] != NULL)) {
-          metaCommandDecoders[metaCmd](pk->data + 1, pk->size - 1);
+    if (pk->port == CRTP_PORT_SETPOINT && pk->channel == 0) {
+        crtpCommanderRpytDecodeSetpoint(&setpoint, pk);
+        commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
+    } else if (pk->port == CRTP_PORT_SETPOINT_GENERIC) {
+        switch (pk->channel) {
+        case SET_SETPOINT_CHANNEL:
+            crtpCommanderGenericDecodeSetpoint(&setpoint, pk);
+            commanderSetSetpoint(&setpoint, COMMANDER_PRIORITY_CRTP);
+            break;
+        case META_COMMAND_CHANNEL: {
+            DEBUG_PRINTI("Recieved Meta Cmd %d, size %d", pk->data[0], pk->size);
+            uint8_t metaCmd = pk->data[0];
+            if (metaCmd < nMetaCommands && (metaCommandDecoders[metaCmd] != NULL)) {
+                metaCommandDecoders[metaCmd](pk->data + 1, pk->size - 1);
+            }
+        } break;
+        default:
+            /* Do nothing */
+            break;
         }
-      }
-      break;
-    default:
-      /* Do nothing */
-      break;
     }
-  }
 }

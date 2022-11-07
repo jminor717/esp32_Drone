@@ -205,46 +205,56 @@ void handleControlUpdate()
             //       PS4.data.latestPacket[46], PS4.data.latestPacket[47], PS4.data.latestPacket[48], PS4.data.latestPacket[49], PS4.data.latestPacket[50], PS4.data.latestPacket[51], PS4.data.latestPacket[52], PS4.data.latestPacket[53], PS4.data.latestPacket[54],
             //       PS4.data.latestPacket[55], PS4.data.latestPacket[56], PS4.data.latestPacket[57], PS4.data.latestPacket[58], PS4.data.latestPacket[59], PS4.data.latestPacket[60], PS4.data.latestPacket[61], PS4.data.latestPacket[62], PS4.data.latestPacket[63],
             //       PS4.data.latestPacket[64], PS4.data.latestPacket[65], PS4.data.latestPacket[66], PS4.data.latestPacket[67], PS4.data.latestPacket[68], PS4.data.latestPacket[69], PS4.data.latestPacket[70], PS4.data.latestPacket[71], PS4.data.latestPacket[72]);
-
             CRTPPacket cmd;
             memset(&cmd, 0, sizeof(CRTPPacket));
-            cmd.channel = SET_SETPOINT_CHANNEL;
-            cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+            
+            if (PS4.PSButton()) {
+                cmd.channel = META_COMMAND_CHANNEL;
+                cmd.port = CRTP_PORT_SETPOINT_GENERIC;
+                cmd.data[0] = metaStartOTAWifi;
+                cmd_len = 2;
+                /* code */
+            }else{
 
-            struct RawControllsPackett_s ContorlData;
-            ContorlData.Rx = PS4.RStickX();
-            ContorlData.Ry = PS4.RStickY();
-            ContorlData.Lx = PS4.LStickX();
-            ContorlData.Ly = PS4.LStickY();
-            ContorlData.R2 = PS4.R2Value();
-            ContorlData.L2 = PS4.L2Value();
-            ContorlData.ButtonCount.RightCount = PS4.Right() || PS4.UpRight() || PS4.DownRight();
-            ContorlData.ButtonCount.LeftCount = PS4.Left() || PS4.UpLeft() || PS4.DownLeft();
-            ContorlData.ButtonCount.UpCount = PS4.Up() || PS4.UpLeft() || PS4.UpRight();
-            ContorlData.ButtonCount.DownCount = PS4.Down() || PS4.DownLeft() || PS4.DownRight();
-            ContorlData.ButtonCount.SquareCount = PS4.Square();
-            ContorlData.ButtonCount.XCount = PS4.Cross();
-            ContorlData.ButtonCount.OCount = PS4.Circle();
-            ContorlData.ButtonCount.TriangleCount = PS4.Triangle();
-            ContorlData.ButtonCount.L1Count = PS4.L1();
-            ContorlData.ButtonCount.L3Count = PS4.L3();
-            ContorlData.ButtonCount.R1Count = PS4.R1();
-            ContorlData.ButtonCount.R3Count = PS4.R3();
-            cmd.data[0] = ControllerType;
-            memcpy(cmd.data + 1, &ContorlData, sizeof(RawControllsPackett_s));
+                cmd.channel = SET_SETPOINT_CHANNEL;
+                cmd.port = CRTP_PORT_SETPOINT_GENERIC;
 
-            struct RawControllsPackett_s DataOut;
-            memcpy(&DataOut, cmd.data + 1, sizeof(RawControllsPackett_s));
+                struct RawControlsPacket_s ContorlData;
+                ContorlData.Rx = PS4.RStickX();
+                ContorlData.Ry = PS4.RStickY();
+                ContorlData.Lx = PS4.LStickX();
+                ContorlData.Ly = PS4.LStickY();
+                ContorlData.R2 = PS4.R2Value();
+                ContorlData.L2 = PS4.L2Value();
+                ContorlData.ButtonCount.RightCount = PS4.Right() || PS4.UpRight() || PS4.DownRight();
+                ContorlData.ButtonCount.LeftCount = PS4.Left() || PS4.UpLeft() || PS4.DownLeft();
+                ContorlData.ButtonCount.UpCount = PS4.Up() || PS4.UpLeft() || PS4.UpRight();
+                ContorlData.ButtonCount.DownCount = PS4.Down() || PS4.DownLeft() || PS4.DownRight();
+                ContorlData.ButtonCount.SquareCount = PS4.Square();
+                ContorlData.ButtonCount.XCount = PS4.Cross();
+                ContorlData.ButtonCount.OCount = PS4.Circle();
+                ContorlData.ButtonCount.TriangleCount = PS4.Triangle();
+                ContorlData.ButtonCount.L1Count = PS4.L1();
+                ContorlData.ButtonCount.L3Count = PS4.L3();
+                ContorlData.ButtonCount.R1Count = PS4.R1();
+                ContorlData.ButtonCount.R3Count = PS4.R3();
 
-            // log_v("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
-            //       DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
-            //       DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
-            //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
-            //       DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+                cmd.data[0] = ControllerType;
+                memcpy(cmd.data + 1, &ContorlData, sizeof(RawControlsPacket_s));
 
-            // SendDataToDrone(cmd, sizeof(RawControllsPackett_s) + 1);
+                struct RawControlsPacket_s DataOut;
+                memcpy(&DataOut, cmd.data + 1, sizeof(RawControlsPacket_s));
+
+                cmd_len = sizeof(RawControlsPacket_s) + 1;
+                // log_v("X:%d, O:%d, △:%d, ▢:%d, ←:%d, →:%d, ↑:%d, ↓:%d, R1:%d, R3:%d, L1:%d, L3:%d ____ lx:%d, ly:%d, rx:%d, ry:%d, r2:%d, l2:%d",
+                //       DataOut.ButtonCount.XCount, DataOut.ButtonCount.OCount, DataOut.ButtonCount.TriangleCount, DataOut.ButtonCount.SquareCount,
+                //       DataOut.ButtonCount.LeftCount, DataOut.ButtonCount.RightCount, DataOut.ButtonCount.UpCount, DataOut.ButtonCount.DownCount,
+                //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
+                //       DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
+            }
+            
+            // SendDataToDrone(cmd, sizeof(RawControlsPacket_s) + 1);
             cmd_Data = cmd;
-            cmd_len = sizeof(RawControllsPackett_s) + 1;
             has_cmd = true;
             // uint8_t R2 = 0;
             // int16_t rx = 0, ry = 0, lx = 0;

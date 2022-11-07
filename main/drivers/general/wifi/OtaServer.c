@@ -35,8 +35,8 @@ static basic_auth_info_t auth_info = {
     .password = "12345",
 };
 
-// static void wifi_task(void* Param);
-// static void ota_task(void* Param);
+static void wifi_task(void* Param);
+static void ota_task(void* Param);
 static httpd_handle_t start_webserver(void);
 char* SerialData;
 
@@ -311,7 +311,7 @@ static httpd_handle_t start_webserver(void)
         httpd_register_uri_handler(server, &root);
 
         static httpd_uri_t indexX = {
-            .uri = "/serial",
+            .uri = "/",
             .method = HTTP_GET,
             .handler = Index_handler,
             .user_ctx = NULL,
@@ -330,7 +330,7 @@ static httpd_handle_t start_webserver(void)
     return NULL;
 }
 
-/*
+//*
 //-----------------------------------------------------------------------------
 static void disconnect_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
@@ -360,18 +360,18 @@ static void wifi_task(void* Param)
 {
     DEBUG_PRINTI("Wifi task starting");
 
-    // httpd_handle_t server = NULL;
+    httpd_handle_t server = NULL;
 
-    // esp_netif_init();
-    // DEBUG_PRINTI("esp_netif_init");
-    // esp_event_loop_create_default();
-    // DEBUG_PRINTI("esp_event_loop_create_default");
-    // example_connect();
-    // DEBUG_PRINTI("example_connect");
+    esp_netif_init();
+    DEBUG_PRINTI("esp_netif_init");
+    esp_event_loop_create_default();
+    DEBUG_PRINTI("esp_event_loop_create_default");
+    example_connect();
+    DEBUG_PRINTI("example_connect");
 
-    // // Register event handlers to stop the server when Wi-Fi is disconnected, and re-start it upon connection
-    // esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server);
-    // esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server);
+    // Register event handlers to stop the server when Wi-Fi is disconnected, and re-start it upon connection
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server);
+    esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server);
 
     // server =
     start_webserver();
@@ -417,4 +417,4 @@ static void ota_task(void* Param)
         vTaskDelay(task_delay_ms / portTICK_RATE_MS);
     }
 }
-*/
+//*/

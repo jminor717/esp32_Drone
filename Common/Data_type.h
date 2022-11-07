@@ -148,7 +148,7 @@ struct _BtnCTX
 };// __attribute__((packed));
 typedef struct _BtnCTX BtnCTX;
 
-struct RawControllsPackett_s
+struct RawControlsPacket_s
 {
     int8_t Rx;
     int8_t Ry;
@@ -198,7 +198,7 @@ struct RawControllsPackettCOMPACT_s
 
 typedef struct altHoldPacket_s altHoldPacket_s;
 typedef struct hoverPacket_s hoverPacket_s;
-typedef struct RawControllsPackett_s RawControllsPackett_s;
+typedef struct RawControlsPacket_s RawControlsPacket_s;
 typedef struct RawControllsPackettCOMPACT_s RawControllsPackettCOMPACT_s;
 
 #pragma GCC diagnostic push
@@ -309,6 +309,7 @@ enum crtpSetpointGenericChannel
 enum metaCommand_e
 {
     metaNotifySetpointsStop = 0,
+    metaStartOTAWifi,
     nMetaCommands, // total number of meta comands, add new comands before this line
 };
 

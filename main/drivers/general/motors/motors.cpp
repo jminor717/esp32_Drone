@@ -96,10 +96,10 @@ static bool isInit = false;
 
 // PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
 
-PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN, DIRECT, 2400);
+PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN, DIRECT, 2047);
 PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN, M2_POSITION_PIN, DIRECT, 2047);
 PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M3A_PIN, M3B_PIN, M3_POSITION_PIN, REVERSE, 2047);
-PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 1713);
+PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 2047);
 
 int32_t RightElevonRatio, RightRearRatio, LeftRearRatio, LeftElevonRatio;
 
