@@ -39,7 +39,8 @@ public:
 
     bool begin();
     void SetPos(int32_t Position, uint32_t Tick);
-
+    void isCalibrating(bool otherCalibrating);
+    uint32_t CurrentPosition = 0;
 private:
     PosContMot(uint16_t _GPIOa, uint16_t _GPIOb, uint16_t _FeedbackPin, int direction, uint16_t offset);
     void MoveMotor(MtrDirection NextDirection, float PidMag);

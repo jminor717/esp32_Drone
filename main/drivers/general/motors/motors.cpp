@@ -96,10 +96,10 @@ static bool isInit = false;
 
 // PWMSpeedControll PwmMotors[NBR_OF_MOTORS] = {pwm_ctrl1, pwm_ctrl2, pwm_ctrl3, pwm_ctrl4};
 
-PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN, DIRECT, 2047);
+PosContMot RightElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_0, M1A_PIN, M1B_PIN, M1_POSITION_PIN, DIRECT, 2128);
 PosContMot RightRear = PosContMot::PosContMotCreate(MCPWM_UNIT_0, MCPWM_TIMER_1, M2A_PIN, M2B_PIN, M2_POSITION_PIN, DIRECT, 2047);
 PosContMot LeftRear = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_0, M3A_PIN, M3B_PIN, M3_POSITION_PIN, REVERSE, 2047);
-PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 2047);
+PosContMot LeftElevon = PosContMot::PosContMotCreate(MCPWM_UNIT_1, MCPWM_TIMER_1, M4A_PIN, M4B_PIN, M4_POSITION_PIN, REVERSE, 2257);
 
 int32_t RightElevonRatio, RightRearRatio, LeftRearRatio, LeftElevonRatio;
 
@@ -224,7 +224,6 @@ void motorsSetRatio(uint8_t id, uint16_t ithrust)
 
 void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick)
 {
-
     //RightElevonRatio, RightRearRatio, LeftRearRatio, LeftElevonRatio;
     switch (id) {
     case 0:
@@ -244,6 +243,25 @@ void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick)
     }
 }
 
+uint32_t SetCalibrateMode(bool OtherCalibrating, uint8_t id)
+{
+    switch (id) {
+    case 0:
+        RightElevon.isCalibrating(OtherCalibrating);
+        return RightElevon.CurrentPosition;
+    case 1:
+        RightRear.isCalibrating(OtherCalibrating);
+        return RightRear.CurrentPosition;
+    case 2:
+        LeftRear.isCalibrating(OtherCalibrating);
+        return LeftRear.CurrentPosition;
+    case 3:
+        LeftElevon.isCalibrating(OtherCalibrating);
+        return LeftElevon.CurrentPosition;
+    default:
+        return 0;
+    }
+}
 
 void ServoTask(void *param){
     uint32_t Tick =0;

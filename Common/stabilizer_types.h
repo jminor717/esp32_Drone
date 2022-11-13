@@ -175,12 +175,22 @@ typedef enum mode_e {
 } stab_mode_t;
 
 typedef enum FlightMode {
+    NoModeChangeRequested = 0b0,
     DroneMode = 0b1,
     PlaneMode = 0b10,
     DroneToPlane = 0b100,
     PlaneToDrone = 0b1000,
-    TransitionalMode = DroneToPlane | PlaneToDrone
+    TransitionalMode = DroneToPlane | PlaneToDrone,
+    CalibrateServos = 0b10000
 } flight_mode;
+
+typedef enum ShiftedMotorId {
+    NoMotor = 0b0,
+    M2Offset = 0b1,
+    M3Offset = 0b10,
+    M4Offset = 0b100,
+    M1Offset = 0b1000
+} Shifted_Motor_Id;
 
 typedef struct setpoint_s {
     uint32_t timestamp;
@@ -193,7 +203,9 @@ typedef struct setpoint_s {
     velocity_t velocity; // m/s
     acc_t acceleration; // m/s^2
     bool velocity_body; // true if velocity is given in body frame; false if velocity is given in world frame
-    flight_mode Flight_Mode;
+    flight_mode Desired_Flight_Mode;
+    int8_t motorId;
+
     struct {
         stab_mode_t x;
         stab_mode_t y;

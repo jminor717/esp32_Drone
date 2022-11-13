@@ -181,6 +181,11 @@ EXTERNC bool motorsTest(void);
 EXTERNC void motorsSetRatio(uint8_t id, uint16_t ratio);
 
 /**
+ * Set the calibration mode for the selected motor 'id'
+ */
+EXTERNC uint32_t SetCalibrateMode(bool OtherCalibrating, uint8_t id);
+
+/**
  * Set the PWM ratio of the motor 'id'
  */
 EXTERNC void servoSetPosition(uint8_t id, int32_t ratio, uint32_t Tick);

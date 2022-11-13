@@ -4,13 +4,15 @@
 #define COMMS_MODE RF69_COMMS_MODE
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
-#include <Arduino.h>
+
 #include "../Submodules/PS4-esp32/src/PS4Controller.h"
 #include <../Common/Data_type.h>
+#include <Arduino.h>
+
 #if (COMMS_MODE == WIFI_COMMS_MODE)
 #include <WiFi.h>
 #else
@@ -64,7 +66,7 @@ IPAddress DroneAddress = IPAddress();
 WiFiUDP udp = WiFiUDP();
 // AsyncUDP udp;
 
-void handleWifiConnected(system_event_t *event)
+void handleWifiConnected(system_event_t* event)
 {
     // CRTPPacket cmd;
     // memset(&cmd, 0, sizeof(CRTPPacket));
@@ -85,7 +87,7 @@ void handleWifiConnected(system_event_t *event)
     // free(buffer);
 }
 
-void handleWifiDropped(system_event_t *event)
+void handleWifiDropped(system_event_t* event)
 {
     delay(5000);
     WiFi.begin(WIFIssid, WIFIpassword);
@@ -158,8 +160,7 @@ uint16_t val = 0;
 void handleControlUpdate()
 {
     // Below has all accessible outputs from the controller
-    if (PS4.isConnected())
-    {
+    if (PS4.isConnected()) {
         now = esp_timer_get_time();
         val++;
         // if (PS4.Share())
@@ -188,8 +189,7 @@ void handleControlUpdate()
         //     Serial.println("The controller has a mic attached");
 
         // Serial.printf("Battery Level : %d\n", PS4.Battery());
-        if (now > NextAvalableTransmit)
-        {
+        if (now > NextAvalableTransmit) {
             val = 0;
             NextAvalableTransmit = now + WIFI_TRANSMIT_RATE_Us;
             /*
@@ -207,14 +207,14 @@ void handleControlUpdate()
             //       PS4.data.latestPacket[64], PS4.data.latestPacket[65], PS4.data.latestPacket[66], PS4.data.latestPacket[67], PS4.data.latestPacket[68], PS4.data.latestPacket[69], PS4.data.latestPacket[70], PS4.data.latestPacket[71], PS4.data.latestPacket[72]);
             CRTPPacket cmd;
             memset(&cmd, 0, sizeof(CRTPPacket));
-            
+
             if (PS4.PSButton()) {
                 cmd.channel = META_COMMAND_CHANNEL;
                 cmd.port = CRTP_PORT_SETPOINT_GENERIC;
                 cmd.data[0] = metaStartOTAWifi;
                 cmd_len = 2;
                 /* code */
-            }else{
+            } else {
 
                 cmd.channel = SET_SETPOINT_CHANNEL;
                 cmd.port = CRTP_PORT_SETPOINT_GENERIC;
@@ -238,6 +238,7 @@ void handleControlUpdate()
                 ContorlData.ButtonCount.L3Count = PS4.L3();
                 ContorlData.ButtonCount.R1Count = PS4.R1();
                 ContorlData.ButtonCount.R3Count = PS4.R3();
+                ContorlData.ButtonCount.touchPad = PS4.Touchpad();
 
                 cmd.data[0] = ControllerType;
                 memcpy(cmd.data + 1, &ContorlData, sizeof(RawControlsPacket_s));
@@ -252,7 +253,7 @@ void handleControlUpdate()
                 //       DataOut.ButtonCount.R1Count, DataOut.ButtonCount.L3Count, DataOut.ButtonCount.L1Count, DataOut.ButtonCount.R3Count,
                 //       DataOut.Lx, DataOut.Ly, DataOut.Rx, DataOut.Ry, DataOut.R2, DataOut.L2);
             }
-            
+
             // SendDataToDrone(cmd, sizeof(RawControlsPacket_s) + 1);
             cmd_Data = cmd;
             has_cmd = true;
@@ -316,8 +317,7 @@ void handleControlUpdate()
 
             portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
             xSemaphoreGiveFromISR(PacketReadySendSem, &xHigherPriorityTaskWoken);
-            if (xHigherPriorityTaskWoken)
-            {
+            if (xHigherPriorityTaskWoken) {
                 portYIELD_FROM_ISR();
             }
         }
@@ -327,8 +327,7 @@ void handleControlUpdate()
 char packetBuffer[255];
 void loop()
 {
-    while (true)
-    {
+    while (true) {
         // int packetSize = udp.parsePacket();
         // if (packetSize)
         // {
@@ -362,8 +361,7 @@ void loop()
         //     delay(1);
         // }
         xSemaphoreTake(PacketReadySendSem, 1000);
-        if (has_cmd)
-        {
+        if (has_cmd) {
             has_cmd = false;
             SendDataToDrone(cmd_Data, cmd_len);
         }
@@ -372,7 +370,7 @@ void loop()
 
 const uint16_t maxCnt = 100;
 uint16_t respCount = 0;
-int16_t RssiCnt[maxCnt] = {0};
+int16_t RssiCnt[maxCnt] = { 0 };
 int64_t last = 1;
 /**
  * cmd: cprt data to send to drone
@@ -382,8 +380,8 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
 {
     len = len + 2; // add one byte to account for cprt header and another for checksum
     cmd.size = len + 3;
-    uint8_t *buffer = (uint8_t *)calloc(1, len + 1);
-    memcpy(buffer, (const uint8_t *)&cmd, len);
+    uint8_t* buffer = (uint8_t*)calloc(1, len + 1);
+    memcpy(buffer, (const uint8_t*)&cmd, len);
     buffer[len] = calculate_cksum(buffer, len);
 
     // log_v("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
@@ -407,21 +405,17 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
     uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
     uint8_t len2 = sizeof(buf);
 
-    if (rf69.waitAvailableTimeout(50))
-    {
+    if (rf69.waitAvailableTimeout(50)) {
         // Should be a reply message for us now
         uint8_t lenOut = rf69.recv(buf, len2);
-        if (lenOut)
-        {
+        if (lenOut) {
 
             RssiCnt[respCount] = rf69.lastRssi();
             respCount++;
-            if (respCount >= maxCnt)
-            {
+            if (respCount >= maxCnt) {
                 respCount = 0;
                 int32_t sum = 0;
-                for (size_t i = 0; i < maxCnt; i++)
-                {
+                for (size_t i = 0; i < maxCnt; i++) {
                     sum += RssiCnt[i];
                 }
                 now = esp_timer_get_time();
@@ -434,19 +428,14 @@ void SendDataToDrone(CRTPPacket cmd, uint8_t len)
                 // log_v("received %d messages in %d with an avg RSSI of %d", , RssiCnt[1], sum / (float)maxCnt);
                 last = esp_timer_get_time();
             }
-            if (lenOut > 5)
-            {
+            if (lenOut > 5) {
                 buf[lenOut + 1] = 0;
-                Serial.println((char *)buf);
+                Serial.println((char*)buf);
             }
-        }
-        else
-        {
+        } else {
             Serial.println("recv failed");
         }
-    }
-    else
-    {
+    } else {
         Serial.print(".");
     }
 #endif

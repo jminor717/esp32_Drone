@@ -168,7 +168,8 @@
         "system.h": "c",
         "crtp_localization_service.h": "c",
         "esp_eth.h": "c",
-        "wifiserver.h": "c"
+        "wifiserver.h": "c",
+        "power_distribution.h": "c"
     },
     "cSpell.words": [
         "CLPT",

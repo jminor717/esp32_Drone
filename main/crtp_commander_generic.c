@@ -362,7 +362,18 @@ static void ControllerDecoder(setpoint_t* setpoint, uint8_t type, const unsigned
     // setpoint->attitude.roll = getChannelUnitMultiplier(DataOut.Rx, 0, 255);
     // setpoint->attitude.pitch = getChannelUnitMultiplier(DataOut.Ry, 0, 255);
 
-    setpoint->Flight_Mode = PlaneMode;
+    setpoint->Desired_Flight_Mode = NoModeChangeRequested;
+    if (DataOut.ButtonCount.R1Count > DataOut.ButtonCount.L1Count && DataOut.ButtonCount.L1Count == 0) {
+        setpoint->Desired_Flight_Mode = DroneMode;
+    }
+    if (DataOut.ButtonCount.R1Count < DataOut.ButtonCount.L1Count && DataOut.ButtonCount.R1Count == 0) {
+        setpoint->Desired_Flight_Mode = PlaneMode;
+    }
+    if (DataOut.ButtonCount.touchPad > 0) {
+        setpoint->Desired_Flight_Mode = CalibrateServos;
+    }
+
+    setpoint->motorId = DataOut.ButtonCount.UpCount | (DataOut.ButtonCount.DownCount << 1) | (DataOut.ButtonCount.LeftCount << 2) | (DataOut.ButtonCount.RightCount << 3);
 
     setpoint->thrust = (DataOut.R2 + DataOut.L2) * INT8_MAX;
 

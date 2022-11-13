@@ -64,7 +64,10 @@ static struct
     uint16_t m4;
 } motorPowerSet;
 
+flight_mode CurrentFlightMode = PlaneMode;
+
 uint32_t LocalTick = 0;
+int8_t CurrentMotor = 0, PreviousMotor = 0;
 
 #ifndef DEFAULT_IDLE_THRUST
 #define DEFAULT_IDLE_THRUST 0
@@ -139,10 +142,82 @@ void powerDistribution(const control_t* control, const setpoint_t* setpoint)
         pitchStab = control->pitch;
     }
 
-    ServoPosition.s1 = setpoint->attitudeRate.roll + (setpoint->attitudeRate.pitch); // - pitchStab
-    // ServoPosition.s2 = -setpoint->attitudeRate.yaw;
-    // ServoPosition.s3 = setpoint->attitudeRate.yaw;
-    ServoPosition.s4 = setpoint->attitudeRate.roll - (setpoint->attitudeRate.pitch); //- pitchStab
+    if (setpoint->Desired_Flight_Mode != NoModeChangeRequested && CurrentFlightMode != setpoint->Desired_Flight_Mode) {
+        if (CurrentFlightMode == CalibrateServos) {
+            SetCalibrateMode(false, 0);
+            SetCalibrateMode(false, 1);
+            SetCalibrateMode(false, 2);
+            SetCalibrateMode(false, 3);
+        }
+        CurrentFlightMode = setpoint->Desired_Flight_Mode;
+    }
+
+    if (CurrentFlightMode == PlaneMode) {
+        ServoPosition.s1 = setpoint->attitudeRate.roll + (setpoint->attitudeRate.pitch) - pitchStab; // - pitchStab
+        // ServoPosition.s2 = -setpoint->attitudeRate.yaw;
+        // ServoPosition.s3 = setpoint->attitudeRate.yaw;
+        ServoPosition.s4 = setpoint->attitudeRate.roll - (setpoint->attitudeRate.pitch) - pitchStab; //- pitchStab
+    }
+    if (CurrentFlightMode == DroneMode) {
+        ServoPosition.s1 = -17872; // - pitchStab
+        // ServoPosition.s2 = 17872;
+        // ServoPosition.s3 = 17872;
+        ServoPosition.s4 = 17872; //- pitchStab
+    }
+
+    if (CurrentFlightMode == CalibrateServos) {
+        ServoPosition.s1 = (setpoint->attitudeRate.pitch);
+        // ServoPosition.s2 = -setpoint->attitudeRate.yaw;
+        // ServoPosition.s3 = setpoint->attitudeRate.yaw;
+        ServoPosition.s4 = -(setpoint->attitudeRate.pitch);
+        if (CurrentMotor != setpoint->motorId) {
+            bool HasPrevious = PreviousMotor > 0;
+            uint32_t Position = 0;
+            int8_t nextMotor = setpoint->motorId;
+            if (HasPrevious) {
+                nextMotor = PreviousMotor;
+            }
+
+            switch (nextMotor) {
+            case M1Offset:
+                CurrentMotor = M1Offset;
+                Position = SetCalibrateMode(HasPrevious, 0);
+                break;
+            case M2Offset:
+                CurrentMotor = M2Offset;
+                Position = SetCalibrateMode(HasPrevious, 1);
+                break;
+            case M3Offset:
+                CurrentMotor = M3Offset;
+                Position = SetCalibrateMode(HasPrevious, 2);
+                break;
+            case M4Offset:
+                CurrentMotor = M4Offset;
+                Position = SetCalibrateMode(HasPrevious, 3);
+                break;
+            default:
+                PreviousMotor = 0;
+                CurrentMotor = setpoint->motorId;
+                break;
+            }
+
+            if (HasPrevious) {
+                DEBUG_PRINTI("M  %d, %d", PreviousMotor, Position);
+                PreviousMotor = 0;
+                CurrentMotor = 0;
+            } else {
+                PreviousMotor = CurrentMotor;
+            }
+
+            if (PreviousMotor == 0) {
+                SetCalibrateMode(true, 0);
+                SetCalibrateMode(true, 1);
+                SetCalibrateMode(true, 2);
+                SetCalibrateMode(true, 3);
+            }
+        }
+    }
+
 #else
 #error Motor layout not defined!
 #endif

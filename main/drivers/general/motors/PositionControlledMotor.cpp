@@ -231,6 +231,11 @@ int16_t absInt(int16_t N)
     return N;
 }
 
+void PosContMot::isCalibrating(bool otherCalibrating)
+{
+    findingStall = otherCalibrating;
+}
+
 /**
  * @brief will iterate the PID loop of the specifed motor and attempt to drive the motor to the specified position
  * @remarks this should be called on every run of the main control loop
@@ -245,11 +250,11 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
     }
 
     // int16_t PidOut = previous_Duty;
-    uint32_t feedback = analogReadRaw(PositionFeedbackPin);
+    CurrentPosition = analogReadRaw(PositionFeedbackPin);
     Position = Position >> 4;
     Position += ZeroOffset;
-    bool currentAngleHigh = feedback > Max_Angle;
-    bool currentAngleLow = feedback < Min_Angle;
+    bool currentAngleHigh = CurrentPosition > Max_Angle;
+    bool currentAngleLow = CurrentPosition < Min_Angle;
 #if initial_tuning
     if (tuning) {
         int val = aTune->Runtime(Tick);
@@ -269,9 +274,9 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
 #endif
         if (RATE_DO_EXECUTE_WITH_OFFSET(SERVO_RATE, Tick, PID_Loop_Offset)) {
 
-        // input_vel = (feedback - input);
-        input_vel = k * (feedback - input) + (1 - k) * input_vel;
-        input = feedback;
+        // input_vel = (CurrentPosition - input);
+        input_vel = k * (CurrentPosition - input) + (1 - k) * input_vel;
+        input = CurrentPosition;
 
         if (Position < Min_Angle) {
             Position = Min_Angle;
@@ -294,7 +299,7 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
 #endif
     float PidMag = 0;
     MtrDirection NextDirection = Stationary;
-    if ((absInt(feedback - Position) <= 15)) {
+    if ((absInt(CurrentPosition - Position) <= 15)) {
         NextDirection = Stationary;
         if (input_vel < 0.3) {
             // call Initialize to avoid integral windup if we aren't fully at the setpoint
@@ -303,12 +308,12 @@ void PosContMot::SetPos(int32_t Position, uint32_t Tick)
         }
     } else {
         // float PIDcap = output;
-        output = TheOneWhoKnocks->Knock(Tick, output, Position, feedback, input_vel);
+        output = TheOneWhoKnocks->Knock(Tick, output, Position, CurrentPosition, input_vel);
         PidMag = abs(output);
 
         // if (PositionFeedbackPin == 1) { //|| PositionFeedbackPin == 10
         //     if (RATE_DO_EXECUTE_WITH_OFFSET(25, Tick, PID_Loop_Offset)) {
-        //         DEBUG_PRINTI("B %d,%d::%d        %.2f,%.2f: %.2f        %d,%d   ,%d", feedback, Position, feedback - Position, output, PIDcap, input_vel, (int)this_Unit, (int)this_Timer, absInt(Position - feedback) - (absInt((int16_t)PIDcap) * 5));
+        //         DEBUG_PRINTI("B %d,%d::%d        %.2f,%.2f: %.2f        %d,%d   ,%d", CurrentPosition, Position, CurrentPosition - Position, output, PIDcap, input_vel, (int)this_Unit, (int)this_Timer, absInt(Position - CurrentPosition) - (absInt((int16_t)PIDcap) * 5));
         //     }
         // }
 
